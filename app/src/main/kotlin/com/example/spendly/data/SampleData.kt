@@ -8,28 +8,30 @@ import java.time.LocalDate
 
 object SampleData {
     val transactions = listOf(
-        Transaction(1, 45.50, "USD", "Whole Foods", Category.FOOD, LocalDate.now().minusDays(0)),
-        Transaction(2, 12.99, "USD", "Netflix", Category.SUBSCRIPTIONS, LocalDate.now().minusDays(1)),
-        Transaction(3, 8.75, "USD", "Uber", Category.TRANSPORT, LocalDate.now().minusDays(1)),
-        Transaction(4, 89.00, "USD", "Zara", Category.SHOPPING, LocalDate.now().minusDays(2)),
-        Transaction(5, 34.20, "USD", "Restaurant Bella", Category.FOOD, LocalDate.now().minusDays(2)),
-        Transaction(6, 22.40, "USD", "Shell Gas", Category.TRANSPORT, LocalDate.now().minusDays(3)),
-        Transaction(7, 15.00, "USD", "Spotify", Category.SUBSCRIPTIONS, LocalDate.now().minusDays(3)),
-        Transaction(8, 120.00, "USD", "Doctor Visit", Category.HEALTH, LocalDate.now().minusDays(5)),
-        Transaction(9, 67.30, "USD", "Amazon", Category.SHOPPING, LocalDate.now().minusDays(6)),
-        Transaction(10, 9.99, "USD", "Coffee Ritual", Category.FOOD, LocalDate.now().minusDays(7)),
-        Transaction(11, 55.00, "USD", "Electricity Bill", Category.UTILITIES, LocalDate.now().minusDays(8)),
-        Transaction(12, 200.00, "EUR", "Hotel Booking", Category.TRAVEL, LocalDate.now().minusDays(10),
+        Transaction(1, 450.00, "INR", "Blue Tokai Coffee", Category.FOOD, LocalDate.now().minusDays(0)),
+        Transaction(2, 1420.00, "INR", "Swiggy Instamart", Category.GROCERIES, LocalDate.now().minusDays(1)),
+        Transaction(3, 380.00, "INR", "Uber Ride to BKC", Category.TRANSPORT, LocalDate.now().minusDays(1)),
+        Transaction(4, 1200.00, "INR", "HP Petrol Pump", Category.TRANSPORT, LocalDate.now().minusDays(2)),
+        Transaction(5, 649.00, "INR", "Netflix", Category.SUBSCRIPTIONS, LocalDate.now().minusDays(3)),
+        Transaction(6, 3490.00, "INR", "Zara Fashion", Category.SHOPPING, LocalDate.now().minusDays(4)),
+        Transaction(7, 8500.00, "INR", "Whole Foods Grocery", Category.GROCERIES, LocalDate.now().minusDays(5)),
+        Transaction(8, 12000.00, "INR", "Fine Dine Bombay Canteen", Category.FOOD, LocalDate.now().minusDays(6)),
+        Transaction(9, 3640.00, "INR", "Apollo Pharmacy", Category.HEALTH, LocalDate.now().minusDays(7)),
+        Transaction(10, 4200.00, "INR", "Tata Power Electricity", Category.UTILITIES, LocalDate.now().minusDays(8)),
+        Transaction(11, 4320.00, "INR", "PVR Cinemas IMAX", Category.ENTERTAINMENT, LocalDate.now().minusDays(9)),
+        Transaction(12, 1850.00, "INR", "Unknown Merchant VPA", Category.OTHER, LocalDate.now().minusDays(10),
+            notes = "Auto-parsed: Sent Rs.1,850.00 from HDFC Bank to VPA on 15-Jan.",
             status = TransactionStatus.NEEDS_REVIEW, source = TransactionSource.SMS),
-        Transaction(13, 18.50, "USD", "Chipotle", Category.FOOD, LocalDate.now().minusDays(11)),
-        Transaction(14, 35.00, "USD", "Cinema", Category.ENTERTAINMENT, LocalDate.now().minusDays(12)),
-        Transaction(15, 150.00, "GBP", "Flight EasyJet", Category.TRAVEL, LocalDate.now().minusDays(14),
+        Transaction(13, 2400.00, "INR", "Card POS Outflow", Category.OTHER, LocalDate.now().minusDays(12),
+            notes = "Auto-parsed: Debited Rs.2,400.00 at Retail POS on 12-Jan.",
             status = TransactionStatus.NEEDS_REVIEW, source = TransactionSource.SMS),
+        Transaction(14, 2100.00, "INR", "Blinkit Quick Delivery", Category.GROCERIES, LocalDate.now().minusDays(14)),
+        Transaction(15, 1200.00, "INR", "Starbucks Reserve", Category.FOOD, LocalDate.now().minusDays(15))
     )
 
     // Weekly spending for bar chart (last 7 days, Mon-Sun)
-    val weeklySpending = listOf(42.0, 78.5, 15.0, 123.0, 56.75, 89.30, 45.50)
-    val weekDayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val weeklySpending = listOf(1450.0, 2100.0, 3480.0, 890.0, 1240.0, 2600.0, 1820.0)
+    val weekDayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
 
     // Category totals for donut chart
     val categoryTotals: Map<Category, Double> = transactions

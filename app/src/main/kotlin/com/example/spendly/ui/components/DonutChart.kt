@@ -1,160 +1,179 @@
 package com.example.spendly.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
-import com.example.spendly.ui.theme.SpendlyAmber
-import com.example.spendly.ui.theme.SpendlyLavender
-import com.example.spendly.ui.theme.SpendlySage
-import com.example.spendly.ui.theme.SpendlySubtle
+import com.example.spendly.ui.theme.StitchCatEntertainment
+import com.example.spendly.ui.theme.StitchCatFood
+import com.example.spendly.ui.theme.StitchCatGroceries
+import com.example.spendly.ui.theme.StitchCatHealth
+import com.example.spendly.ui.theme.StitchCatOther
+import com.example.spendly.ui.theme.StitchCatShopping
+import com.example.spendly.ui.theme.StitchCatSubscriptions
+import com.example.spendly.ui.theme.StitchCatTransport
+import com.example.spendly.ui.theme.StitchCatTravel
+import com.example.spendly.ui.theme.StitchCatUtilities
+import com.example.spendly.ui.theme.StitchContainer
+import com.example.spendly.ui.theme.StitchContainerLow
+import com.example.spendly.ui.theme.StitchOnSurface
+import com.example.spendly.ui.theme.StitchOnSurfaceVariant
 
-val categoryColors = mapOf(
-    Category.FOOD to SpendlyLavender,
-    Category.TRANSPORT to SpendlySage,
-    Category.SHOPPING to SpendlyAmber,
-    Category.ENTERTAINMENT to Color(0xFF8BA4C7),
-    Category.HEALTH to Color(0xFFC77F8B),
-    Category.UTILITIES to Color(0xFF7BC7B8),
-    Category.SUBSCRIPTIONS to Color(0xFFC7A87B),
-    Category.TRAVEL to Color(0xFFB07BC7),
-    Category.OTHER to SpendlySubtle
+val stitchCategoryColors = mapOf(
+    Category.FOOD to StitchCatFood,
+    Category.GROCERIES to StitchCatGroceries,
+    Category.TRANSPORT to StitchCatTransport,
+    Category.SHOPPING to StitchCatShopping,
+    Category.ENTERTAINMENT to StitchCatEntertainment,
+    Category.UTILITIES to StitchCatUtilities,
+    Category.HEALTH to StitchCatHealth,
+    Category.SUBSCRIPTIONS to StitchCatSubscriptions,
+    Category.TRAVEL to StitchCatTravel,
+    Category.OTHER to StitchCatOther
 )
+
+val categoryColors = stitchCategoryColors
 
 @Composable
 fun DonutChart(
     categoryTotals: Map<Category, Double>,
     modifier: Modifier = Modifier,
-    size: Dp = 160.dp,
+    currencySymbol: String = "₹",
+    size: Dp = 180.dp,
     strokeWidth: Dp = 22.dp
 ) {
     val total = categoryTotals.values.sum()
-    if (total == 0.0) {
-        Row(
-            modifier = modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(size),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.size(size)) {
-                    drawArc(
-                        color = SpendlySubtle.copy(alpha = 0.35f),
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "$0",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.W700
-                    )
-                    Text(
-                        text = "no data",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "No spending recorded this month yet.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        return
-    }
+    val nonZero = categoryTotals.filter { it.value > 0 }
 
-    val sortedEntries = categoryTotals.entries.sortedByDescending { it.value }
-
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Centered Donut with Core Text
         Box(
             modifier = Modifier.size(size),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.size(size)) {
-                var startAngle = -90f
-                val gap = 3f
-                sortedEntries.forEach { (category, value) ->
-                    val sweep = ((value / total) * 360f).toFloat() - gap
-                    drawArc(
-                        color = categoryColors[category] ?: SpendlySubtle,
-                        startAngle = startAngle,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
-                    )
-                    startAngle += (value / total * 360f).toFloat()
+                // Background track
+                drawArc(
+                    color = StitchContainer,
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                )
+
+                if (total > 0 && nonZero.isNotEmpty()) {
+                    var currentStartAngle = -90f
+                    val gapDegrees = 3f
+                    val totalGap = nonZero.size * gapDegrees
+                    val availableAngle = (360f - totalGap).coerceAtLeast(0f)
+
+                    nonZero.forEach { (category, amount) ->
+                        val proportion = (amount / total).toFloat()
+                        val sweep = proportion * availableAngle
+                        val color = stitchCategoryColors[category] ?: StitchCatOther
+
+                        drawArc(
+                            color = color,
+                            startAngle = currentStartAngle,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                        )
+                        currentStartAngle += sweep + gapDegrees
+                    }
                 }
             }
+
+            // Donut Center Hub
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "\$${String.format("%.0f", total)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.W700
+                    text = "$currencySymbol${String.format("%,.0f", total)}",
+                    color = StitchOnSurface,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.W700,
+                    letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "total",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "TOTAL SPENT",
+                    color = StitchOnSurfaceVariant,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.W600,
+                    letterSpacing = 1.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // Legend — top 4 categories
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
-        ) {
-            sortedEntries.take(4).forEach { (category, value) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(10.dp),
-                        shape = CircleShape,
-                        color = categoryColors[category] ?: SpendlySubtle
-                    ) {}
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = category.displayName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "\$${String.format("%.0f", value)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.W600,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+        // Donut Legend Cards (Stitch style pill rows)
+        if (nonZero.isNotEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                nonZero.entries
+                    .sortedByDescending { it.value }
+                    .take(5)
+                    .forEach { (cat, amt) ->
+                        val color = stitchCategoryColors[cat] ?: StitchCatOther
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(StitchContainerLow)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(color, shape = CircleShape)
+                                )
+                                Text(
+                                    text = cat.displayName,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.W500,
+                                    color = StitchOnSurface
+                                )
+                            }
+                            Text(
+                                text = "$currencySymbol${String.format("%,.0f", amt)}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.W600,
+                                color = StitchOnSurface
+                            )
+                        }
+                    }
             }
         }
     }

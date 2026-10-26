@@ -7,7 +7,7 @@ class SpendlyPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("spendly_prefs", Context.MODE_PRIVATE)
 
     var defaultCurrency: String
-        get() = prefs.getString(KEY_DEFAULT_CURRENCY, "USD") ?: "USD"
+        get() = prefs.getString(KEY_DEFAULT_CURRENCY, "INR") ?: "INR"
         set(value) = prefs.edit().putString(KEY_DEFAULT_CURRENCY, value).apply()
 
     var isSmsAutoSaveEnabled: Boolean

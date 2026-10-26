@@ -1,24 +1,14 @@
 package com.example.spendly
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import com.example.spendly.ui.theme.PieChart
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,24 +18,15 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.spendly.ui.SpendlyViewModel
 import com.example.spendly.ui.activity.ActivityScreen
+import com.example.spendly.ui.calendar.CalendarScreen
+import com.example.spendly.ui.components.StitchBottomDock
+import com.example.spendly.ui.components.StitchNavDestination
 import com.example.spendly.ui.home.HomeScreen
 import com.example.spendly.ui.insights.InsightsScreen
 import com.example.spendly.ui.settings.SettingsScreen
 import com.example.spendly.ui.transaction.AddTransactionScreen
 import com.example.spendly.ui.transaction.EditTransactionScreen
-
-private data class NavItem(
-    val label: String,
-    val icon: ImageVector,
-    val destination: Any
-)
-
-private val navItems = listOf(
-    NavItem("Home", Icons.Default.Home, HomeDestination),
-    NavItem("Activity", Icons.AutoMirrored.Filled.List, ActivityDestination),
-    NavItem("Insights", Icons.Default.PieChart, InsightsDestination),
-    NavItem("Settings", Icons.Default.Settings, SettingsDestination),
-)
+import com.example.spendly.ui.transaction.QuickAddExpenseSheet
 
 @Composable
 fun MainNavigation() {
@@ -65,44 +46,39 @@ fun MainNavigation() {
     val isScanningSms by viewModel.isScanningSms.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack(HomeDestination)
-    var currentTab by remember { mutableStateOf<Any>(HomeDestination) }
+    var showQuickAddSheet by remember { mutableStateOf(false) }
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                navItems.forEach { item ->
-                    val isSelected = currentTab == item.destination
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                        selected = isSelected,
-                        onClick = {
-                            currentTab = item.destination
-                            // Clear back stack to tab root
-                            while (backStack.size > 1) backStack.removeLastOrNull()
-                            if (backStack.lastOrNull() != item.destination) {
-                                backStack.removeLastOrNull()
-                                backStack.add(item.destination as NavKey)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
+    val currencySymbol = when (defaultCurrency) {
+        "INR" -> "₹"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        else -> "$"
+    }
+
+    val currentKey = backStack.lastOrNull()
+    val showDock = currentKey !is EditTransactionDestination && currentKey !is AddTransactionDestination
+
+    val currentDest = when (currentKey) {
+        CalendarDestination -> StitchNavDestination.CALENDAR
+        InsightsDestination -> StitchNavDestination.INSIGHTS
+        SettingsDestination -> StitchNavDestination.SETTINGS
+        else -> StitchNavDestination.HOME
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         NavDisplay(
             backStack = backStack,
             onBack = { backStack.removeLastOrNull() },
-            modifier = Modifier.padding(paddingValues).fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             entryProvider = entryProvider {
                 entry<HomeDestination> {
                     HomeScreen(
-                        onAddTransaction = { backStack.add(AddTransactionDestination()) },
+                        onAddTransaction = { showQuickAddSheet = true },
                         onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
                         onReviewClick = {
-                            currentTab = ActivityDestination
-                            while (backStack.size > 1) backStack.removeLastOrNull()
-                            backStack.removeLastOrNull()
+                            backStack.add(ActivityDestination)
+                        },
+                        onViewAllClick = {
                             backStack.add(ActivityDestination)
                         },
                         monthlyTotal = monthlyTotal,
@@ -115,16 +91,19 @@ fun MainNavigation() {
                         defaultCurrency = defaultCurrency
                     )
                 }
-                entry<ActivityDestination> {
-                    ActivityScreen(
+                entry<CalendarDestination> {
+                    CalendarScreen(
                         transactions = transactions,
-                        onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) }
+                        onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
+                        currencySymbol = currencySymbol
                     )
                 }
                 entry<InsightsDestination> {
                     InsightsScreen(
                         categoryTotals = categoryTotals,
-                        monthlyTotal = monthlyTotal
+                        monthlyTotal = monthlyTotal,
+                        currencySymbol = currencySymbol,
+                        defaultCurrency = defaultCurrency
                     )
                 }
                 entry<SettingsDestination> {
@@ -137,6 +116,13 @@ fun MainNavigation() {
                         onScanSms = { onResult -> viewModel.scanSmsInbox(context, onResult) },
                         onClearAllData = { viewModel.clearAllData() },
                         onLoadSampleData = { viewModel.loadSampleData() }
+                    )
+                }
+                entry<ActivityDestination> {
+                    ActivityScreen(
+                        transactions = transactions,
+                        onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
+                        onBack = { backStack.removeLastOrNull() }
                     )
                 }
                 entry<AddTransactionDestination> { key ->
@@ -168,5 +154,39 @@ fun MainNavigation() {
                 }
             }
         )
+
+        // Floating Bottom Dock (matching Stitch 1:1)
+        if (showDock) {
+            StitchBottomDock(
+                currentDestination = currentDest,
+                onNavigate = { dest ->
+                    val targetKey: NavKey = when (dest) {
+                        StitchNavDestination.HOME -> HomeDestination
+                        StitchNavDestination.CALENDAR -> CalendarDestination
+                        StitchNavDestination.INSIGHTS -> InsightsDestination
+                        StitchNavDestination.SETTINGS -> SettingsDestination
+                    }
+                    while (backStack.size > 1) backStack.removeLastOrNull()
+                    if (backStack.lastOrNull() != targetKey) {
+                        backStack.removeLastOrNull()
+                        backStack.add(targetKey)
+                    }
+                },
+                onFabClick = { showQuickAddSheet = true },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
+        // Quick Add Expense Bottom Sheet Modal (matching Stitch 1:1)
+        if (showQuickAddSheet) {
+            QuickAddExpenseSheet(
+                onDismiss = { showQuickAddSheet = false },
+                onSave = { amount, currency, merchant, category, notes ->
+                    viewModel.addTransaction(amount, currency, merchant, category, notes)
+                    showQuickAddSheet = false
+                },
+                defaultCurrency = defaultCurrency
+            )
+        }
     }
 }

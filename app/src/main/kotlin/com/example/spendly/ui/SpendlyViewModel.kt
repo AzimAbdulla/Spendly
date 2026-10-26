@@ -175,7 +175,8 @@ class SpendlyViewModel(
 
     fun loadSampleData() {
         viewModelScope.launch {
-            repository.insertAll(SampleData.transactions)
+            val freshData = SampleData.transactions.map { it.copy(id = 0) }
+            repository.insertAll(freshData)
         }
     }
 
