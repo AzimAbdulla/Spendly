@@ -100,38 +100,64 @@ fun ActivityScreen(
                 )
             }
 
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                grouped.forEach { (date, dayTransactions) ->
-                    item(key = date.toString()) {
+            if (filtered.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Text(
-                            text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                            style = MaterialTheme.typography.labelMedium,
+                            text = if (filter == ActivityFilter.REVIEW) "No transactions need review" else "No transactions yet",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.W600,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (filter == ActivityFilter.REVIEW) "All transactions are confirmed" else "Tap + on Home to add your first expense",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    item(key = "${date}_card") {
-                        SpendlyCard {
-                            dayTransactions.forEachIndexed { index, transaction ->
-                                TransactionItem(
-                                    transaction = transaction,
-                                    onClick = { onTransactionClick(transaction.id) }
-                                )
-                                if (index < dayTransactions.lastIndex) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(1.dp)
-                                            .padding(horizontal = 16.dp)
-                                    ) {
-                                        Surface(
-                                            modifier = Modifier.fillMaxSize(),
-                                            color = MaterialTheme.colorScheme.outline
-                                        ) {}
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    grouped.forEach { (date, dayTransactions) ->
+                        item(key = date.toString()) {
+                            Text(
+                                text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.W600,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                        item(key = "${date}_card") {
+                            SpendlyCard {
+                                dayTransactions.forEachIndexed { index, transaction ->
+                                    TransactionItem(
+                                        transaction = transaction,
+                                        onClick = { onTransactionClick(transaction.id) }
+                                    )
+                                    if (index < dayTransactions.lastIndex) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(1.dp)
+                                                .padding(horizontal = 16.dp)
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier.fillMaxSize(),
+                                                color = MaterialTheme.colorScheme.outline
+                                            ) {}
+                                        }
                                     }
                                 }
                             }

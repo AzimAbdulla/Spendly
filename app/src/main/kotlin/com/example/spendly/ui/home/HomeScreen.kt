@@ -56,6 +56,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     // In a real app these would come from a ViewModel
     monthlyTotal: Double = SampleData.monthlyTotal,
+    transactionCount: Int = SampleData.transactions.size,
     recentTransactions: List<Transaction> = SampleData.transactions.take(5),
     reviewCount: Int = SampleData.reviewCount,
     weeklySpending: List<Double> = SampleData.weeklySpending,
@@ -125,7 +126,7 @@ fun HomeScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "${SampleData.transactions.size} transactions",
+                            text = "$transactionCount transactions",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -222,22 +223,44 @@ fun HomeScreen(
 
             item {
                 SpendlyCard {
-                    recentTransactions.forEachIndexed { index, transaction ->
-                        TransactionItem(
-                            transaction = transaction,
-                            onClick = { onTransactionClick(transaction.id) }
-                        )
-                        if (index < recentTransactions.lastIndex) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                Surface(
-                                    modifier = Modifier.fillMaxSize(),
-                                    color = MaterialTheme.colorScheme.outline
-                                ) {}
+                    if (recentTransactions.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "No recent transactions",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.W500,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Tap the + button to record an expense",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        recentTransactions.forEachIndexed { index, transaction ->
+                            TransactionItem(
+                                transaction = transaction,
+                                onClick = { onTransactionClick(transaction.id) }
+                            )
+                            if (index < recentTransactions.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.fillMaxSize(),
+                                        color = MaterialTheme.colorScheme.outline
+                                    ) {}
+                                }
                             }
                         }
                     }

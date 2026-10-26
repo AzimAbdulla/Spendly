@@ -47,7 +47,46 @@ fun DonutChart(
     strokeWidth: Dp = 22.dp
 ) {
     val total = categoryTotals.values.sum()
-    if (total == 0.0) return
+    if (total == 0.0) {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(size),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.size(size)) {
+                    drawArc(
+                        color = SpendlySubtle.copy(alpha = 0.35f),
+                        startAngle = 0f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "$0",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.W700
+                    )
+                    Text(
+                        text = "no data",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "No spending recorded this month yet.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
 
     val sortedEntries = categoryTotals.entries.sortedByDescending { it.value }
 

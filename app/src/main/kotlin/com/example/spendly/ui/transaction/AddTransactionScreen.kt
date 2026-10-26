@@ -46,7 +46,7 @@ import com.example.spendly.ui.theme.SpendlyTheme
 @Composable
 fun AddTransactionScreen(
     prefillAmount: Double? = null,
-    onSaved: () -> Unit,
+    onSaved: (Double, String, String, Category, String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -161,7 +161,10 @@ fun AddTransactionScreen(
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick = onSaved,
+                onClick = {
+                    val parsedAmount = amount.toDoubleOrNull() ?: 0.0
+                    onSaved(parsedAmount, currency, merchant, category, notes)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = amount.isNotBlank() && merchant.isNotBlank()
             ) {
@@ -177,5 +180,5 @@ fun AddTransactionScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AddTransactionScreenPreview() {
-    SpendlyTheme { AddTransactionScreen(onSaved = {}, onCancel = {}) }
+    SpendlyTheme { AddTransactionScreen(onSaved = { _, _, _, _, _ -> }, onCancel = {}) }
 }

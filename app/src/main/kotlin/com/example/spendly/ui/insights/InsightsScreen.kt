@@ -100,7 +100,14 @@ fun InsightsScreen(
                             fontWeight = FontWeight.W600
                         )
                         Spacer(Modifier.height(16.dp))
-                        sorted.forEach { (category, amount) ->
+                        if (sorted.isEmpty()) {
+                            Text(
+                                text = "No category data recorded this month yet.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            sorted.forEach { (category, amount) ->
                             val fraction = if (monthlyTotal > 0) (amount / monthlyTotal).toFloat() else 0f
                             Row(
                                 modifier = Modifier
@@ -148,6 +155,7 @@ fun InsightsScreen(
                         }
                     }
                 }
+            }
             }
         }
     }

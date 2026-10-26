@@ -19,10 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.spendly.ui.SpendlyViewModel
 import com.example.spendly.ui.activity.ActivityScreen
 import com.example.spendly.ui.home.HomeScreen
 import com.example.spendly.ui.insights.InsightsScreen
@@ -45,6 +49,18 @@ private val navItems = listOf(
 
 @Composable
 fun MainNavigation() {
+    val context = LocalContext.current.applicationContext as SpendlyApplication
+    val viewModel: SpendlyViewModel = viewModel(
+        factory = SpendlyViewModel.provideFactory(context.repository)
+    )
+
+    val transactions by viewModel.transactions.collectAsStateWithLifecycle()
+    val recentTransactions by viewModel.recentTransactions.collectAsStateWithLifecycle()
+    val monthlyTotal by viewModel.monthlyTotal.collectAsStateWithLifecycle()
+    val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
+    val categoryTotals by viewModel.categoryTotals.collectAsStateWithLifecycle()
+    val weeklySpending by viewModel.weeklySpending.collectAsStateWithLifecycle()
+
     val backStack = rememberNavBackStack(HomeDestination)
     var currentTab by remember { mutableStateOf<Any>(HomeDestination) }
 
@@ -85,31 +101,57 @@ fun MainNavigation() {
                             while (backStack.size > 1) backStack.removeLastOrNull()
                             backStack.removeLastOrNull()
                             backStack.add(ActivityDestination)
-                        }
+                        },
+                        monthlyTotal = monthlyTotal,
+                        transactionCount = transactions.size,
+                        recentTransactions = recentTransactions,
+                        reviewCount = reviewCount,
+                        weeklySpending = weeklySpending,
+                        weekDayLabels = viewModel.weekDayLabels,
+                        categoryTotals = categoryTotals
                     )
                 }
                 entry<ActivityDestination> {
                     ActivityScreen(
+                        transactions = transactions,
                         onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) }
                     )
                 }
                 entry<InsightsDestination> {
-                    InsightsScreen()
+                    InsightsScreen(
+                        categoryTotals = categoryTotals,
+                        monthlyTotal = monthlyTotal
+                    )
                 }
                 entry<SettingsDestination> {
-                    SettingsScreen()
+                    SettingsScreen(
+                        onClearAllData = { viewModel.clearAllData() },
+                        onLoadSampleData = { viewModel.loadSampleData() }
+                    )
                 }
                 entry<AddTransactionDestination> { key ->
                     AddTransactionScreen(
                         prefillAmount = key.prefillAmount,
-                        onSaved = { backStack.removeLastOrNull() },
+                        onSaved = { amt, curr, merch, cat, notes ->
+                            viewModel.addTransaction(amt, curr, merch, cat, notes)
+                            backStack.removeLastOrNull()
+                        },
                         onCancel = { backStack.removeLastOrNull() }
                     )
                 }
                 entry<EditTransactionDestination> { key ->
+                    val tx = transactions.find { it.id == key.transactionId }
                     EditTransactionScreen(
                         transactionId = key.transactionId,
-                        onSaved = { backStack.removeLastOrNull() },
+                        transaction = tx,
+                        onSaved = { updated ->
+                            viewModel.updateTransaction(updated)
+                            backStack.removeLastOrNull()
+                        },
+                        onDelete = { id ->
+                            viewModel.deleteTransaction(id)
+                            backStack.removeLastOrNull()
+                        },
                         onCancel = { backStack.removeLastOrNull() }
                     )
                 }

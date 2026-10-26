@@ -40,7 +40,11 @@ val supportedCurrencies = listOf("USD", "EUR", "GBP", "INR", "JPY", "CAD", "AUD"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    modifier: Modifier = Modifier,
+    onClearAllData: () -> Unit = {},
+    onLoadSampleData: () -> Unit = {}
+) {
     var selectedCurrency by remember { mutableStateOf("USD") }
     var currencyDropdownExpanded by remember { mutableStateOf(false) }
     var smsAutoSave by remember { mutableStateOf(false) }
@@ -151,6 +155,47 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                                 onCheckedChange = { smsAutoSave = it },
                                 enabled = false
                             )
+                        }
+                    }
+                }
+            }
+
+            // Data Management section
+            item {
+                Text(
+                    "Data Management",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                SpendlyCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            "Manage local financial records stored in device Room database.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = onClearAllData,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = com.example.spendly.ui.theme.SpendlyExpense
+                            )
+                        ) {
+                            Text("Clear All Transactions")
+                        }
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = onLoadSampleData,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Load Sample Data")
                         }
                     }
                 }

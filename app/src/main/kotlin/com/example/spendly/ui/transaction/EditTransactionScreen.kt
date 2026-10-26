@@ -49,19 +49,21 @@ import com.example.spendly.ui.theme.SpendlyTheme
 @Composable
 fun EditTransactionScreen(
     transactionId: Long,
-    onSaved: () -> Unit,
+    transaction: com.example.spendly.data.model.Transaction? = null,
+    onSaved: (com.example.spendly.data.model.Transaction) -> Unit,
+    onDelete: (Long) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // In a real app this would be fetched from DB via ViewModel
-    val transaction = SampleData.transactions.find { it.id == transactionId }
+    val currentTransaction = transaction
+        ?: SampleData.transactions.find { it.id == transactionId }
         ?: SampleData.transactions.first()
 
-    var amount by remember { mutableStateOf(transaction.amount.toString()) }
-    var merchant by remember { mutableStateOf(transaction.merchant) }
-    var notes by remember { mutableStateOf(transaction.notes) }
-    var currency by remember { mutableStateOf(transaction.currency) }
-    var category by remember { mutableStateOf(transaction.category) }
+    var amount by remember(currentTransaction) { mutableStateOf(currentTransaction.amount.toString()) }
+    var merchant by remember(currentTransaction) { mutableStateOf(currentTransaction.merchant) }
+    var notes by remember(currentTransaction) { mutableStateOf(currentTransaction.notes) }
+    var currency by remember(currentTransaction) { mutableStateOf(currentTransaction.currency) }
+    var category by remember(currentTransaction) { mutableStateOf(currentTransaction.category) }
     var currencyExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
 
@@ -167,14 +169,27 @@ fun EditTransactionScreen(
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick = onSaved,
+                onClick = {
+                    val parsedAmount = amount.toDoubleOrNull() ?: currentTransaction.amount
+                    onSaved(
+                        currentTransaction.copy(
+                            amount = parsedAmount,
+                            merchant = merchant,
+                            currency = currency,
+                            category = category,
+                            notes = notes
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = amount.isNotBlank() && merchant.isNotBlank()
             ) {
                 Text("Save Changes", modifier = Modifier.padding(vertical = 4.dp))
             }
             OutlinedButton(
-                onClick = { /* delete */ onCancel() },
+                onClick = {
+                    onDelete(transactionId)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = SpendlyExpense)
             ) {
@@ -187,5 +202,5 @@ fun EditTransactionScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun EditTransactionScreenPreview() {
-    SpendlyTheme { EditTransactionScreen(transactionId = 1L, onSaved = {}, onCancel = {}) }
+    SpendlyTheme { EditTransactionScreen(transactionId = 1L, onSaved = {}, onDelete = {}, onCancel = {}) }
 }
