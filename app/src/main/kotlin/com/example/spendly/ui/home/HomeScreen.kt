@@ -62,8 +62,19 @@ fun HomeScreen(
     weeklySpending: List<Double> = SampleData.weeklySpending,
     weekDayLabels: List<String> = SampleData.weekDayLabels,
     categoryTotals: Map<Category, Double> = SampleData.categoryTotals,
+    defaultCurrency: String = "USD",
 ) {
     val monthLabel = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+    val currencySymbol = when (defaultCurrency) {
+        "USD", "CAD", "AUD", "SGD" -> "$"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        "INR" -> "₹"
+        "JPY" -> "¥"
+        "AED" -> "AED "
+        "CHF" -> "CHF "
+        else -> "$defaultCurrency "
+    }
 
     Scaffold(
         modifier = modifier,
@@ -119,7 +130,7 @@ fun HomeScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "\$${String.format("%.2f", monthlyTotal)}",
+                            text = "$currencySymbol${String.format("%.2f", monthlyTotal)}",
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.W700,
                             color = MaterialTheme.colorScheme.onSurface

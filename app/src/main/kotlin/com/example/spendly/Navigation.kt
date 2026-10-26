@@ -51,7 +51,7 @@ private val navItems = listOf(
 fun MainNavigation() {
     val context = LocalContext.current.applicationContext as SpendlyApplication
     val viewModel: SpendlyViewModel = viewModel(
-        factory = SpendlyViewModel.provideFactory(context.repository)
+        factory = SpendlyViewModel.provideFactory(context.repository, context.preferences)
     )
 
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
@@ -60,6 +60,9 @@ fun MainNavigation() {
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
     val categoryTotals by viewModel.categoryTotals.collectAsStateWithLifecycle()
     val weeklySpending by viewModel.weeklySpending.collectAsStateWithLifecycle()
+    val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
+    val smsAutoSave by viewModel.smsAutoSave.collectAsStateWithLifecycle()
+    val isScanningSms by viewModel.isScanningSms.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack(HomeDestination)
     var currentTab by remember { mutableStateOf<Any>(HomeDestination) }
@@ -108,7 +111,8 @@ fun MainNavigation() {
                         reviewCount = reviewCount,
                         weeklySpending = weeklySpending,
                         weekDayLabels = viewModel.weekDayLabels,
-                        categoryTotals = categoryTotals
+                        categoryTotals = categoryTotals,
+                        defaultCurrency = defaultCurrency
                     )
                 }
                 entry<ActivityDestination> {
@@ -125,6 +129,12 @@ fun MainNavigation() {
                 }
                 entry<SettingsDestination> {
                     SettingsScreen(
+                        defaultCurrency = defaultCurrency,
+                        onCurrencySelected = { viewModel.setDefaultCurrency(it) },
+                        smsAutoSave = smsAutoSave,
+                        onSmsAutoSaveChanged = { viewModel.setSmsAutoSave(it) },
+                        isScanningSms = isScanningSms,
+                        onScanSms = { onResult -> viewModel.scanSmsInbox(context, onResult) },
                         onClearAllData = { viewModel.clearAllData() },
                         onLoadSampleData = { viewModel.loadSampleData() }
                     )
@@ -132,6 +142,7 @@ fun MainNavigation() {
                 entry<AddTransactionDestination> { key ->
                     AddTransactionScreen(
                         prefillAmount = key.prefillAmount,
+                        defaultCurrency = defaultCurrency,
                         onSaved = { amt, curr, merch, cat, notes ->
                             viewModel.addTransaction(amt, curr, merch, cat, notes)
                             backStack.removeLastOrNull()

@@ -177,7 +177,8 @@ fun EditTransactionScreen(
                             merchant = merchant,
                             currency = currency,
                             category = category,
-                            notes = notes
+                            notes = notes,
+                            status = com.example.spendly.data.model.TransactionStatus.CONFIRMED
                         )
                     )
                 },

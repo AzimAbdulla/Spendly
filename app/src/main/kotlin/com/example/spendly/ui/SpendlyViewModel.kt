@@ -4,13 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.spendly.data.SampleData
+import com.example.spendly.data.SpendlyPreferences
 import com.example.spendly.data.TransactionRepository
 import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
+import com.example.spendly.sms.SmsReader
+import com.example.spendly.sms.SmsScanResult
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -18,8 +23,18 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class SpendlyViewModel(
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val preferences: SpendlyPreferences
 ) : ViewModel() {
+
+    private val _defaultCurrency = MutableStateFlow(preferences.defaultCurrency)
+    val defaultCurrency: StateFlow<String> = _defaultCurrency.asStateFlow()
+
+    private val _smsAutoSave = MutableStateFlow(preferences.isSmsAutoSaveEnabled)
+    val smsAutoSave: StateFlow<Boolean> = _smsAutoSave.asStateFlow()
+
+    private val _isScanningSms = MutableStateFlow(false)
+    val isScanningSms: StateFlow<Boolean> = _isScanningSms.asStateFlow()
 
     val transactions: StateFlow<List<Transaction>> = repository.getAllTransactions()
         .stateIn(
@@ -126,6 +141,32 @@ class SpendlyViewModel(
         }
     }
 
+    fun setDefaultCurrency(currency: String) {
+        preferences.defaultCurrency = currency
+        _defaultCurrency.value = currency
+    }
+
+    fun setSmsAutoSave(enabled: Boolean) {
+        preferences.isSmsAutoSaveEnabled = enabled
+        _smsAutoSave.value = enabled
+    }
+
+    fun scanSmsInbox(context: android.content.Context, onResult: (SmsScanResult) -> Unit = {}) {
+        viewModelScope.launch {
+            _isScanningSms.value = true
+            try {
+                val result = SmsReader.scanInbox(
+                    context = context,
+                    repository = repository,
+                    autoSave = _smsAutoSave.value
+                )
+                onResult(result)
+            } finally {
+                _isScanningSms.value = false
+            }
+        }
+    }
+
     fun clearAllData() {
         viewModelScope.launch {
             repository.clearAll()
@@ -139,11 +180,14 @@ class SpendlyViewModel(
     }
 
     companion object {
-        fun provideFactory(repository: TransactionRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            repository: TransactionRepository,
+            preferences: SpendlyPreferences
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SpendlyViewModel(repository) as T
+                    return SpendlyViewModel(repository, preferences) as T
                 }
             }
     }

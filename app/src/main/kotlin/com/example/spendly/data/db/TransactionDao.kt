@@ -2,6 +2,7 @@ package com.example.spendly.data.db
 
 import androidx.room.*
 import com.example.spendly.data.model.Transaction
+import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -25,6 +26,9 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     suspend fun getTransactionByIdOnce(id: Long): Transaction?
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE source = :source AND merchant = :merchant AND amount = :amount AND date = :date")
+    suspend fun countMatchingTransaction(source: TransactionSource, merchant: String, amount: Double, date: LocalDate): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction): Long

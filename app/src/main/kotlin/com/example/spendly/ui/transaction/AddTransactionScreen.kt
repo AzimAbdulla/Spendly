@@ -46,6 +46,7 @@ import com.example.spendly.ui.theme.SpendlyTheme
 @Composable
 fun AddTransactionScreen(
     prefillAmount: Double? = null,
+    defaultCurrency: String = "USD",
     onSaved: (Double, String, String, Category, String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -53,7 +54,7 @@ fun AddTransactionScreen(
     var amount by remember { mutableStateOf(prefillAmount?.toString() ?: "") }
     var merchant by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    var currency by remember { mutableStateOf("USD") }
+    var currency by remember { mutableStateOf(defaultCurrency) }
     var category by remember { mutableStateOf(Category.OTHER) }
     var currencyExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
