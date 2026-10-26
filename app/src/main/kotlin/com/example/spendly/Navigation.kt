@@ -3,8 +3,8 @@ package com.example.spendly
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -38,7 +38,7 @@ private data class NavItem(
 
 private val navItems = listOf(
     NavItem("Home", Icons.Default.Home, HomeDestination),
-    NavItem("Activity", Icons.Default.List, ActivityDestination),
+    NavItem("Activity", Icons.AutoMirrored.Filled.List, ActivityDestination),
     NavItem("Insights", Icons.Default.PieChart, InsightsDestination),
     NavItem("Settings", Icons.Default.Settings, SettingsDestination),
 )

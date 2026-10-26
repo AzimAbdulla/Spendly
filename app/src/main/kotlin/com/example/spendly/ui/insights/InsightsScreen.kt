@@ -45,7 +45,7 @@ fun InsightsScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Insights", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.W600) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
