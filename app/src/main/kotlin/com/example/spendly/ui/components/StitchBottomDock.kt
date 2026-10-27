@@ -7,14 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -33,11 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.ui.theme.CalendarToday
 import com.example.spendly.ui.theme.PieChart
-import com.example.spendly.ui.theme.StitchDockBackground
-import com.example.spendly.ui.theme.StitchOnPrimary
-import com.example.spendly.ui.theme.StitchPrimary
-import com.example.spendly.ui.theme.StitchPrimaryFixed
-import com.example.spendly.ui.theme.StitchPrimaryFixedDim
+import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.Tune
 
 enum class StitchNavDestination {
@@ -65,11 +58,11 @@ fun StitchBottomDock(
                 .shadow(
                     elevation = 16.dp,
                     shape = CircleShape,
-                    spotColor = Color(0x381A1B22),
-                    ambientColor = Color(0x381A1B22)
+                    spotColor = Color(0x38000000),
+                    ambientColor = Color(0x38000000)
                 ),
             shape = CircleShape,
-            color = StitchDockBackground.copy(alpha = 0.96f)
+            color = SpendlyTheme.colors.dockBackground.copy(alpha = 0.96f)
         ) {
             Row(
                 modifier = Modifier
@@ -98,8 +91,7 @@ fun StitchBottomDock(
 
                 // Center FAB Action
                 Box(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
@@ -109,17 +101,17 @@ fun StitchBottomDock(
                             .shadow(
                                 elevation = 10.dp,
                                 shape = CircleShape,
-                                spotColor = StitchPrimary.copy(alpha = 0.5f)
+                                spotColor = SpendlyTheme.colors.primary.copy(alpha = 0.5f)
                             ),
                         shape = CircleShape,
-                        color = StitchPrimary,
+                        color = SpendlyTheme.colors.primary,
                         onClick = onFabClick
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = "Add Expense",
-                                tint = StitchOnPrimary,
+                                tint = SpendlyTheme.colors.onPrimary,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -156,9 +148,9 @@ private fun DockItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeBg = StitchPrimaryFixed.copy(alpha = 0.20f)
-    val activeColor = StitchPrimaryFixedDim
-    val inactiveColor = Color(0xFFC9C4D1)
+    val activeBg = SpendlyTheme.colors.primary.copy(alpha = 0.18f)
+    val activeColor = SpendlyTheme.colors.primary
+    val inactiveColor = Color(0xFFA0A0AB)
 
     Box(
         modifier = modifier

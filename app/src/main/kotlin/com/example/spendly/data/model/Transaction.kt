@@ -17,17 +17,17 @@ data class Transaction(
     val status: TransactionStatus = TransactionStatus.CONFIRMED
 )
 
-enum class Category(val displayName: String, val shortName: String, val emoji: String) {
-    FOOD("Food & Dining", "Dining", "🍴"),
-    GROCERIES("Groceries", "Groc...", "🛒"),
-    TRANSPORT("Transport", "Transit", "🚗"),
-    SHOPPING("Shopping", "Shop...", "🛍️"),
-    ENTERTAINMENT("Entertainment", "Fun", "🎟️"),
-    UTILITIES("Utilities", "Utility", "⚡"),
-    HEALTH("Health", "Health", "💊"),
-    SUBSCRIPTIONS("Subscriptions", "Subs", "🔄"),
-    TRAVEL("Travel", "Travel", "✈️"),
-    OTHER("Other", "Other", "•••")
+enum class Category(val displayName: String, val shortName: String) {
+    FOOD("Food & Dining", "Dining"),
+    GROCERIES("Groceries", "Groceries"),
+    TRANSPORT("Transport", "Transit"),
+    SHOPPING("Shopping", "Shopping"),
+    ENTERTAINMENT("Entertainment", "Fun"),
+    UTILITIES("Utilities", "Utility"),
+    HEALTH("Health", "Health"),
+    SUBSCRIPTIONS("Subscriptions", "Subs"),
+    TRAVEL("Travel", "Travel"),
+    OTHER("Other", "Other")
 }
 
 enum class TransactionSource { MANUAL, SMS }

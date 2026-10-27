@@ -1,6 +1,7 @@
 package com.example.spendly.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,19 +12,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import com.example.spendly.ui.theme.StitchBorder
-import com.example.spendly.ui.theme.StitchCardSurface
+import com.example.spendly.ui.theme.SpendlyTheme
 
 @Composable
 fun SpendlyCard(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = StitchCardSurface,
-    borderColor: Color = StitchBorder,
+    backgroundColor: Color = SpendlyTheme.colors.cardBackground,
+    borderColor: Color = SpendlyTheme.colors.border,
     shape: Shape = RoundedCornerShape(16.dp),
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = BorderStroke(1.dp, borderColor),

@@ -22,9 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import com.example.spendly.ui.theme.ChevronRight
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -33,7 +30,6 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -57,22 +53,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.spendly.sms.SmsScanResult
 import com.example.spendly.ui.components.SpendlyCard
-import com.example.spendly.ui.theme.StitchBackground
-import com.example.spendly.ui.theme.StitchBorder
-import com.example.spendly.ui.theme.StitchCardSurface
-import com.example.spendly.ui.theme.StitchContainer
-import com.example.spendly.ui.theme.StitchContainerLow
-import com.example.spendly.ui.theme.StitchError
-import com.example.spendly.ui.theme.StitchOnPrimary
-import com.example.spendly.ui.theme.StitchOnSurface
-import com.example.spendly.ui.theme.StitchOnSurfaceVariant
-import com.example.spendly.ui.theme.StitchOnTertiary
-import com.example.spendly.ui.theme.StitchPrimary
-import com.example.spendly.ui.theme.StitchPrimaryFixed
-import com.example.spendly.ui.theme.StitchSecondary
-import com.example.spendly.ui.theme.StitchSecondaryFixed
-import com.example.spendly.ui.theme.StitchTertiaryContainer
-import com.example.spendly.ui.theme.StitchTertiaryFixed
+import com.example.spendly.ui.theme.SpendlyTheme
+import com.example.spendly.ui.theme.Tune
 
 val supportedCurrencies = listOf("INR", "USD", "EUR", "GBP", "CAD", "AUD", "AED", "CHF", "SGD", "JPY")
 
@@ -88,12 +70,14 @@ fun SettingsScreen(
     onReviewInboxClick: () -> Unit = {},
     onClearAllData: () -> Unit = {},
     onLoadSampleData: () -> Unit = {},
+    themeMode: String = "SYSTEM",
+    onThemeModeSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val colors = SpendlyTheme.colors
     val context = LocalContext.current
     var currencyDropdownExpanded by remember { mutableStateOf(false) }
     var scanResultMessage by remember { mutableStateOf<String?>(null) }
-    var selectedAppearance by remember { mutableStateOf("Auto") }
 
     var hasSmsPermissions by remember {
         mutableStateOf(
@@ -121,33 +105,23 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(modifier = Modifier.size(8.dp).background(StitchPrimary, CircleShape))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(colors.primary, CircleShape)
+                        )
                         Text(
                             text = "Settings",
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.W700,
-                            color = StitchOnSurface
+                            color = colors.textPrimary
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = StitchOnSurfaceVariant)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(32.dp)
-                            .background(StitchPrimary, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(imageVector = Icons.Default.Person, contentDescription = "Profile", tint = StitchOnPrimary, modifier = Modifier.size(18.dp))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = StitchBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
             )
         },
-        containerColor = StitchBackground
+        containerColor = colors.background
     ) { innerPadding ->
         LazyColumn(
             modifier = modifier
@@ -156,72 +130,15 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top Green Banner: Offline Ledger Security
-            item {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFEAF5EE),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6D3)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(Color(0xFFD2EBDC), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🛡️", fontSize = 18.sp)
-                        }
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "Offline Ledger Security",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.W700,
-                                    color = StitchOnSurface
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFBAE3C9))
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "Local Only",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.W700,
-                                        color = StitchSecondary
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Spendly operates completely isolated from third-party servers. Your SMS texts and spend logs never leave this handset.",
-                                fontSize = 12.sp,
-                                color = StitchOnSurfaceVariant,
-                                lineHeight = 17.sp
-                            )
-                        }
-                    }
-                }
-            }
-
             // GENERAL PREFERENCES Section
             item {
                 Text(
                     text = "GENERAL PREFERENCES",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.W700,
-                    color = StitchPrimary,
+                    color = colors.textSecondary,
                     letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
             item {
@@ -248,17 +165,23 @@ fun SettingsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.size(36.dp).background(StitchContainer, CircleShape),
+                                        modifier = Modifier.size(36.dp).background(colors.container, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("₹", fontSize = 16.sp, fontWeight = FontWeight.W700, color = StitchOnSurface)
+                                        val symbol = when (defaultCurrency) {
+                                            "INR" -> "₹"
+                                            "EUR" -> "€"
+                                            "GBP" -> "£"
+                                            else -> "$"
+                                        }
+                                        Text(symbol, fontSize = 16.sp, fontWeight = FontWeight.W700, color = colors.textPrimary)
                                     }
                                     Column {
-                                        Text("Default Reporting Currency", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                        Text("$defaultCurrency · Tap to change", fontSize = 12.sp, color = StitchPrimary)
+                                        Text("Default Reporting Currency", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                        Text("$defaultCurrency · Tap to change", fontSize = 12.sp, color = colors.primary)
                                     }
                                 }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = StitchOnSurfaceVariant)
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary)
                             }
 
                             ExposedDropdownMenu(
@@ -280,25 +203,19 @@ fun SettingsScreen(
                         // Info Box
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = StitchContainerLow,
+                            color = colors.container,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Text("ℹ️", fontSize = 12.sp)
-                                Text(
-                                    text = "Stored transactions retain original logged currency. No volatile online exchange rate dependencies or remote sync.",
-                                    fontSize = 11.sp,
-                                    color = StitchOnSurfaceVariant,
-                                    lineHeight = 15.sp
-                                )
-                            }
+                            Text(
+                                text = "Stored transactions retain original logged currency. All calculations are executed strictly on device without third-party sync.",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary,
+                                lineHeight = 15.sp,
+                                modifier = Modifier.padding(12.dp)
+                            )
                         }
 
-                        HorizontalDivider(color = StitchContainer)
+                        HorizontalDivider(color = colors.border)
 
                         // Appearance Selector
                         Row(
@@ -306,43 +223,41 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp).background(StitchContainer, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("🎨", fontSize = 16.sp)
+                            Column {
+                                Text("Appearance", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                val modeLabel = when (themeMode) {
+                                    "LIGHT" -> "Light"
+                                    "DARK" -> "Dark"
+                                    else -> "System Default"
                                 }
-                                Column {
-                                    Text("Appearance", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("System Default", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
+                                Text(modeLabel, fontSize = 12.sp, color = colors.textSecondary)
                             }
 
                             // Auto | Light | Dark pill
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = StitchContainerLow,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, StitchBorder)
+                                color = colors.container,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
                             ) {
                                 Row(modifier = Modifier.padding(2.dp)) {
-                                    listOf("Auto", "Light", "Dark").forEach { mode ->
-                                        val isSel = selectedAppearance == mode
+                                    listOf(
+                                        "Auto" to "SYSTEM",
+                                        "Light" to "LIGHT",
+                                        "Dark" to "DARK"
+                                    ).forEach { (label, modeKey) ->
+                                        val isSel = themeMode == modeKey
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(14.dp))
-                                                .background(if (isSel) StitchCardSurface else Color.Transparent)
-                                                .clickable { selectedAppearance = mode }
+                                                .background(if (isSel) colors.cardBackground else Color.Transparent)
+                                                .clickable { onThemeModeSelected(modeKey) }
                                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                                         ) {
                                             Text(
-                                                text = mode,
+                                                text = label,
                                                 fontSize = 11.sp,
                                                 fontWeight = if (isSel) FontWeight.W700 else FontWeight.W500,
-                                                color = if (isSel) StitchOnSurface else StitchOnSurfaceVariant
+                                                color = if (isSel) colors.textPrimary else colors.textSecondary
                                             )
                                         }
                                     }
@@ -364,19 +279,19 @@ fun SettingsScreen(
                         text = "SMS EXPENSE TRACKING",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.W700,
-                        color = StitchPrimary,
+                        color = colors.textSecondary,
                         letterSpacing = 0.8.sp
                     )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Box(modifier = Modifier.size(6.dp).background(StitchSecondary, CircleShape))
+                        Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
                         Text(
                             text = "Active Daemon",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.W600,
-                            color = StitchSecondary
+                            color = colors.primary
                         )
                     }
                 }
@@ -400,14 +315,19 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Box(
-                                    modifier = Modifier.size(36.dp).background(StitchPrimaryFixed, CircleShape),
+                                    modifier = Modifier.size(36.dp).background(colors.container, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("💬", fontSize = 16.sp)
+                                    Icon(
+                                        imageVector = Icons.Filled.Tune,
+                                        contentDescription = null,
+                                        tint = colors.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                                 Column {
-                                    Text("Automated SMS Ingestion", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("Instant spend detection from bank SMS", fontSize = 12.sp, color = StitchOnSurfaceVariant)
+                                    Text("Automated SMS Ingestion", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                    Text("Instant spend detection from bank SMS", fontSize = 12.sp, color = colors.textSecondary)
                                 }
                             }
                             Switch(
@@ -420,8 +340,8 @@ fun SettingsScreen(
                                     }
                                 },
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = StitchOnPrimary,
-                                    checkedTrackColor = StitchPrimary
+                                    checkedThumbColor = colors.onPrimary,
+                                    checkedTrackColor = colors.primary
                                 )
                             )
                         }
@@ -429,7 +349,7 @@ fun SettingsScreen(
                         // Detection Engine badge
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = StitchContainerLow,
+                            color = colors.container,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -437,30 +357,24 @@ fun SettingsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text("⚙️", fontSize = 14.sp)
-                                    Text("Detection Engine", fontSize = 12.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                }
+                                Text("Detection Engine", fontSize = 12.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(StitchPrimaryFixed)
+                                        .background(colors.cardBackground)
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = "On-Device Parsing (100% Private)",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.W600,
-                                        color = StitchPrimary
+                                        color = colors.primary
                                     )
                                 }
                             }
                         }
 
-                        HorizontalDivider(color = StitchContainer)
+                        HorizontalDivider(color = colors.border)
 
                         // SMS Read Permission Status
                         Row(
@@ -468,34 +382,23 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp).background(Color(0xFFEAF5EE), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("🛡️", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Text("SMS Read Permission", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("Standard Android runtime privilege", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
+                            Column {
+                                Text("SMS Read Permission", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                Text("Standard Android runtime privilege", fontSize = 12.sp, color = colors.textSecondary)
                             }
 
                             if (hasSmsPermissions) {
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(StitchSecondaryFixed)
+                                        .background(colors.container)
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        text = "✓ Granted",
+                                        text = "Granted",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.W700,
-                                        color = StitchSecondary
+                                        color = colors.primary
                                     )
                                 }
                             } else {
@@ -512,46 +415,7 @@ fun SettingsScreen(
                             }
                         }
 
-                        HorizontalDivider(color = StitchContainer)
-
-                        // Review Inbox Item
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = onReviewInboxClick),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp).background(StitchTertiaryFixed, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("📥", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text("Review Inbox", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                        Box(
-                                            modifier = Modifier.size(16.dp).background(StitchTertiaryContainer, CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text("2", fontSize = 10.sp, fontWeight = FontWeight.W700, color = StitchOnTertiary)
-                                        }
-                                    }
-                                    Text("Transactions needing attention", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
-                            }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = StitchOnSurfaceVariant)
-                        }
-
-                        HorizontalDivider(color = StitchContainer)
+                        HorizontalDivider(color = colors.border)
 
                         // Auto-save High Confidence Toggle
                         Row(
@@ -559,28 +423,16 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp).background(StitchContainer, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("⚡", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Text("Auto-save High Confidence", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("Skip manual check for recognizable merchants", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Auto-save High Confidence", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                Text("Skip manual check for recognizable merchants", fontSize = 12.sp, color = colors.textSecondary)
                             }
                             Switch(
                                 checked = smsAutoSave,
                                 onCheckedChange = onSmsAutoSaveChanged,
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = StitchOnPrimary,
-                                    checkedTrackColor = StitchPrimary
+                                    checkedThumbColor = colors.onPrimary,
+                                    checkedTrackColor = colors.primary
                                 )
                             )
                         }
@@ -611,7 +463,7 @@ fun SettingsScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Scanning Inbox...")
                             } else {
-                                Text("📥 Scan SMS Inbox Now", fontSize = 13.sp)
+                                Text("Scan SMS Inbox Now", fontSize = 13.sp)
                             }
                         }
 
@@ -619,7 +471,7 @@ fun SettingsScreen(
                             Text(
                                 text = msg,
                                 fontSize = 12.sp,
-                                color = if (msg.contains("Successfully")) StitchSecondary else StitchOnSurfaceVariant,
+                                color = if (msg.contains("Successfully")) colors.primary else colors.textSecondary,
                                 fontWeight = FontWeight.W500
                             )
                         }
@@ -633,9 +485,9 @@ fun SettingsScreen(
                     text = "DATA MANAGEMENT & BACKUP",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.W700,
-                    color = StitchPrimary,
+                    color = colors.textSecondary,
                     letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
 
@@ -645,31 +497,6 @@ fun SettingsScreen(
                         modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // Export Transactions
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {},
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(modifier = Modifier.size(36.dp).background(StitchContainer, CircleShape), contentAlignment = Alignment.Center) {
-                                    Text("📥", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Text("Export Transactions", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("Generate clean CSV or encrypted JSON ledger", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
-                            }
-                            Text("⬇️", fontSize = 14.sp)
-                        }
-
-                        HorizontalDivider(color = StitchContainer)
-
                         // Load Sample Data / Restore
                         Row(
                             modifier = Modifier
@@ -678,22 +505,14 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(modifier = Modifier.size(36.dp).background(StitchContainer, CircleShape), contentAlignment = Alignment.Center) {
-                                    Text("📄", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Text("Load Sample Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchOnSurface)
-                                    Text("Populate ledger with realistic spending entries", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
+                            Column {
+                                Text("Load Sample Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                Text("Populate ledger with realistic spending entries", fontSize = 12.sp, color = colors.textSecondary)
                             }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = StitchOnSurfaceVariant)
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary)
                         }
 
-                        HorizontalDivider(color = StitchContainer)
+                        HorizontalDivider(color = colors.border)
 
                         // Clear All Data
                         Row(
@@ -703,19 +522,11 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(modifier = Modifier.size(36.dp).background(Color(0xFFFFEAEA), CircleShape), contentAlignment = Alignment.Center) {
-                                    Text("🗑️", fontSize = 16.sp)
-                                }
-                                Column {
-                                    Text("Clear All Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = StitchError)
-                                    Text("Permanently wipe stored transactions and categories", fontSize = 12.sp, color = StitchOnSurfaceVariant)
-                                }
+                            Column {
+                                Text("Clear All Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.error)
+                                Text("Permanently wipe stored transactions and categories", fontSize = 12.sp, color = colors.textSecondary)
                             }
-                            Text("⚠️", fontSize = 14.sp)
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.error)
                         }
                     }
                 }
@@ -731,28 +542,22 @@ fun SettingsScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(StitchContainerLow)
+                            .background(colors.container)
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Box(modifier = Modifier.size(6.dp).background(StitchPrimary, CircleShape))
+                            Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
                             Text(
                                 text = "Spendly v1.4.0 (Offline-First Build)",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.W600,
-                                color = StitchOnSurfaceVariant
+                                color = colors.textSecondary
                             )
                         }
                     }
-                    Text(
-                        text = "Made for Android with Material 3 ergonomics. Tactile linen utility.",
-                        fontSize = 11.sp,
-                        color = StitchOnSurfaceVariant,
-                        fontWeight = FontWeight.W400
-                    )
                 }
             }
 

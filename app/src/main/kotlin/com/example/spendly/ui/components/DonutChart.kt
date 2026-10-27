@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
+import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.StitchCatEntertainment
 import com.example.spendly.ui.theme.StitchCatFood
 import com.example.spendly.ui.theme.StitchCatGroceries
@@ -36,10 +37,6 @@ import com.example.spendly.ui.theme.StitchCatSubscriptions
 import com.example.spendly.ui.theme.StitchCatTransport
 import com.example.spendly.ui.theme.StitchCatTravel
 import com.example.spendly.ui.theme.StitchCatUtilities
-import com.example.spendly.ui.theme.StitchContainer
-import com.example.spendly.ui.theme.StitchContainerLow
-import com.example.spendly.ui.theme.StitchOnSurface
-import com.example.spendly.ui.theme.StitchOnSurfaceVariant
 
 val stitchCategoryColors = mapOf(
     Category.FOOD to StitchCatFood,
@@ -66,6 +63,7 @@ fun DonutChart(
 ) {
     val total = categoryTotals.values.sum()
     val nonZero = categoryTotals.filter { it.value > 0 }
+    val trackColor = SpendlyTheme.colors.container
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -79,7 +77,7 @@ fun DonutChart(
             Canvas(modifier = Modifier.size(size)) {
                 // Background track
                 drawArc(
-                    color = StitchContainer,
+                    color = trackColor,
                     startAngle = 0f,
                     sweepAngle = 360f,
                     useCenter = false,
@@ -113,14 +111,14 @@ fun DonutChart(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "$currencySymbol${String.format("%,.0f", total)}",
-                    color = StitchOnSurface,
+                    color = SpendlyTheme.colors.textPrimary,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.W700,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "TOTAL SPENT",
-                    color = StitchOnSurfaceVariant,
+                    color = SpendlyTheme.colors.textSecondary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.W600,
                     letterSpacing = 1.sp
@@ -130,7 +128,7 @@ fun DonutChart(
 
         Spacer(Modifier.height(20.dp))
 
-        // Donut Legend Cards (Stitch style pill rows)
+        // Donut Legend Cards (Clean minimal pill rows)
         if (nonZero.isNotEmpty()) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -145,32 +143,32 @@ fun DonutChart(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(StitchContainerLow)
+                                .background(SpendlyTheme.colors.containerLow)
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(10.dp)
-                                        .background(color, shape = CircleShape)
+                                        .size(8.dp)
+                                        .background(color, CircleShape)
                                 )
                                 Text(
                                     text = cat.displayName,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.W500,
-                                    color = StitchOnSurface
+                                    color = SpendlyTheme.colors.textPrimary
                                 )
                             }
                             Text(
                                 text = "$currencySymbol${String.format("%,.0f", amt)}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.W600,
-                                color = StitchOnSurface
+                                color = SpendlyTheme.colors.textPrimary
                             )
                         }
                     }

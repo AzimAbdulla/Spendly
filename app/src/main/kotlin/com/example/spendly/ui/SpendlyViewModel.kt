@@ -30,6 +30,9 @@ class SpendlyViewModel(
     private val _defaultCurrency = MutableStateFlow(preferences.defaultCurrency)
     val defaultCurrency: StateFlow<String> = _defaultCurrency.asStateFlow()
 
+    private val _themeMode = MutableStateFlow(preferences.themeMode)
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
     private val _smsAutoSave = MutableStateFlow(preferences.isSmsAutoSaveEnabled)
     val smsAutoSave: StateFlow<Boolean> = _smsAutoSave.asStateFlow()
 
@@ -144,6 +147,11 @@ class SpendlyViewModel(
     fun setDefaultCurrency(currency: String) {
         preferences.defaultCurrency = currency
         _defaultCurrency.value = currency
+    }
+
+    fun setThemeMode(mode: String) {
+        preferences.themeMode = mode
+        _themeMode.value = mode
     }
 
     fun setSmsAutoSave(enabled: Boolean) {

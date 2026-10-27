@@ -29,21 +29,22 @@ import com.example.spendly.ui.transaction.EditTransactionScreen
 import com.example.spendly.ui.transaction.QuickAddExpenseSheet
 
 @Composable
-fun MainNavigation() {
+fun MainNavigation(viewModel: SpendlyViewModel? = null) {
     val context = LocalContext.current.applicationContext as SpendlyApplication
-    val viewModel: SpendlyViewModel = viewModel(
+    val vm: SpendlyViewModel = viewModel ?: viewModel(
         factory = SpendlyViewModel.provideFactory(context.repository, context.preferences)
     )
 
-    val transactions by viewModel.transactions.collectAsStateWithLifecycle()
-    val recentTransactions by viewModel.recentTransactions.collectAsStateWithLifecycle()
-    val monthlyTotal by viewModel.monthlyTotal.collectAsStateWithLifecycle()
-    val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
-    val categoryTotals by viewModel.categoryTotals.collectAsStateWithLifecycle()
-    val weeklySpending by viewModel.weeklySpending.collectAsStateWithLifecycle()
-    val defaultCurrency by viewModel.defaultCurrency.collectAsStateWithLifecycle()
-    val smsAutoSave by viewModel.smsAutoSave.collectAsStateWithLifecycle()
-    val isScanningSms by viewModel.isScanningSms.collectAsStateWithLifecycle()
+    val transactions by vm.transactions.collectAsStateWithLifecycle()
+    val recentTransactions by vm.recentTransactions.collectAsStateWithLifecycle()
+    val monthlyTotal by vm.monthlyTotal.collectAsStateWithLifecycle()
+    val reviewCount by vm.reviewCount.collectAsStateWithLifecycle()
+    val categoryTotals by vm.categoryTotals.collectAsStateWithLifecycle()
+    val weeklySpending by vm.weeklySpending.collectAsStateWithLifecycle()
+    val defaultCurrency by vm.defaultCurrency.collectAsStateWithLifecycle()
+    val smsAutoSave by vm.smsAutoSave.collectAsStateWithLifecycle()
+    val isScanningSms by vm.isScanningSms.collectAsStateWithLifecycle()
+    val themeMode by vm.themeMode.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack(HomeDestination)
     var showQuickAddSheet by remember { mutableStateOf(false) }
@@ -86,7 +87,7 @@ fun MainNavigation() {
                         recentTransactions = recentTransactions,
                         reviewCount = reviewCount,
                         weeklySpending = weeklySpending,
-                        weekDayLabels = viewModel.weekDayLabels,
+                        weekDayLabels = vm.weekDayLabels,
                         categoryTotals = categoryTotals,
                         defaultCurrency = defaultCurrency
                     )
@@ -100,8 +101,7 @@ fun MainNavigation() {
                 }
                 entry<InsightsDestination> {
                     InsightsScreen(
-                        categoryTotals = categoryTotals,
-                        monthlyTotal = monthlyTotal,
+                        transactions = transactions,
                         currencySymbol = currencySymbol,
                         defaultCurrency = defaultCurrency
                     )
@@ -109,13 +109,15 @@ fun MainNavigation() {
                 entry<SettingsDestination> {
                     SettingsScreen(
                         defaultCurrency = defaultCurrency,
-                        onCurrencySelected = { viewModel.setDefaultCurrency(it) },
+                        onCurrencySelected = { vm.setDefaultCurrency(it) },
                         smsAutoSave = smsAutoSave,
-                        onSmsAutoSaveChanged = { viewModel.setSmsAutoSave(it) },
+                        onSmsAutoSaveChanged = { vm.setSmsAutoSave(it) },
                         isScanningSms = isScanningSms,
-                        onScanSms = { onResult -> viewModel.scanSmsInbox(context, onResult) },
-                        onClearAllData = { viewModel.clearAllData() },
-                        onLoadSampleData = { viewModel.loadSampleData() }
+                        onScanSms = { onResult -> vm.scanSmsInbox(context, onResult) },
+                        onClearAllData = { vm.clearAllData() },
+                        onLoadSampleData = { vm.loadSampleData() },
+                        themeMode = themeMode,
+                        onThemeModeSelected = { vm.setThemeMode(it) }
                     )
                 }
                 entry<ActivityDestination> {
@@ -130,7 +132,7 @@ fun MainNavigation() {
                         prefillAmount = key.prefillAmount,
                         defaultCurrency = defaultCurrency,
                         onSaved = { amt, curr, merch, cat, notes ->
-                            viewModel.addTransaction(amt, curr, merch, cat, notes)
+                            vm.addTransaction(amt, curr, merch, cat, notes)
                             backStack.removeLastOrNull()
                         },
                         onCancel = { backStack.removeLastOrNull() }
@@ -142,11 +144,11 @@ fun MainNavigation() {
                         transactionId = key.transactionId,
                         transaction = tx,
                         onSaved = { updated ->
-                            viewModel.updateTransaction(updated)
+                            vm.updateTransaction(updated)
                             backStack.removeLastOrNull()
                         },
                         onDelete = { id ->
-                            viewModel.deleteTransaction(id)
+                            vm.deleteTransaction(id)
                             backStack.removeLastOrNull()
                         },
                         onCancel = { backStack.removeLastOrNull() }
@@ -182,7 +184,7 @@ fun MainNavigation() {
             QuickAddExpenseSheet(
                 onDismiss = { showQuickAddSheet = false },
                 onSave = { amount, currency, merchant, category, notes ->
-                    viewModel.addTransaction(amount, currency, merchant, category, notes)
+                    vm.addTransaction(amount, currency, merchant, category, notes)
                     showQuickAddSheet = false
                 },
                 defaultCurrency = defaultCurrency

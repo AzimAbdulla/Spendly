@@ -14,18 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import com.example.spendly.ui.theme.ChevronLeft
 import com.example.spendly.ui.theme.ChevronRight
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,20 +42,8 @@ import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.components.TransactionItem
-import com.example.spendly.ui.theme.StitchBackground
-import com.example.spendly.ui.theme.StitchBorder
-import com.example.spendly.ui.theme.StitchCatEntertainment
-import com.example.spendly.ui.theme.StitchCatFood
-import com.example.spendly.ui.theme.StitchCatGroceries
-import com.example.spendly.ui.theme.StitchCatTransport
-import com.example.spendly.ui.theme.StitchContainer
-import com.example.spendly.ui.theme.StitchContainerLow
-import com.example.spendly.ui.theme.StitchOnPrimary
-import com.example.spendly.ui.theme.StitchOnSurface
-import com.example.spendly.ui.theme.StitchOnSurfaceVariant
-import com.example.spendly.ui.theme.StitchPrimary
-import com.example.spendly.ui.theme.StitchPrimaryFixed
-import com.example.spendly.ui.theme.StitchSecondary
+import com.example.spendly.ui.theme.SpendlyTheme
+import com.example.spendly.ui.theme.getColor
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -72,6 +56,7 @@ fun CalendarScreen(
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹"
 ) {
+    val colors = SpendlyTheme.colors
     var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
 
@@ -92,33 +77,23 @@ fun CalendarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(modifier = Modifier.size(8.dp).background(StitchPrimary, CircleShape))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(colors.primary, CircleShape)
+                        )
                         Text(
                             text = "Calendar",
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.W700,
-                            color = StitchOnSurface
+                            color = colors.textPrimary
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = StitchOnSurfaceVariant)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(32.dp)
-                            .background(StitchPrimary, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = StitchOnPrimary, modifier = Modifier.size(18.dp))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = StitchBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
             )
         },
-        containerColor = StitchBackground
+        containerColor = colors.background
     ) { innerPadding ->
         LazyColumn(
             modifier = modifier
@@ -130,7 +105,9 @@ fun CalendarScreen(
             // Month Switcher Header Row
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -141,31 +118,41 @@ fun CalendarScreen(
                         Surface(
                             modifier = Modifier.size(32.dp),
                             shape = CircleShape,
-                            color = StitchContainerLow,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, StitchBorder),
+                            color = colors.container,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                             onClick = { selectedMonth = selectedMonth.minusMonths(1) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "Prev Month", tint = StitchOnSurfaceVariant, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.ChevronLeft,
+                                    contentDescription = "Prev Month",
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
 
                         Text(
                             text = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                            fontSize = 17.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.W700,
-                            color = StitchOnSurface
+                            color = colors.textPrimary
                         )
 
                         Surface(
                             modifier = Modifier.size(32.dp),
                             shape = CircleShape,
-                            color = StitchContainerLow,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, StitchBorder),
+                            color = colors.container,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                             onClick = { selectedMonth = selectedMonth.plusMonths(1) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.ChevronRight, contentDescription = "Next Month", tint = StitchOnSurfaceVariant, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.ChevronRight,
+                                    contentDescription = "Next Month",
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
@@ -174,19 +161,19 @@ fun CalendarScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(StitchPrimaryFixed)
+                            .background(colors.container)
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Box(modifier = Modifier.size(6.dp).background(StitchPrimary, CircleShape))
+                            Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
                             Text(
                                 text = "$daysWithTx Active Days",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.W600,
-                                color = StitchPrimary
+                                color = colors.textPrimary
                             )
                         }
                     }
@@ -207,7 +194,7 @@ fun CalendarScreen(
                                     text = day,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.W600,
-                                    color = StitchOnSurfaceVariant,
+                                    color = colors.textSecondary,
                                     modifier = Modifier.width(36.dp),
                                     textAlign = TextAlign.Center
                                 )
@@ -241,7 +228,7 @@ fun CalendarScreen(
                                                     .clip(RoundedCornerShape(18.dp))
                                                     .clickable { selectedDate = date }
                                                     .then(
-                                                        if (isSelected) Modifier.background(StitchPrimary)
+                                                        if (isSelected) Modifier.background(colors.primary)
                                                         else Modifier
                                                     )
                                                     .padding(vertical = 4.dp),
@@ -252,7 +239,7 @@ fun CalendarScreen(
                                                     text = dayNumber.toString(),
                                                     fontSize = 13.sp,
                                                     fontWeight = if (isSelected) FontWeight.W700 else FontWeight.W500,
-                                                    color = if (isSelected) StitchOnPrimary else StitchOnSurface,
+                                                    color = if (isSelected) colors.onPrimary else colors.textPrimary,
                                                     textAlign = TextAlign.Center
                                                 )
                                                 // Activity indicator dot
@@ -262,8 +249,8 @@ fun CalendarScreen(
                                                         .size(4.dp)
                                                         .background(
                                                             when {
-                                                                isSelected -> StitchOnPrimary
-                                                                hasTx -> StitchSecondary
+                                                                isSelected -> colors.onPrimary
+                                                                hasTx -> colors.primary
                                                                 else -> Color.Transparent
                                                             },
                                                             CircleShape
@@ -297,20 +284,20 @@ fun CalendarScreen(
                                 text = "SELECTED DAY",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.W700,
-                                color = StitchOnSurfaceVariant,
+                                color = colors.textSecondary,
                                 letterSpacing = 0.8.sp
                             )
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(StitchPrimaryFixed)
+                                    .background(colors.container)
                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "${dayTransactions.size} Recorded",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.W600,
-                                    color = StitchPrimary
+                                    color = colors.textPrimary
                                 )
                             }
                         }
@@ -319,7 +306,7 @@ fun CalendarScreen(
                             text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMM yyyy")),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.W700,
-                            color = StitchOnSurface
+                            color = colors.textPrimary
                         )
 
                         Row(
@@ -330,18 +317,8 @@ fun CalendarScreen(
                                 text = "$currencySymbol${String.format("%,.2f", dayTotal)}",
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.W700,
-                                color = StitchOnSurface
+                                color = colors.textPrimary
                             )
-                            if (dayTotal > 0) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "✓ On Track",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.W600,
-                                        color = StitchSecondary
-                                    )
-                                }
-                            }
                         }
 
                         // Category distribution bar
@@ -350,23 +327,17 @@ fun CalendarScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(8.dp)
+                                    .height(6.dp)
                                     .clip(CircleShape)
                             ) {
                                 catGroups.forEach { (cat, txs) ->
                                     val catSum = txs.sumOf { it.amount }
                                     val weight = (catSum / dayTotal).toFloat()
-                                    val color = when (cat) {
-                                        com.example.spendly.data.model.Category.FOOD -> StitchCatFood
-                                        com.example.spendly.data.model.Category.GROCERIES -> StitchCatGroceries
-                                        com.example.spendly.data.model.Category.TRANSPORT -> StitchCatTransport
-                                        else -> StitchCatEntertainment
-                                    }
                                     Box(
                                         modifier = Modifier
                                             .weight(weight.coerceAtLeast(0.05f))
                                             .fillMaxSize()
-                                            .background(color)
+                                            .background(cat.getColor())
                                     )
                                 }
                             }
@@ -378,7 +349,9 @@ fun CalendarScreen(
             // Timeline & Receipts section header
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -386,12 +359,12 @@ fun CalendarScreen(
                         text = "Timeline & Receipts",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.W700,
-                        color = StitchOnSurface
+                        color = colors.textPrimary
                     )
                     Text(
                         text = "Categorized",
                         fontSize = 12.sp,
-                        color = StitchOnSurfaceVariant
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -409,7 +382,7 @@ fun CalendarScreen(
                             Text(
                                 text = "No transactions logged on this day",
                                 fontSize = 13.sp,
-                                color = StitchOnSurfaceVariant
+                                color = colors.textSecondary
                             )
                         }
                     }
@@ -429,48 +402,10 @@ fun CalendarScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(1.dp)
-                                            .background(StitchContainer)
+                                            .background(colors.border)
                                     )
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            // LEDGER WISDOM card
-            item {
-                SpendlyCard(
-                    backgroundColor = StitchContainerLow,
-                    borderColor = Color.Transparent
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(StitchContainer, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("✦", fontSize = 16.sp, color = StitchPrimary)
-                        }
-                        Column {
-                            Text(
-                                text = "LEDGER WISDOM",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.W700,
-                                color = StitchOnSurfaceVariant,
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = "Awareness over restriction. Daily logs create lasting clarity.",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.W500,
-                                color = StitchOnSurface
-                            )
                         }
                     }
                 }

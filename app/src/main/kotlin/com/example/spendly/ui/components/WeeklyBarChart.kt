@@ -23,10 +23,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.spendly.ui.theme.StitchContainer
-import com.example.spendly.ui.theme.StitchOnPrimary
-import com.example.spendly.ui.theme.StitchOnSurfaceVariant
-import com.example.spendly.ui.theme.StitchPrimary
+import com.example.spendly.ui.theme.SpendlyTheme
 
 @Composable
 fun WeeklyBarChart(
@@ -38,6 +35,11 @@ fun WeeklyBarChart(
     val maxVal = (values.maxOrNull() ?: 1.0).coerceAtLeast(1.0)
     val todayIndex = (values.size - 1).coerceAtLeast(0)
     val todayAmount = values.getOrNull(todayIndex) ?: 0.0
+
+    val primaryColor = SpendlyTheme.colors.primary
+    val trackColor = SpendlyTheme.colors.container
+    val onPrimaryColor = SpendlyTheme.colors.onPrimary
+    val textColor = SpendlyTheme.colors.textSecondary
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -59,12 +61,12 @@ fun WeeklyBarChart(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(StitchPrimary)
+                            .background(primaryColor)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "$currencySymbol${String.format("%,.0f", todayAmount)}",
-                            color = StitchOnPrimary,
+                            color = onPrimaryColor,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.W700,
                             letterSpacing = (-0.2).sp
@@ -83,7 +85,7 @@ fun WeeklyBarChart(
                 ) {
                     // Inactive full capsule track
                     drawRoundRect(
-                        color = StitchContainer,
+                        color = trackColor,
                         topLeft = Offset(0f, 0f),
                         size = Size(size.width, size.height),
                         cornerRadius = CornerRadius(size.width / 2, size.width / 2)
@@ -92,7 +94,7 @@ fun WeeklyBarChart(
                     // Filled bar
                     val fillHeight = (size.height * fraction).coerceAtLeast(0f)
                     val top = size.height - fillHeight
-                    val color = if (isToday) StitchPrimary else StitchPrimary.copy(alpha = 0.45f)
+                    val color = if (isToday) primaryColor else primaryColor.copy(alpha = 0.35f)
 
                     if (fillHeight > 0) {
                         drawRoundRect(
@@ -111,7 +113,7 @@ fun WeeklyBarChart(
                     text = shortDay,
                     fontSize = 11.sp,
                     fontWeight = if (isToday) FontWeight.W700 else FontWeight.W500,
-                    color = if (isToday) StitchPrimary else StitchOnSurfaceVariant
+                    color = if (isToday) primaryColor else textColor
                 )
             }
         }

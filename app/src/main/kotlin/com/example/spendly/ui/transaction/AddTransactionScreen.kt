@@ -129,7 +129,7 @@ fun AddTransactionScreen(
                 onExpandedChange = { categoryExpanded = it }
             ) {
                 OutlinedTextField(
-                    value = "${category.emoji} ${category.displayName}",
+                    value = category.displayName,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
@@ -144,7 +144,7 @@ fun AddTransactionScreen(
                 ) {
                     Category.entries.forEach { cat ->
                         DropdownMenuItem(
-                            text = { Text("${cat.emoji} ${cat.displayName}") },
+                            text = { Text(cat.displayName) },
                             onClick = { category = cat; categoryExpanded = false }
                         )
                     }
