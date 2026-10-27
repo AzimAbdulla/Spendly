@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -21,16 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,80 +84,20 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .shadow(8.dp, CircleShape, spotColor = Color(0x99CABEFE))
-                                .background(colors.primary, CircleShape)
-                        )
-                        Text(
-                            text = "Overview",
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textPrimary,
-                            letterSpacing = (-0.2).sp
-                        )
-                    }
-                },
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(end = 12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .clickable(onClick = onViewAllClick),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = colors.textSecondary,
-                                modifier = Modifier.size(19.dp)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(colors.containerHigh)
-                                .border(1.dp, colors.border, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = colors.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colors.background
-                )
-            )
-        },
         containerColor = colors.background
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .statusBarsPadding()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            item {
+                Spacer(Modifier.height(4.dp))
+            }
+
             // Sub-header Row: Spendly Brand + Month Pill + Review Bell
             item {
                 Row(
@@ -214,37 +152,45 @@ fun HomeScreen(
                         }
                     }
 
-                    // Notification bell with badge
+                    // Notification bell with unclipped badge
                     Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(colors.container)
-                            .border(1.dp, colors.border, CircleShape)
-                            .clickable(onClick = onReviewClick),
+                        modifier = Modifier.size(40.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Reviews",
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(19.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(colors.container)
+                                .border(1.dp, colors.border, CircleShape)
+                                .clickable(onClick = onReviewClick),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Reviews",
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+
                         if (reviewCount > 0) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(1.dp)
-                                    .size(16.dp)
-                                    .shadow(4.dp, CircleShape, spotColor = Color(0x99FEB956))
-                                    .background(colors.tertiary, CircleShape),
+                                    .offset(x = 1.dp, y = (-1).dp)
+                                    .size(17.dp)
+                                    .background(colors.tertiary, CircleShape)
+                                    .border(2.dp, colors.background, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = reviewCount.toString(),
-                                    fontSize = 10.sp,
+                                    text = if (reviewCount > 9) "9+" else reviewCount.toString(),
+                                    fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1A1100)
+                                    color = Color(0xFF1A1100),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    lineHeight = 10.sp
                                 )
                             }
                         }
@@ -425,86 +371,6 @@ fun HomeScreen(
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Review Pending Alert Banner (when reviews exist)
-            if (reviewCount > 0) {
-                item {
-                    SpendlyCard(
-                        backgroundColor = if (colors.isDark) Color(0xFF09090F) else Color(0xFFFFFBEB),
-                        borderColor = colors.tertiary.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(16.dp),
-                        onClick = onReviewClick
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(colors.tertiary.copy(alpha = 0.15f))
-                                        .border(1.dp, colors.tertiary.copy(alpha = 0.35f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Notifications,
-                                        contentDescription = null,
-                                        tint = colors.tertiary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = "$reviewCount uncertain expenses",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = colors.textPrimary
-                                    )
-                                    Text(
-                                        text = "Auto-parsed via SMS alerts",
-                                        fontSize = 11.sp,
-                                        color = colors.textSecondary
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                shape = CircleShape,
-                                color = colors.tertiary.copy(alpha = 0.2f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, colors.tertiary.copy(alpha = 0.35f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(
-                                        text = "Review",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.tertiary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = null,
-                                        tint = colors.tertiary,
-                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
