@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -130,18 +131,17 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background
-    ) { innerPadding ->
+        containerColor = colors.background,
+        contentWindowInsets = WindowInsets(0.dp)
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Spacer(Modifier.height(4.dp))
                 Text(
                     text = "Settings",
                     fontFamily = SpaceGroteskFontFamily,

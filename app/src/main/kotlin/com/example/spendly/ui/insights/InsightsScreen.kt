@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -110,19 +111,16 @@ fun InsightsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background
-    ) { innerPadding ->
+        containerColor = colors.background,
+        contentWindowInsets = WindowInsets(0.dp)
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                Spacer(Modifier.height(4.dp))
-            }
             // Period & Cadence Selector Control
             item {
                 Row(
