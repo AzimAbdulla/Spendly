@@ -2,6 +2,7 @@ package com.example.spendly.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.StitchCatEntertainment
 import com.example.spendly.ui.theme.StitchCatFood
@@ -42,28 +44,27 @@ val stitchCategoryColors = mapOf(
     Category.FOOD to StitchCatFood,
     Category.GROCERIES to StitchCatGroceries,
     Category.TRANSPORT to StitchCatTransport,
-    Category.SHOPPING to StitchCatShopping,
     Category.ENTERTAINMENT to StitchCatEntertainment,
     Category.UTILITIES to StitchCatUtilities,
+    Category.SHOPPING to StitchCatShopping,
     Category.HEALTH to StitchCatHealth,
     Category.SUBSCRIPTIONS to StitchCatSubscriptions,
     Category.TRAVEL to StitchCatTravel,
     Category.OTHER to StitchCatOther
 )
 
-val categoryColors = stitchCategoryColors
-
 @Composable
 fun DonutChart(
     categoryTotals: Map<Category, Double>,
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹",
-    size: Dp = 180.dp,
-    strokeWidth: Dp = 22.dp
+    size: Dp = 170.dp,
+    strokeWidth: Dp = 20.dp
 ) {
+    val colors = SpendlyTheme.colors
     val total = categoryTotals.values.sum()
-    val nonZero = categoryTotals.filter { it.value > 0 }
-    val trackColor = SpendlyTheme.colors.container
+    val nonZero = categoryTotals.filter { it.value > 0 }.entries.sortedByDescending { it.value }
+    val trackColor = if (colors.isDark) Color(0xFF101018) else colors.container
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -86,92 +87,100 @@ fun DonutChart(
 
                 if (total > 0 && nonZero.isNotEmpty()) {
                     var currentStartAngle = -90f
-                    val gapDegrees = 3f
+                    val gapDegrees = 4f
                     val totalGap = nonZero.size * gapDegrees
                     val availableAngle = (360f - totalGap).coerceAtLeast(0f)
 
                     nonZero.forEach { (category, amount) ->
                         val proportion = (amount / total).toFloat()
                         val sweep = proportion * availableAngle
-                        val color = stitchCategoryColors[category] ?: StitchCatOther
+                        val catColor = stitchCategoryColors[category] ?: StitchCatOther
 
-                        drawArc(
-                            color = color,
-                            startAngle = currentStartAngle,
-                            sweepAngle = sweep,
-                            useCenter = false,
-                            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
-                        )
-                        currentStartAngle += sweep + gapDegrees
+                        if (sweep > 0f) {
+                            drawArc(
+                                color = catColor,
+                                startAngle = currentStartAngle,
+                                sweepAngle = sweep,
+                                useCenter = false,
+                                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                            )
+                            currentStartAngle += sweep + gapDegrees
+                        }
                     }
                 }
             }
 
-            // Donut Center Hub
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Core center info
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
                     text = "$currencySymbol${String.format("%,.0f", total)}",
-                    color = SpendlyTheme.colors.textPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.W700,
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "TOTAL SPENT",
-                    color = SpendlyTheme.colors.textSecondary,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.W600,
-                    letterSpacing = 1.sp
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textSecondary,
+                    letterSpacing = 0.8.sp
                 )
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // Donut Legend Cards (Clean minimal pill rows)
-        if (nonZero.isNotEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                nonZero.entries
-                    .sortedByDescending { it.value }
-                    .take(5)
-                    .forEach { (cat, amt) ->
-                        val color = stitchCategoryColors[cat] ?: StitchCatOther
-                        Row(
+        // Donut Legend Rows
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val legendItems = if (nonZero.isNotEmpty()) nonZero.take(5) else emptyList()
+            legendItems.forEach { (cat, amt) ->
+                val catColor = stitchCategoryColors[cat] ?: StitchCatOther
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (colors.isDark) Color(0x331F1F2A) else colors.containerLow)
+                        .border(
+                            1.dp,
+                            if (colors.isDark) Color(0x26FFFFFF) else colors.border,
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(SpendlyTheme.colors.containerLow)
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(color, CircleShape)
-                                )
-                                Text(
-                                    text = cat.displayName,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.W500,
-                                    color = SpendlyTheme.colors.textPrimary
-                                )
-                            }
-                            Text(
-                                text = "$currencySymbol${String.format("%,.0f", amt)}",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.W600,
-                                color = SpendlyTheme.colors.textPrimary
-                            )
-                        }
+                                .size(8.dp)
+                                .background(catColor, CircleShape)
+                        )
+                        Text(
+                            text = cat.displayName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textPrimary
+                        )
                     }
+                    Text(
+                        text = "$currencySymbol${String.format("%,.0f", amt)}",
+                        fontFamily = SpaceGroteskFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.textPrimary
+                    )
+                }
             }
         }
     }

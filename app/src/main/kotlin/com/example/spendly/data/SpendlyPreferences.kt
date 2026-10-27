@@ -15,7 +15,7 @@ class SpendlyPreferences(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_SMS_AUTO_SAVE, value).apply()
 
     var themeMode: String
-        get() = prefs.getString(KEY_THEME_MODE, "SYSTEM") ?: "SYSTEM"
+        get() = prefs.getString(KEY_THEME_MODE, "DARK") ?: "DARK"
         set(value) = prefs.edit().putString(KEY_THEME_MODE, value).apply()
 
     companion object {

@@ -1,6 +1,7 @@
 package com.example.spendly.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import com.example.spendly.ui.theme.ChevronLeft
-import com.example.spendly.ui.theme.ChevronRight
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.FreeBreakfast
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -34,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,8 +49,8 @@ import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.components.TransactionItem
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.theme.getColor
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -80,14 +87,53 @@ fun CalendarScreen(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
+                                .shadow(8.dp, CircleShape, spotColor = Color(0x99CABEFE))
                                 .background(colors.primary, CircleShape)
                         )
                         Text(
                             text = "Calendar",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.2).sp
                         )
+                    }
+                },
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colors.containerHigh)
+                                .border(1.dp, colors.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
@@ -100,14 +146,14 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Month Switcher Header Row
+            // Month Switcher & Quick Meta Row
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .padding(horizontal = 2.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -134,9 +180,11 @@ fun CalendarScreen(
 
                         Text(
                             text = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                            fontFamily = SpaceGroteskFontFamily,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.2).sp
                         )
 
                         Surface(
@@ -160,19 +208,25 @@ fun CalendarScreen(
                     // Active Days Chip
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(CircleShape)
                             .background(colors.container)
+                            .border(1.dp, colors.border, CircleShape)
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .shadow(6.dp, CircleShape, spotColor = Color(0xB39E8CFC))
+                                    .background(colors.primary, CircleShape)
+                            )
                             Text(
                                 text = "$daysWithTx Active Days",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.W600,
+                                fontWeight = FontWeight.Medium,
                                 color = colors.textPrimary
                             )
                         }
@@ -180,34 +234,38 @@ fun CalendarScreen(
                 }
             }
 
-            // Interactive Calendar Grid Card
+            // Monthly Calendar Card
             item {
-                SpendlyCard {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Day-of-week header
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                        // Day headers (S, M, T, W, T, F, S)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
                             listOf("S", "M", "T", "W", "T", "F", "S").forEach { day ->
                                 Text(
                                     text = day,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.W600,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
                                     color = colors.textSecondary,
                                     modifier = Modifier.width(36.dp),
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    letterSpacing = 0.5.sp
                                 )
                             }
                         }
 
-                        // Calendar Days Grid
+                        // Calendar Grid
                         val firstDayOfMonth = selectedMonth.atDay(1)
                         val daysInMonth = selectedMonth.lengthOfMonth()
                         val leadingEmpty = firstDayOfMonth.dayOfWeek.value % 7 // Sunday = 0
                         val totalCells = ((leadingEmpty + daysInMonth + 6) / 7) * 7
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             for (week in 0 until (totalCells / 7)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -224,41 +282,67 @@ fun CalendarScreen(
 
                                             Column(
                                                 modifier = Modifier
-                                                    .width(36.dp)
-                                                    .clip(RoundedCornerShape(18.dp))
+                                                    .width(38.dp)
+                                                    .height(42.dp)
+                                                    .clip(CircleShape)
                                                     .clickable { selectedDate = date }
                                                     .then(
-                                                        if (isSelected) Modifier.background(colors.primary)
-                                                        else Modifier
-                                                    )
-                                                    .padding(vertical = 4.dp),
+                                                        if (isSelected) {
+                                                            Modifier
+                                                                .background(colors.primary)
+                                                                .shadow(8.dp, CircleShape, spotColor = Color(0x809E8CFC))
+                                                        } else {
+                                                            Modifier
+                                                        }
+                                                    ),
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
                                                 Text(
                                                     text = dayNumber.toString(),
                                                     fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.W700 else FontWeight.W500,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                     color = if (isSelected) colors.onPrimary else colors.textPrimary,
                                                     textAlign = TextAlign.Center
                                                 )
-                                                // Activity indicator dot
-                                                Box(
-                                                    modifier = Modifier
-                                                        .padding(top = 2.dp)
-                                                        .size(4.dp)
-                                                        .background(
-                                                            when {
-                                                                isSelected -> colors.onPrimary
-                                                                hasTx -> colors.primary
-                                                                else -> Color.Transparent
-                                                            },
-                                                            CircleShape
+                                                // Activity indicator dots
+                                                if (hasTx) {
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                                        modifier = Modifier.padding(top = 2.dp)
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(4.dp)
+                                                                .background(
+                                                                    if (isSelected) colors.onPrimary
+                                                                    else colors.secondary,
+                                                                    CircleShape
+                                                                )
                                                         )
-                                                )
+                                                    }
+                                                } else {
+                                                    Spacer(Modifier.height(6.dp))
+                                                }
                                             }
                                         } else {
-                                            Spacer(Modifier.width(36.dp))
+                                            // Overflow cell from previous or next month
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(38.dp)
+                                                    .height(42.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                val prevMonthDays = selectedMonth.minusMonths(1).lengthOfMonth()
+                                                val overflowDay = if (dayNumber <= 0) prevMonthDays + dayNumber else dayNumber - daysInMonth
+                                                Text(
+                                                    text = overflowDay.toString(),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Normal,
+                                                    color = colors.textMuted.copy(alpha = 0.35f),
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -268,141 +352,101 @@ fun CalendarScreen(
                 }
             }
 
-            // SELECTED DAY Summary Card
+            // Daily Outflow Stream / Day Details Card
             item {
-                SpendlyCard {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "SELECTED DAY",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.W700,
-                                color = colors.textSecondary,
-                                letterSpacing = 0.8.sp
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.container)
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
+                            Column {
                                 Text(
-                                    text = "${dayTransactions.size} Recorded",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.W600,
+                                    text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = colors.textPrimary
                                 )
+                                Text(
+                                    text = if (dayTransactions.isNotEmpty()) "${dayTransactions.size} entries recorded" else "No spending recorded",
+                                    fontSize = 12.sp,
+                                    color = colors.textSecondary
+                                )
                             }
-                        }
-
-                        Text(
-                            text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMM yyyy")),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "$currencySymbol${String.format("%,.2f", dayTotal)}",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.W700,
-                                color = colors.textPrimary
-                            )
-                        }
-
-                        // Category distribution bar
-                        if (dayTotal > 0) {
-                            val catGroups = dayTransactions.groupBy { it.category }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(CircleShape)
-                            ) {
-                                catGroups.forEach { (cat, txs) ->
-                                    val catSum = txs.sumOf { it.amount }
-                                    val weight = (catSum / dayTotal).toFloat()
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(weight.coerceAtLeast(0.05f))
-                                            .fillMaxSize()
-                                            .background(cat.getColor())
+                            if (dayTotal > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(colors.error.copy(alpha = 0.15f))
+                                        .border(1.dp, colors.error.copy(alpha = 0.3f), CircleShape)
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "-$currencySymbol${String.format("%,.2f", dayTotal)}",
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.error
                                     )
                                 }
                             }
                         }
-                    }
-                }
-            }
 
-            // Timeline & Receipts section header
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Timeline & Receipts",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.W700,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Categorized",
-                        fontSize = 12.sp,
-                        color = colors.textSecondary
-                    )
-                }
-            }
+                        Spacer(Modifier.height(14.dp))
 
-            // Timeline Items
-            if (dayTransactions.isEmpty()) {
-                item {
-                    SpendlyCard {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No transactions logged on this day",
-                                fontSize = 13.sp,
-                                color = colors.textSecondary
-                            )
-                        }
-                    }
-                }
-            } else {
-                item {
-                    SpendlyCard {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            dayTransactions.forEachIndexed { idx, tx ->
+                        if (dayTransactions.isEmpty()) {
+                            // Empty State Container
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.containerHigh)
+                                        .border(1.dp, colors.border, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FreeBreakfast,
+                                        contentDescription = null,
+                                        tint = colors.textSecondary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    text = "Quiet Spending Day",
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.textPrimary
+                                )
+                                Text(
+                                    text = "No expenses recorded on this day. Tap + to add an entry.",
+                                    fontSize = 12.sp,
+                                    color = colors.textSecondary,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp)
+                                )
+                            }
+                        } else {
+                            dayTransactions.forEachIndexed { index, tx ->
                                 TransactionItem(
                                     transaction = tx,
                                     onClick = { onTransactionClick(tx.id) },
                                     currencySymbol = currencySymbol
                                 )
-                                if (idx < dayTransactions.size - 1) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(1.dp)
-                                            .background(colors.border)
+                                if (index < dayTransactions.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 2.dp),
+                                        color = colors.divider
                                     )
                                 }
                             }
@@ -411,9 +455,53 @@ fun CalendarScreen(
                 }
             }
 
-            // Bottom spacer for the floating dock
+            // Ledger Wisdom Card
             item {
-                Spacer(Modifier.height(88.dp))
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(colors.containerHigh)
+                                .border(1.dp, colors.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EditNote,
+                                contentDescription = null,
+                                tint = colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "LEDGER WISDOM",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textSecondary,
+                                letterSpacing = 0.8.sp
+                            )
+                            Text(
+                                text = "Awareness over restriction. Daily logs create lasting clarity.",
+                                fontSize = 12.sp,
+                                color = colors.textPrimary,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom clearance for dock
+            item {
+                Spacer(Modifier.height(64.dp))
             }
         }
     }

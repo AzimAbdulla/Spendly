@@ -1,6 +1,7 @@
 package com.example.spendly.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,11 +18,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
-import com.example.spendly.ui.theme.ChevronRight
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -31,8 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.SampleData
@@ -43,9 +48,11 @@ import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.components.TransactionItem
 import com.example.spendly.ui.components.WeeklyBarChart
 import com.example.spendly.ui.theme.CalendarToday
+import com.example.spendly.ui.theme.ChevronRight
+import com.example.spendly.ui.theme.HeroCardGradient
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.Tag
-import com.example.spendly.ui.theme.Tune
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -89,17 +96,59 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
+                                .shadow(8.dp, CircleShape, spotColor = Color(0x99CABEFE))
                                 .background(colors.primary, CircleShape)
                         )
                         Text(
                             text = "Overview",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.2).sp
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .clickable(onClick = onViewAllClick),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colors.containerHigh)
+                                .border(1.dp, colors.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colors.background
+                )
             )
         },
         containerColor = colors.background
@@ -109,14 +158,14 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Sub-header Row: Spendly Brand + Month Pill + Review Bell
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = 2.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -126,30 +175,39 @@ fun HomeScreen(
                     ) {
                         Text(
                             text = "Spendly",
+                            fontFamily = SpaceGroteskFontFamily,
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.3).sp
                         )
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(colors.primary, CircleShape)
+                                .shadow(6.dp, CircleShape, spotColor = Color(0x667DD9A3))
+                                .background(colors.secondary, CircleShape)
                         )
                         // Month indicator pill
                         Surface(
-                            shape = RoundedCornerShape(20.dp),
+                            shape = CircleShape,
                             color = colors.container,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                             modifier = Modifier.clickable {}
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
                                     text = monthLabel,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.W600,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.textPrimary
+                                )
+                                Text(
+                                    text = "▾",
+                                    fontSize = 10.sp,
                                     color = colors.textSecondary
                                 )
                             }
@@ -159,9 +217,10 @@ fun HomeScreen(
                     // Notification bell with badge
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(colors.container)
+                            .border(1.dp, colors.border, CircleShape)
                             .clickable(onClick = onReviewClick),
                         contentAlignment = Alignment.Center
                     ) {
@@ -169,22 +228,23 @@ fun HomeScreen(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Reviews",
                             tint = colors.textSecondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                         if (reviewCount > 0) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(2.dp)
+                                    .padding(1.dp)
                                     .size(16.dp)
-                                    .background(colors.primary, CircleShape),
+                                    .shadow(4.dp, CircleShape, spotColor = Color(0x99FEB956))
+                                    .background(colors.tertiary, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = reviewCount.toString(),
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.W700,
-                                    color = colors.onPrimary
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1A1100)
                                 )
                             }
                         }
@@ -192,10 +252,23 @@ fun HomeScreen(
                 }
             }
 
-            // Primary Monthly Spending Card (Hero)
+            // Primary Monthly Spending Card (Hero with Stitch Gradient)
             item {
-                SpendlyCard {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 16.dp,
+                            shape = RoundedCornerShape(20.dp),
+                            spotColor = Color(0x664F34A8)
+                        )
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(HeroCardGradient)
+                        .border(1.dp, Color(0x66CABEFE), RoundedCornerShape(20.dp))
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        // Card Header Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -208,113 +281,150 @@ fun HomeScreen(
                                 Icon(
                                     imageVector = Icons.Filled.CalendarToday,
                                     contentDescription = null,
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(16.dp)
+                                    tint = Color(0xFFE6DEFF),
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Text(
                                     text = "SPENT THIS MONTH",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.W700,
-                                    color = colors.textSecondary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFE6DEFF),
                                     letterSpacing = 0.8.sp
                                 )
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.container)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0x26FFFFFF))
+                                    .border(1.dp, Color(0x33FFFFFF), CircleShape)
+                                    .padding(horizontal = 10.dp, vertical = 3.dp)
                             ) {
                                 Text(
                                     text = dateRangeLabel,
-                                    fontSize = 11.sp,
-                                    color = colors.textSecondary,
-                                    fontWeight = FontWeight.W500
+                                    fontSize = 10.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                        // Large Outflow Metric
+                        // Large Outflow Metric (Space Grotesk Bold)
                         Text(
                             text = "$currencySymbol${String.format("%,.2f", monthlyTotal)}",
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary,
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
                             letterSpacing = (-1).sp
                         )
 
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(6.dp))
 
-                        Text(
-                            text = "$transactionCount recorded expenses",
-                            fontSize = 12.sp,
-                            color = colors.textSecondary,
-                            fontWeight = FontWeight.W500
-                        )
+                        // Count & Trend pill
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "$transactionCount recorded expenses",
+                                fontSize = 12.sp,
+                                color = Color(0xCCFFFFFF),
+                                fontWeight = FontWeight.Normal
+                            )
+                            Text(text = "•", color = Color(0x80FFFFFF), fontSize = 12.sp)
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFFDDB4))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                        contentDescription = null,
+                                        tint = Color(0xFF291800),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = "+4.2% vs Dec",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF291800)
+                                    )
+                                }
+                            }
+                        }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(18.dp))
 
-                        // Action Pills
+                        // Hero Action Buttons Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            // Primary Add Expense Button
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
-                                    .clickable(onClick = onAddTransaction),
-                                shape = RoundedCornerShape(22.dp),
-                                color = colors.primary
+                                    .height(42.dp),
+                                shape = CircleShape,
+                                color = Color.White,
+                                shadowElevation = 4.dp,
+                                onClick = onAddTransaction
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxSize(),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = colors.onPrimary,
-                                        modifier = Modifier.size(18.dp)
+                                        tint = Color(0xFF1C0C52),
+                                        modifier = Modifier.size(17.dp)
                                     )
-                                    Spacer(Modifier.width(6.dp))
+                                    Spacer(Modifier.width(4.dp))
                                     Text(
                                         text = "Add Expense",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.W700,
-                                        color = colors.onPrimary
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1C0C52)
                                     )
                                 }
                             }
 
+                            // Secondary Categories Button
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
-                                    .clickable(onClick = onViewAllClick),
-                                shape = RoundedCornerShape(22.dp),
-                                color = colors.container
+                                    .height(42.dp),
+                                shape = CircleShape,
+                                color = Color(0x26FFFFFF),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x40FFFFFF)),
+                                onClick = onViewAllClick
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxSize(),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Tag,
                                         contentDescription = null,
-                                        tint = colors.textPrimary,
-                                        modifier = Modifier.size(16.dp)
+                                        tint = Color(0xFFE6DEFF),
+                                        modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     Text(
                                         text = "Categories",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.W600,
-                                        color = colors.textPrimary
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White
                                     )
                                 }
                             }
@@ -323,74 +433,78 @@ fun HomeScreen(
                 }
             }
 
-            // Review Pending Alert Banner
+            // Review Pending Alert Banner (when reviews exist)
             if (reviewCount > 0) {
                 item {
                     SpendlyCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onReviewClick)
+                        backgroundColor = if (colors.isDark) Color(0xFF09090F) else Color(0xFFFFFBEB),
+                        borderColor = colors.tertiary.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(16.dp),
+                        onClick = onReviewClick
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
-                                        .background(colors.container, CircleShape),
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.tertiary.copy(alpha = 0.15f))
+                                        .border(1.dp, colors.tertiary.copy(alpha = 0.35f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Filled.Tune,
+                                        imageVector = Icons.Default.Notifications,
                                         contentDescription = null,
-                                        tint = colors.primary,
+                                        tint = colors.tertiary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 Column {
                                     Text(
-                                        text = "$reviewCount unconfirmed expenses",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.W700,
+                                        text = "$reviewCount uncertain expenses",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
                                         color = colors.textPrimary
                                     )
                                     Text(
                                         text = "Auto-parsed via SMS alerts",
-                                        fontSize = 12.sp,
+                                        fontSize = 11.sp,
                                         color = colors.textSecondary
                                     )
                                 }
                             }
 
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(colors.primary)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            Surface(
+                                shape = CircleShape,
+                                color = colors.tertiary.copy(alpha = 0.2f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, colors.tertiary.copy(alpha = 0.35f))
                             ) {
                                 Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                                 ) {
                                     Text(
                                         text = "Review",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.W700,
-                                        color = colors.onPrimary
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.tertiary
                                     )
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
                                         contentDescription = null,
-                                        tint = colors.onPrimary,
-                                        modifier = Modifier.size(16.dp)
+                                        tint = colors.tertiary,
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
@@ -399,10 +513,10 @@ fun HomeScreen(
                 }
             }
 
-            // Spending Breakdown Donut Chart
+            // Spending by Category Donut Chart
             item {
-                SpendlyCard {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -410,17 +524,28 @@ fun HomeScreen(
                         ) {
                             Text(
                                 text = "Spending Breakdown",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.W700,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
-                            Text(
-                                text = "View All ›",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.W600,
-                                color = colors.primary,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.clickable(onClick = onViewAllClick)
-                            )
+                            ) {
+                                Text(
+                                    text = "View All",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
                         }
 
                         Spacer(Modifier.height(16.dp))
@@ -435,8 +560,8 @@ fun HomeScreen(
 
             // Weekly Spending Cadence (Bar visualization)
             item {
-                SpendlyCard {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -445,8 +570,9 @@ fun HomeScreen(
                             Column {
                                 Text(
                                     text = "This Week",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = colors.textPrimary
                                 )
                                 Text(
@@ -458,20 +584,21 @@ fun HomeScreen(
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = "$currencySymbol${String.format("%,.0f", weeklySpending.sum())}",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = colors.textPrimary
                                 )
                                 Text(
-                                    text = "Weekly Total",
+                                    text = "Within target",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.W500,
-                                    color = colors.textSecondary
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.secondary
                                 )
                             }
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(14.dp))
 
                         WeeklyBarChart(
                             values = weeklySpending,
@@ -484,8 +611,8 @@ fun HomeScreen(
 
             // Recent Expenses List
             item {
-                SpendlyCard {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -493,71 +620,72 @@ fun HomeScreen(
                         ) {
                             Text(
                                 text = "Recent Expenses",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.W700,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
-                            Text(
-                                text = "View All ›",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.W600,
-                                color = colors.primary,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.clickable(onClick = onViewAllClick)
-                            )
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        if (recentTransactions.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                                contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "No recent transactions logged",
-                                    fontSize = 13.sp,
-                                    color = colors.textSecondary
+                                    text = "View All",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(15.dp)
                                 )
                             }
-                        } else {
-                            recentTransactions.forEachIndexed { index, tx ->
-                                TransactionItem(
-                                    transaction = tx,
-                                    onClick = { onTransactionClick(tx.id) },
-                                    currencySymbol = currencySymbol
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        recentTransactions.forEachIndexed { index, tx ->
+                            TransactionItem(
+                                transaction = tx,
+                                onClick = { onTransactionClick(tx.id) },
+                                currencySymbol = currencySymbol
+                            )
+                            if (index < recentTransactions.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 2.dp),
+                                    color = colors.divider
                                 )
-                                if (index < recentTransactions.size - 1) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(1.dp)
-                                            .background(colors.border)
-                                    )
-                                }
                             }
                         }
                     }
                 }
             }
 
-            // Spacer for floating dock
+            // End-of-feed calm marker
             item {
-                Spacer(Modifier.height(88.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🛡️ Offline ledger up to date",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textSecondary.copy(alpha = 0.7f),
+                        letterSpacing = 0.3.sp
+                    )
+                }
+            }
+
+            // Bottom clearance for dock
+            item {
+                Spacer(Modifier.height(64.dp))
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    SpendlyTheme {
-        HomeScreen(
-            onAddTransaction = {},
-            onTransactionClick = {},
-            onReviewClick = {}
-        )
     }
 }

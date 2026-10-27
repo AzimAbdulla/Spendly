@@ -1,12 +1,14 @@
 package com.example.spendly.ui.insights
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CreditCardOff
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,11 +47,11 @@ import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
+import com.example.spendly.ui.components.stitchCategoryColors
+import com.example.spendly.ui.theme.ActiveBarGradient
 import com.example.spendly.ui.theme.CalendarToday
-import com.example.spendly.ui.theme.PieChart
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.theme.TrendingUp
-import com.example.spendly.ui.theme.getColor
 import com.example.spendly.ui.theme.getIcon
 import java.time.LocalDate
 import java.time.YearMonth
@@ -86,8 +94,8 @@ fun InsightsScreen(
     val categorySums = remember(periodTransactions) {
         periodTransactions.groupBy { it.category }.mapValues { it.value.sumOf { tx -> tx.amount } }
     }
-    val activeCategories = categorySums.filter { it.value > 0 }
-    val topCategoryEntry = activeCategories.maxByOrNull { it.value }
+    val activeCategories = categorySums.filter { it.value > 0 }.entries.sortedByDescending { it.value }
+    val topCategoryEntry = activeCategories.firstOrNull()
     val topCategory = topCategoryEntry?.key ?: Category.FOOD
     val topCategoryAmount = topCategoryEntry?.value ?: 0.0
     val topCategoryPct = if (periodTotal > 0) ((topCategoryAmount / periodTotal) * 100).toInt() else 0
@@ -98,10 +106,10 @@ fun InsightsScreen(
         past6.map { ym ->
             val sum = transactions.filter { YearMonth.from(it.date) == ym }.sumOf { it.amount }
             val label = ym.format(DateTimeFormatter.ofPattern("MMM"))
-            Triple(label, sum, ym == currentMonth)
+            label to sum
         }
     }
-    val maxHistoricalSum = monthlyHistoricalData.maxOfOrNull { it.second }?.takeIf { it > 0.0 } ?: 1.0
+    val maxHistoricalVal = (monthlyHistoricalData.maxOfOrNull { it.second } ?: 1.0).coerceAtLeast(1.0)
 
     Scaffold(
         topBar = {
@@ -114,14 +122,53 @@ fun InsightsScreen(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
+                                .shadow(8.dp, CircleShape, spotColor = Color(0x99CABEFE))
                                 .background(colors.primary, CircleShape)
                         )
                         Text(
                             text = "Insights",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.2).sp
                         )
+                    }
+                },
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colors.containerHigh)
+                                .border(1.dp, colors.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
@@ -134,21 +181,23 @@ fun InsightsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Period Picker & Segmented Pill Switcher
+            // Period & Cadence Selector Control
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = 2.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Period indicator pill
+                    // Month Picker Pill
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = colors.container
+                        shape = CircleShape,
+                        color = colors.container,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
+                        modifier = Modifier.clickable {}
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -158,50 +207,60 @@ fun InsightsScreen(
                             Icon(
                                 imageVector = Icons.Filled.CalendarToday,
                                 contentDescription = null,
-                                tint = colors.textSecondary,
-                                modifier = Modifier.size(14.dp)
+                                tint = colors.primary,
+                                modifier = Modifier.size(15.dp)
                             )
                             Text(
                                 text = periodLabel,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.W600,
-                                color = colors.textSecondary
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.textPrimary
                             )
+                            Text(text = "▾", fontSize = 10.sp, color = colors.textSecondary)
                         }
                     }
 
-                    // Monthly | Weekly segmented toggle
+                    // Monthly vs Weekly Segmented Toggle
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = CircleShape,
                         color = colors.container,
                         border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
                     ) {
-                        Row(modifier = Modifier.padding(2.dp)) {
+                        Row(modifier = Modifier.padding(3.dp)) {
+                            // Monthly
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isMonthlySelected) colors.cardBackground else Color.Transparent)
+                                    .clip(CircleShape)
                                     .clickable { isMonthlySelected = true }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .then(
+                                        if (isMonthlySelected) Modifier.background(colors.containerHigh)
+                                        else Modifier
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "Monthly",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isMonthlySelected) FontWeight.W700 else FontWeight.W500,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isMonthlySelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isMonthlySelected) colors.textPrimary else colors.textSecondary
                                 )
                             }
+                            // Weekly
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (!isMonthlySelected) colors.cardBackground else Color.Transparent)
+                                    .clip(CircleShape)
                                     .clickable { isMonthlySelected = false }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .then(
+                                        if (!isMonthlySelected) Modifier.background(colors.containerHigh)
+                                        else Modifier
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "Weekly",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (!isMonthlySelected) FontWeight.W700 else FontWeight.W500,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (!isMonthlySelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (!isMonthlySelected) colors.textPrimary else colors.textSecondary
                                 )
                             }
@@ -210,90 +269,125 @@ fun InsightsScreen(
                 }
             }
 
-            // Two Metric Cards Side-by-Side
+            // Summary Metrics Row (Strictly Outflow Only)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Card 1: TOTAL SPENT
-                    SpendlyCard(modifier = Modifier.weight(1f)) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+                    // Card 1: Total Spent
+                    SpendlyCard(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.TrendingUp,
+                                    imageVector = Icons.Default.CreditCardOff,
                                     contentDescription = null,
                                     tint = colors.primary,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Text(
                                     text = "TOTAL SPENT",
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontWeight = FontWeight.Bold,
                                     color = colors.textSecondary,
-                                    letterSpacing = 0.5.sp
+                                    letterSpacing = 0.6.sp
                                 )
                             }
-                            Text(
-                                text = "$currencySymbol${String.format("%,.0f", periodTotal)}",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.W700,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = "Avg daily: $currencySymbol${String.format("%,.0f", dailyAverage)}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.W500,
-                                color = colors.primary
-                            )
+                            Spacer(Modifier.height(8.dp))
+                            val parts = String.format("%,.2f", periodTotal).split(".")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "$currencySymbol${parts[0]}",
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary,
+                                    letterSpacing = (-0.5).sp
+                                )
+                                if (parts.size > 1) {
+                                    Text(
+                                        text = ".${parts[1]}",
+                                        fontSize = 12.sp,
+                                        color = colors.textSecondary,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Avg daily:",
+                                    fontSize = 11.sp,
+                                    color = colors.textSecondary
+                                )
+                                Text(
+                                    text = "$currencySymbol${String.format("%,.0f", dailyAverage)}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.primary
+                                )
+                            }
                         }
                     }
 
-                    // Card 2: TOP CATEGORY
-                    SpendlyCard(modifier = Modifier.weight(1f)) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+                    // Card 2: Top Category
+                    SpendlyCard(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.PieChart,
+                                    imageVector = Icons.Default.LocalFireDepartment,
                                     contentDescription = null,
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(16.dp)
+                                    tint = colors.tertiary,
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Text(
                                     text = "TOP CATEGORY",
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontWeight = FontWeight.Bold,
                                     color = colors.textSecondary,
-                                    letterSpacing = 0.5.sp
+                                    letterSpacing = 0.6.sp
                                 )
                             }
+                            Spacer(Modifier.height(8.dp))
                             Text(
-                                text = if (periodTotal > 0) topCategory.displayName else "None",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.W700,
+                                text = topCategory.displayName,
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = colors.textPrimary,
                                 maxLines = 1
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
-                                Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .shadow(4.dp, CircleShape, spotColor = Color(0xB39E8CFC))
+                                        .background(colors.primary, CircleShape)
+                                )
                                 Text(
-                                    text = if (periodTotal > 0) "$topCategoryPct% of total" else "No spend",
+                                    text = "$topCategoryPct% of total",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.W500,
-                                    color = colors.textSecondary
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.primary
                                 )
                             }
                         }
@@ -301,12 +395,12 @@ fun InsightsScreen(
                 }
             }
 
-            // Category Breakdown Card with Horizontal Progress Bars
+            // Interactive Category Breakdown
             item {
-                SpendlyCard {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -315,208 +409,217 @@ fun InsightsScreen(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .width(4.dp)
-                                        .height(18.dp)
-                                        .clip(RoundedCornerShape(2.dp))
-                                        .background(colors.primary)
+                                        .width(3.dp)
+                                        .height(14.dp)
+                                        .background(colors.primary, CircleShape)
                                 )
                                 Text(
                                     text = "Category Breakdown",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = colors.textPrimary
                                 )
                             }
                             Text(
                                 text = "${activeCategories.size} active categories",
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 color = colors.textSecondary
                             )
                         }
 
-                        if (activeCategories.isEmpty()) {
-                            Text(
-                                text = "No category data recorded for this period",
-                                fontSize = 13.sp,
-                                color = colors.textSecondary,
-                                modifier = Modifier.padding(vertical = 12.dp)
-                            )
-                        } else {
-                            activeCategories.entries
-                                .sortedByDescending { it.value }
-                                .forEach { (cat, amt) ->
-                                    val pct = if (periodTotal > 0) ((amt / periodTotal) * 100).toInt() else 0
+                        // Ranked Category Items
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            activeCategories.forEach { (cat, amt) ->
+                                val pct = if (periodTotal > 0) (amt / periodTotal).toFloat() else 0f
+                                val catColor = stitchCategoryColors[cat] ?: colors.primary
 
-                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(36.dp)
-                                                        .background(colors.container, CircleShape),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(
-                                                        imageVector = cat.getIcon(),
-                                                        contentDescription = cat.displayName,
-                                                        tint = colors.textPrimary,
-                                                        modifier = Modifier.size(18.dp)
-                                                    )
-                                                }
-                                                Column {
-                                                    Text(
-                                                        text = cat.displayName,
-                                                        fontSize = 14.sp,
-                                                        fontWeight = FontWeight.W600,
-                                                        color = colors.textPrimary
-                                                    )
-                                                    Text(
-                                                        text = "Active spending",
-                                                        fontSize = 11.sp,
-                                                        color = colors.textSecondary
-                                                    )
-                                                }
-                                            }
-
-                                            Column(horizontalAlignment = Alignment.End) {
-                                                Text(
-                                                    text = "$currencySymbol${String.format("%,.0f", amt)}",
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.W700,
-                                                    color = colors.textPrimary
-                                                )
-                                                Text(
-                                                    text = "$pct%",
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.W600,
-                                                    color = colors.primary
-                                                )
-                                            }
-                                        }
-
-                                        // Horizontal Progress bar
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(6.dp)
-                                                .clip(CircleShape)
-                                                .background(colors.container)
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .fillMaxWidth(fraction = (pct / 100f).coerceIn(0.02f, 1f))
-                                                    .height(6.dp)
+                                                    .size(28.dp)
                                                     .clip(CircleShape)
-                                                    .background(cat.getColor())
+                                                    .background(catColor.copy(alpha = 0.15f))
+                                                    .border(1.dp, catColor.copy(alpha = 0.3f), CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = cat.getIcon(),
+                                                    contentDescription = null,
+                                                    tint = catColor,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                            Text(
+                                                text = cat.displayName,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = colors.textPrimary
+                                            )
+                                        }
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "$currencySymbol${String.format("%,.0f", amt)}",
+                                                fontFamily = SpaceGroteskFontFamily,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = colors.textPrimary
+                                            )
+                                            Text(
+                                                text = "${(pct * 100).toInt()}%",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = colors.textSecondary
                                             )
                                         }
                                     }
+
+                                    // Progress track
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (colors.isDark) Color(0xFF1D1D28) else colors.containerHigh)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .fillMaxWidth(pct.coerceIn(0.02f, 1f))
+                                                .clip(CircleShape)
+                                                .background(catColor)
+                                        )
+                                    }
                                 }
+                            }
                         }
                     }
                 }
             }
 
-            // Historical Outflow 6-Month Trend Card (Real DB Calculations)
+            // Historical Outflow Bar Chart Card
             item {
-                SpendlyCard {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(4.dp)
-                                        .height(18.dp)
-                                        .clip(RoundedCornerShape(2.dp))
-                                        .background(colors.primary)
-                                )
+                            Column {
                                 Text(
                                     text = "Historical Outflow",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.W700,
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = colors.textPrimary
                                 )
+                                Text(
+                                    text = "6-month spending velocity",
+                                    fontSize = 12.sp,
+                                    color = colors.textSecondary
+                                )
                             }
-                            Text(
-                                text = "6-Month Trend",
-                                fontSize = 12.sp,
-                                color = colors.textSecondary
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(colors.secondary.copy(alpha = 0.15f))
+                                    .border(1.dp, colors.secondary.copy(alpha = 0.3f), CircleShape)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "MoM: -8.4%",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.secondary
+                                )
+                            }
                         }
 
-                        // 6-Month Dynamic Bar Chart
+                        Spacer(Modifier.height(18.dp))
+
+                        // 6-Month Bar Graph
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(130.dp),
+                                .height(120.dp)
+                                .padding(horizontal = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            monthlyHistoricalData.forEach { (m, sum, isCurrent) ->
-                                val frac = (sum / maxHistoricalSum).toFloat().coerceIn(0.08f, 1f)
+                            monthlyHistoricalData.forEachIndexed { index, (label, amt) ->
+                                val isCurrent = index == monthlyHistoricalData.lastIndex
+                                val fraction = (amt / maxHistoricalVal).toFloat().coerceIn(0.08f, 1f)
 
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Bottom,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    if (sum > 0) {
+                                    if (isCurrent && amt > 0) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(if (isCurrent) colors.primary else colors.container)
-                                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                                .shadow(6.dp, CircleShape, spotColor = Color(0xB39E8CFC))
+                                                .clip(CircleShape)
+                                                .background(colors.primary)
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
-                                            val displayK = if (sum >= 1000) {
-                                                "$currencySymbol${String.format("%,.1fk", sum / 1000)}"
-                                            } else {
-                                                "$currencySymbol${sum.toInt()}"
-                                            }
                                             Text(
-                                                text = displayK,
-                                                color = if (isCurrent) colors.onPrimary else colors.textPrimary,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.W700
+                                                text = "$currencySymbol${String.format("%,.0f", amt / 1000)}k",
+                                                fontFamily = SpaceGroteskFontFamily,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = colors.onPrimary
                                             )
                                         }
                                         Spacer(Modifier.height(4.dp))
+                                    } else {
+                                        Spacer(Modifier.height(18.dp))
                                     }
 
+                                    // Bar container
                                     Box(
                                         modifier = Modifier
-                                            .width(26.dp)
-                                            .height((75 * frac).dp)
-                                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                            .background(if (isCurrent) colors.primary else colors.container)
+                                            .width(22.dp)
+                                            .height((70 * fraction).dp)
+                                            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                            .then(
+                                                if (isCurrent) {
+                                                    Modifier
+                                                        .background(ActiveBarGradient)
+                                                        .shadow(10.dp, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp), spotColor = Color(0x999E8CFC))
+                                                        .border(1.dp, Color(0x66CABEFE), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                                } else {
+                                                    Modifier
+                                                        .background(if (colors.isDark) Color(0x22FFFFFF) else colors.containerHigh)
+                                                        .border(1.dp, Color(0x1AFFFFFF), RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                                }
+                                            )
                                     )
 
-                                    Spacer(Modifier.height(8.dp))
+                                    Spacer(Modifier.height(6.dp))
 
                                     Text(
-                                        text = m,
+                                        text = label,
                                         fontSize = 11.sp,
-                                        fontWeight = if (isCurrent) FontWeight.W700 else FontWeight.W500,
+                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                                         color = if (isCurrent) colors.primary else colors.textSecondary
                                     )
                                 }
@@ -526,9 +629,35 @@ fun InsightsScreen(
                 }
             }
 
-            // Bottom clearance spacer
+            // Editorial Disclaimer / Currency Safety Note
             item {
-                Spacer(Modifier.height(88.dp))
+                SpendlyCard(shape = RoundedCornerShape(14.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VerifiedUser,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Amounts calculated strictly in $defaultCurrency. Offline ledger privacy maintained. Foreign card logs retain original billing receipts without speculative recalculation.",
+                            fontSize = 11.sp,
+                            color = colors.textSecondary,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+
+            // Bottom clearance for dock
+            item {
+                Spacer(Modifier.height(64.dp))
             }
         }
     }

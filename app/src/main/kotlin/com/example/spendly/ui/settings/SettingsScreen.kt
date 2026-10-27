@@ -5,10 +5,13 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,13 +24,28 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import com.example.spendly.ui.theme.ChevronRight
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -36,6 +54,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -53,12 +73,25 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.spendly.sms.SmsScanResult
 import com.example.spendly.ui.components.SpendlyCard
+import com.example.spendly.ui.theme.ChevronRight
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.theme.Tune
 
 val supportedCurrencies = listOf("INR", "USD", "EUR", "GBP", "CAD", "AUD", "AED", "CHF", "SGD", "JPY")
 
-@OptIn(ExperimentalMaterial3Api::class)
+val currencyChipList = listOf(
+    "INR" to "₹ INR",
+    "USD" to "$ USD",
+    "EUR" to "€ EUR",
+    "GBP" to "£ GBP",
+    "AED" to "د.إ AED",
+    "JPY" to "¥ JPY",
+    "CAD" to "$ CAD",
+    "AUD" to "$ AUD",
+    "SGD" to "$ SGD"
+)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     defaultCurrency: String = "INR",
@@ -70,14 +103,15 @@ fun SettingsScreen(
     onReviewInboxClick: () -> Unit = {},
     onClearAllData: () -> Unit = {},
     onLoadSampleData: () -> Unit = {},
-    themeMode: String = "SYSTEM",
+    themeMode: String = "DARK",
     onThemeModeSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
     val context = LocalContext.current
-    var currencyDropdownExpanded by remember { mutableStateOf(false) }
+    var currencyExpanded by remember { mutableStateOf(false) }
     var scanResultMessage by remember { mutableStateOf<String?>(null) }
+    var showWipeDialog by remember { mutableStateOf(false) }
 
     var hasSmsPermissions by remember {
         mutableStateOf(
@@ -108,14 +142,53 @@ fun SettingsScreen(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
+                                .shadow(8.dp, CircleShape, spotColor = Color(0x99CABEFE))
                                 .background(colors.primary, CircleShape)
                         )
                         Text(
                             text = "Settings",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            color = colors.textPrimary
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.textPrimary,
+                            letterSpacing = (-0.2).sp
                         )
+                    }
+                },
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colors.containerHigh)
+                                .border(1.dp, colors.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
@@ -130,33 +203,91 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // GENERAL PREFERENCES Section
+            // Privacy Hero Highlight Banner
             item {
-                Text(
-                    text = "GENERAL PREFERENCES",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.W700,
-                    color = colors.textSecondary,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
-            }
-            item {
-                SpendlyCard {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // Default Reporting Currency Row
-                        ExposedDropdownMenuBox(
-                            expanded = currencyDropdownExpanded,
-                            onExpandedChange = { currencyDropdownExpanded = it }
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(colors.secondary.copy(alpha = 0.12f))
+                                .border(1.dp, colors.secondary.copy(alpha = 0.3f), CircleShape),
+                            contentAlignment = Alignment.Center
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = colors.secondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Offline Ledger Security",
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.textPrimary
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(colors.secondary.copy(alpha = 0.15f))
+                                        .border(1.dp, colors.secondary.copy(alpha = 0.35f), CircleShape)
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "Local Only",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.secondary
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Spendly operates completely isolated from third-party servers. Your SMS texts and spend logs never leave this handset.",
+                                fontSize = 12.sp,
+                                color = colors.textSecondary,
+                                lineHeight = 17.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // GROUP 1: General Preferences
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "GENERAL PREFERENCES",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+
+                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Currency Row
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                    .clickable { currencyDropdownExpanded = true },
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { currencyExpanded = !currencyExpanded }
+                                    .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -165,406 +296,794 @@ fun SettingsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.size(36.dp).background(colors.container, CircleShape),
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh)
+                                            .border(1.dp, colors.border, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        val symbol = when (defaultCurrency) {
-                                            "INR" -> "₹"
-                                            "EUR" -> "€"
-                                            "GBP" -> "£"
-                                            else -> "$"
-                                        }
-                                        Text(symbol, fontSize = 16.sp, fontWeight = FontWeight.W700, color = colors.textPrimary)
-                                    }
-                                    Column {
-                                        Text("Default Reporting Currency", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                        Text("$defaultCurrency · Tap to change", fontSize = 12.sp, color = colors.primary)
-                                    }
-                                }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary)
-                            }
-
-                            ExposedDropdownMenu(
-                                expanded = currencyDropdownExpanded,
-                                onDismissRequest = { currencyDropdownExpanded = false }
-                            ) {
-                                supportedCurrencies.forEach { curr ->
-                                    DropdownMenuItem(
-                                        text = { Text(curr) },
-                                        onClick = {
-                                            onCurrencySelected(curr)
-                                            currencyDropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Info Box
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = colors.container,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Stored transactions retain original logged currency. All calculations are executed strictly on device without third-party sync.",
-                                fontSize = 11.sp,
-                                color = colors.textSecondary,
-                                lineHeight = 15.sp,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-
-                        HorizontalDivider(color = colors.border)
-
-                        // Appearance Selector
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("Appearance", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                val modeLabel = when (themeMode) {
-                                    "LIGHT" -> "Light"
-                                    "DARK" -> "Dark"
-                                    else -> "System Default"
-                                }
-                                Text(modeLabel, fontSize = 12.sp, color = colors.textSecondary)
-                            }
-
-                            // Auto | Light | Dark pill
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = colors.container,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
-                            ) {
-                                Row(modifier = Modifier.padding(2.dp)) {
-                                    listOf(
-                                        "Auto" to "SYSTEM",
-                                        "Light" to "LIGHT",
-                                        "Dark" to "DARK"
-                                    ).forEach { (label, modeKey) ->
-                                        val isSel = themeMode == modeKey
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(14.dp))
-                                                .background(if (isSel) colors.cardBackground else Color.Transparent)
-                                                .clickable { onThemeModeSelected(modeKey) }
-                                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 11.sp,
-                                                fontWeight = if (isSel) FontWeight.W700 else FontWeight.W500,
-                                                color = if (isSel) colors.textPrimary else colors.textSecondary
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // SMS EXPENSE TRACKING Section
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "SMS EXPENSE TRACKING",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.W700,
-                        color = colors.textSecondary,
-                        letterSpacing = 0.8.sp
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
-                        Text(
-                            text = "Active Daemon",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.W600,
-                            color = colors.primary
-                        )
-                    }
-                }
-            }
-
-            item {
-                SpendlyCard {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // Automated SMS Ingestion Switch
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp).background(colors.container, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Tune,
-                                        contentDescription = null,
-                                        tint = colors.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                Column {
-                                    Text("Automated SMS Ingestion", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                    Text("Instant spend detection from bank SMS", fontSize = 12.sp, color = colors.textSecondary)
-                                }
-                            }
-                            Switch(
-                                checked = hasSmsPermissions,
-                                onCheckedChange = {
-                                    if (!hasSmsPermissions) {
-                                        permissionLauncher.launch(
-                                            arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
+                                        Icon(
+                                            imageVector = Icons.Default.CurrencyRupee,
+                                            contentDescription = null,
+                                            tint = colors.primary,
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = colors.onPrimary,
-                                    checkedTrackColor = colors.primary
+                                    Column {
+                                        Text(
+                                            text = "Default Reporting Currency",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "$defaultCurrency (${when(defaultCurrency) { "INR" -> "₹ - Indian Rupee"; "USD" -> "$ - US Dollar"; "EUR" -> "€ - Euro"; "GBP" -> "£ - British Pound"; "AED" -> "د.إ - Dirham"; else -> defaultCurrency }})",
+                                            fontSize = 12.sp,
+                                            color = colors.primary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                            )
-                        }
+                            }
 
-                        // Detection Engine badge
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = colors.container,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                            // Expandable Currency Chip Grid
+                            if (currencyExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                                        .padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Select Reporting Denomination:",
+                                        fontSize = 11.sp,
+                                        color = colors.textSecondary
+                                    )
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        currencyChipList.forEach { (code, label) ->
+                                            val isSelected = code == defaultCurrency
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = if (isSelected) colors.primary else colors.containerHigh,
+                                                border = androidx.compose.foundation.BorderStroke(
+                                                    1.dp,
+                                                    if (isSelected) colors.primary else colors.border
+                                                ),
+                                                onClick = {
+                                                    onCurrencySelected(code)
+                                                    currencyExpanded = false
+                                                }
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) colors.onPrimary else colors.textPrimary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Currency Footnote
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = "Stored transactions retain original logged currency. No volatile online exchange rate dependencies or remote sync.",
+                                    fontSize = 11.sp,
+                                    color = colors.textSecondary,
+                                    lineHeight = 15.sp
+                                )
+                            }
+
+                            HorizontalDivider(color = colors.divider)
+
+                            // Appearance Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Detection Engine", fontSize = 12.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh)
+                                            .border(1.dp, colors.border, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Palette,
+                                            contentDescription = null,
+                                            tint = colors.textSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Appearance",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = when (themeMode) {
+                                                "DARK" -> "Dark Mode (OLED)"
+                                                "LIGHT" -> "Light Mode"
+                                                else -> "System Default"
+                                            },
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+
+                                // Segmented Control (Auto, Light, Dark)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
+                                ) {
+                                    Row(modifier = Modifier.padding(2.dp)) {
+                                        listOf("SYSTEM" to "Auto", "LIGHT" to "Light", "DARK" to "Dark").forEach { (mode, label) ->
+                                            val isSel = themeMode == mode
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(CircleShape)
+                                                    .clickable { onThemeModeSelected(mode) }
+                                                    .then(
+                                                        if (isSel) Modifier.background(colors.primary)
+                                                        else Modifier
+                                                    )
+                                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSel) colors.onPrimary else colors.textSecondary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // GROUP 2: SMS Expense Tracking (Core Engine)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "SMS EXPENSE TRACKING",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary,
+                            letterSpacing = 0.8.sp
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .shadow(6.dp, CircleShape, spotColor = Color(0x992FE575))
+                                    .background(colors.secondary, CircleShape)
+                            )
+                            Text(
+                                text = "Active Daemon",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.secondary
+                            )
+                        }
+                    }
+
+                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Master Ingestion Switch
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.primary.copy(alpha = 0.12f))
+                                            .border(1.dp, colors.primary.copy(alpha = 0.25f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Sms,
+                                            contentDescription = null,
+                                            tint = colors.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Automated SMS Ingestion",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Instant spend detection from bank SMS",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+                                Switch(
+                                    checked = smsAutoSave,
+                                    onCheckedChange = onSmsAutoSaveChanged,
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = colors.onPrimary,
+                                        checkedTrackColor = colors.primary,
+                                        uncheckedThumbColor = colors.textSecondary,
+                                        uncheckedTrackColor = colors.containerHigh
+                                    )
+                                )
+                            }
+
+                            // Engine Architecture Pill
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Memory,
+                                        contentDescription = null,
+                                        tint = colors.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Detection Engine",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colors.textPrimary
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(colors.cardBackground)
+                                        .clip(CircleShape)
+                                        .background(colors.primary.copy(alpha = 0.15f))
+                                        .border(1.dp, colors.primary.copy(alpha = 0.3f), CircleShape)
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = "On-Device Parsing (100% Private)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.W600,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = colors.primary
                                     )
                                 }
                             }
-                        }
 
-                        HorizontalDivider(color = colors.border)
-
-                        // SMS Read Permission Status
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("SMS Read Permission", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                Text("Standard Android runtime privilege", fontSize = 12.sp, color = colors.textSecondary)
-                            }
-
-                            if (hasSmsPermissions) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(colors.container)
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                            // Permission Status Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Text(
-                                        text = "Granted",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.W700,
-                                        color = colors.primary
-                                    )
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = {
-                                        permissionLauncher.launch(
-                                            arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.secondary.copy(alpha = 0.12f))
+                                            .border(1.dp, colors.secondary.copy(alpha = 0.25f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.VerifiedUser,
+                                            contentDescription = null,
+                                            tint = colors.secondary,
+                                            modifier = Modifier.size(18.dp)
                                         )
-                                    },
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Grant", fontSize = 12.sp)
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(color = colors.border)
-
-                        // Auto-save High Confidence Toggle
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Auto-save High Confidence", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                Text("Skip manual check for recognizable merchants", fontSize = 12.sp, color = colors.textSecondary)
-                            }
-                            Switch(
-                                checked = smsAutoSave,
-                                onCheckedChange = onSmsAutoSaveChanged,
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = colors.onPrimary,
-                                    checkedTrackColor = colors.primary
-                                )
-                            )
-                        }
-
-                        // Scan SMS Inbox Button
-                        OutlinedButton(
-                            onClick = {
-                                if (!hasSmsPermissions) {
-                                    permissionLauncher.launch(
-                                        arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
-                                    )
-                                } else {
-                                    onScanSms { result ->
-                                        scanResultMessage = if (result.importedCount > 0) {
-                                            "Successfully imported ${result.importedCount} transaction(s) from ${result.scannedCount} SMS messages."
-                                        } else {
-                                            "Scanned ${result.scannedCount} SMS messages. No new financial expenses found."
-                                        }
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "SMS Read Permission",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Standard Android runtime privilege",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
                                     }
                                 }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isScanningSms,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            if (isScanningSms) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Scanning Inbox...")
-                            } else {
-                                Text("Scan SMS Inbox Now", fontSize = 13.sp)
-                            }
-                        }
 
-                        scanResultMessage?.let { msg ->
-                            Text(
-                                text = msg,
-                                fontSize = 12.sp,
-                                color = if (msg.contains("Successfully")) colors.primary else colors.textSecondary,
-                                fontWeight = FontWeight.W500
-                            )
+                                if (hasSmsPermissions) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(colors.secondary.copy(alpha = 0.15f))
+                                            .border(1.dp, colors.secondary.copy(alpha = 0.35f), CircleShape)
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = colors.secondary,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Text(
+                                                text = "Granted",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = colors.secondary
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            permissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.RECEIVE_SMS,
+                                                    Manifest.permission.READ_SMS
+                                                )
+                                            )
+                                        },
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                                    ) {
+                                        Text(
+                                            text = "Grant",
+                                            fontSize = 11.sp,
+                                            color = colors.onPrimary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Review Inbox Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(onClick = onReviewInboxClick)
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.tertiary.copy(alpha = 0.12f))
+                                            .border(1.dp, colors.tertiary.copy(alpha = 0.25f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MarkEmailUnread,
+                                            contentDescription = null,
+                                            tint = colors.tertiary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = "Review Inbox",
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = colors.textPrimary
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(CircleShape)
+                                                    .background(colors.tertiary)
+                                                    .padding(horizontal = 6.dp, vertical = 1.dp)
+                                            ) {
+                                                Text(
+                                                    text = "2",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF1C0F00)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "2 transactions need attention",
+                                            fontSize = 12.sp,
+                                            color = colors.tertiary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            // Scan Past SMS Button
+                            OutlinedButton(
+                                onClick = {
+                                    onScanSms { res ->
+                                        scanResultMessage = "Scanned ${res.scannedCount} SMS • ${res.importedCount} new imported • ${res.skippedDuplicates} duplicates"
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = CircleShape,
+                                enabled = !isScanningSms
+                            ) {
+                                if (isScanningSms) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Scanning SMS Inbox...")
+                                } else {
+                                    Text(
+                                        "Scan Past SMS for Expenses",
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            if (scanResultMessage != null) {
+                                Text(
+                                    text = scanResultMessage!!,
+                                    fontSize = 11.sp,
+                                    color = colors.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            // Strict Privacy Stamp
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = colors.secondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Incoming bank & UPI SMS messages are parsed entirely inside Android sandbox memory. No raw SMS text, account numbers, or spend metrics ever transmit across the network.",
+                                    fontSize = 11.sp,
+                                    color = colors.textSecondary,
+                                    lineHeight = 15.sp
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // DATA MANAGEMENT & BACKUP Section
+            // GROUP 3: Data Management & Backup
             item {
-                Text(
-                    text = "DATA MANAGEMENT & BACKUP",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.W700,
-                    color = colors.textSecondary,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
-            }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "DATA MANAGEMENT & BACKUP",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary,
+                        letterSpacing = 0.8.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
 
-            item {
-                SpendlyCard {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // Load Sample Data / Restore
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = onLoadSampleData),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("Load Sample Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.textPrimary)
-                                Text("Populate ledger with realistic spending entries", fontSize = 12.sp, color = colors.textSecondary)
+                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            // Export Transactions
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {}
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh)
+                                            .border(1.dp, colors.border, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FileDownload,
+                                            contentDescription = null,
+                                            tint = colors.textPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Export Transactions",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Generate clean CSV or encrypted JSON ledger",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary)
-                        }
 
-                        HorizontalDivider(color = colors.border)
+                            HorizontalDivider(color = colors.divider)
 
-                        // Clear All Data
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = onClearAllData),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("Clear All Data", fontSize = 14.sp, fontWeight = FontWeight.W600, color = colors.error)
-                                Text("Permanently wipe stored transactions and categories", fontSize = 12.sp, color = colors.textSecondary)
+                            // Load Sample Data
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        onLoadSampleData()
+                                        scanResultMessage = "Sample data loaded successfully."
+                                    }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh)
+                                            .border(1.dp, colors.border, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Storage,
+                                            contentDescription = null,
+                                            tint = colors.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Load Sample Data",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Add demo entries for testing & preview",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colors.error)
+
+                            HorizontalDivider(color = colors.divider)
+
+                            // Wipe Local Ledger
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showWipeDialog = true }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.error.copy(alpha = 0.15f))
+                                            .border(1.dp, colors.error.copy(alpha = 0.3f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteForever,
+                                            contentDescription = null,
+                                            tint = colors.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Wipe Local Ledger",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.error
+                                        )
+                                        Text(
+                                            text = "Permanently delete all logs and cached data",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Version Pill & Tagline Footer
+            // Version Footer
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(colors.container)
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(modifier = Modifier.size(6.dp).background(colors.primary, CircleShape))
-                            Text(
-                                text = "Spendly v1.4.0 (Offline-First Build)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.W600,
-                                color = colors.textSecondary
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Spendly v1.0.0 (Build 2026.1)",
+                        fontSize = 11.sp,
+                        color = colors.textSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Local SQLite Room Ledger • No Network Permissions",
+                        fontSize = 10.sp,
+                        color = colors.textMuted
+                    )
                 }
             }
 
-            // Bottom clearance spacer
+            // Bottom clearance for dock
             item {
-                Spacer(Modifier.height(88.dp))
+                Spacer(Modifier.height(64.dp))
             }
         }
+    }
+
+    if (showWipeDialog) {
+        AlertDialog(
+            onDismissRequest = { showWipeDialog = false },
+            title = {
+                Text(
+                    text = "Wipe Local Ledger?",
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "This will permanently remove all expense logs from your device storage. This action cannot be undone.",
+                    fontSize = 13.sp,
+                    color = colors.textSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearAllData()
+                        showWipeDialog = false
+                    }
+                ) {
+                    Text("Wipe All", color = colors.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWipeDialog = false }) {
+                    Text("Cancel", color = colors.textSecondary)
+                }
+            },
+            containerColor = colors.cardBackground
+        )
     }
 }
