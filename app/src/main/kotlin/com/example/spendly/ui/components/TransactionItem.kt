@@ -78,8 +78,20 @@ fun TransactionItem(
                 color = colors.textPrimary,
                 maxLines = 1
             )
+            val today = java.time.LocalDate.now()
+            val formattedDate = when (transaction.date) {
+                today -> "Today"
+                today.minusDays(1) -> "Yesterday"
+                else -> {
+                    if (transaction.date.year == today.year) {
+                        transaction.date.format(DateTimeFormatter.ofPattern("d MMM"))
+                    } else {
+                        transaction.date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))
+                    }
+                }
+            }
             Text(
-                text = "${transaction.category.displayName} • ${transaction.date.format(DateTimeFormatter.ofPattern("d MMM, h:mm a"))}",
+                text = "${transaction.category.displayName} • $formattedDate",
                 fontSize = 11.sp,
                 color = colors.textSecondary,
                 fontWeight = FontWeight.Normal
