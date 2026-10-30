@@ -24,9 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,13 +69,11 @@ fun QuickAddExpenseSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var amountStr by remember { mutableStateOf(prefillAmount?.let { String.format("%.0f", it) } ?: "0") }
-    var selectedCurrency by remember { mutableStateOf(defaultCurrency) }
-    var currencyDropdownExpanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf(Category.FOOD) }
     var merchant by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
 
-    val currencySymbol = when (selectedCurrency) {
+    val currencySymbol = when (defaultCurrency) {
         "INR" -> "₹"
         "EUR" -> "€"
         "GBP" -> "£"
@@ -243,45 +239,10 @@ fun QuickAddExpenseSheet(
                     .clip(RoundedCornerShape(16.dp))
                     .background(colors.containerLow)
                     .border(1.dp, colors.border, RoundedCornerShape(16.dp))
-                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                    .padding(vertical = 20.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Currency Selector Pill
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = colors.containerHigh,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                    onClick = { currencyDropdownExpanded = !currencyDropdownExpanded }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CurrencyRupee,
-                            contentDescription = null,
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "$selectedCurrency ($currencySymbol)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = colors.textPrimary
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ExpandMore,
-                            contentDescription = null,
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
                 // Amount being typed
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -512,7 +473,7 @@ fun QuickAddExpenseSheet(
                     onClick = {
                         val finalAmount = parsedAmount.coerceAtLeast(1.0)
                         val finalMerchant = if (merchant.isBlank()) selectedCategory.displayName else merchant
-                        onSave(finalAmount, selectedCurrency, finalMerchant, selectedCategory, notes)
+                        onSave(finalAmount, defaultCurrency, finalMerchant, selectedCategory, notes)
                         onDismiss()
                     }
                 ) {
