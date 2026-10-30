@@ -26,7 +26,6 @@ import com.example.spendly.ui.insights.InsightsScreen
 import com.example.spendly.ui.settings.SettingsScreen
 import com.example.spendly.ui.transaction.AddTransactionScreen
 import com.example.spendly.ui.transaction.EditTransactionScreen
-import com.example.spendly.ui.transaction.QuickAddExpenseSheet
 
 @Composable
 fun MainNavigation(viewModel: SpendlyViewModel? = null) {
@@ -47,7 +46,6 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack(HomeDestination)
-    var showQuickAddSheet by remember { mutableStateOf(false) }
 
     val currencySymbol = when (defaultCurrency) {
         "INR" -> "₹"
@@ -78,7 +76,7 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
             entryProvider = entryProvider {
                 entry<HomeDestination> {
                     HomeScreen(
-                        onAddTransaction = { showQuickAddSheet = true },
+                        onAddTransaction = { backStack.add(AddTransactionDestination()) },
                         onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
                         onReviewClick = {
                             backStack.add(ActivityDestination)
@@ -178,20 +176,8 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
                         backStack.add(targetKey)
                     }
                 },
-                onFabClick = { showQuickAddSheet = true },
+                onFabClick = { backStack.add(AddTransactionDestination()) },
                 modifier = Modifier.align(Alignment.BottomCenter)
-            )
-        }
-
-        // Quick Add Expense Bottom Sheet Modal (matching Stitch 1:1)
-        if (showQuickAddSheet) {
-            QuickAddExpenseSheet(
-                onDismiss = { showQuickAddSheet = false },
-                onSave = { amount, currency, merchant, category, notes ->
-                    vm.addTransaction(amount, currency, merchant, category, notes)
-                    showQuickAddSheet = false
-                },
-                defaultCurrency = defaultCurrency
             )
         }
     }
