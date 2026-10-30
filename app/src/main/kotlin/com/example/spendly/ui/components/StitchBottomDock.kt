@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -24,14 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.ui.theme.CalendarToday
-import com.example.spendly.ui.theme.FabGradient
 import com.example.spendly.ui.theme.PieChart
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.Tune
@@ -51,7 +48,7 @@ fun StitchBottomDock(
     val isDark = colors.isDark
 
     val dockBg = if (isDark) Color(0xEB07070A) else Color(0xF2FFFFFF)
-    val dockBorder = if (isDark) Color(0x1FFFFFFF) else colors.border
+    val dockBorder = if (isDark) Color(0x14FFFFFF) else colors.border
 
     Column(
         modifier = modifier
@@ -64,12 +61,6 @@ fun StitchBottomDock(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = 20.dp,
-                    shape = CircleShape,
-                    spotColor = if (isDark) Color(0xFA000000) else Color(0x33000000),
-                    ambientColor = if (isDark) Color(0xFA000000) else Color(0x22000000)
-                )
                 .border(1.dp, dockBorder, CircleShape),
             shape = CircleShape,
             color = dockBg
@@ -77,7 +68,7 @@ fun StitchBottomDock(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -99,31 +90,24 @@ fun StitchBottomDock(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Center FAB Action (Elevated with gradient)
+                // Center add action: off-white disc, the one bright control in the dock
                 Box(
                     modifier = Modifier.padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(50.dp)
-                            .offset(y = (-4).dp)
-                            .shadow(
-                                elevation = 12.dp,
-                                shape = CircleShape,
-                                spotColor = Color(0xB39E8CFC),
-                                ambientColor = Color(0x809E8CFC)
-                            )
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(FabGradient)
+                            .background(colors.textPrimary)
                             .clickable(onClick = onFabClick),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add Expense",
-                            tint = Color(0xFF18103D),
-                            modifier = Modifier.size(28.dp)
+                            tint = colors.background,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -159,19 +143,19 @@ private fun DockItem(
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
-    val activeBg = colors.primary.copy(alpha = 0.15f)
-    val activeColor = colors.primary
+    val activeBg = colors.containerHigh
+    val activeColor = colors.textPrimary
     val inactiveColor = colors.textSecondary
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .then(
                 if (isSelected) Modifier.background(activeBg)
                 else Modifier
             )
-            .padding(vertical = 6.dp, horizontal = 4.dp),
+            .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -187,9 +171,9 @@ private fun DockItem(
             Text(
                 text = label,
                 color = if (isSelected) activeColor else inactiveColor,
-                fontSize = 10.sp,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                letterSpacing = 0.2.sp
+                fontSize = 11.sp,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Medium,
+                letterSpacing = 0.sp
             )
         }
     }

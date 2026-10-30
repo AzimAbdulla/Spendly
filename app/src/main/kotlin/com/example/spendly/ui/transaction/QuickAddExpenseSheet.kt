@@ -55,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
 import com.example.spendly.ui.components.stitchCategoryColors
-import com.example.spendly.ui.theme.FabGradient
 import com.example.spendly.ui.theme.GeistFontFamily
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
@@ -98,7 +97,7 @@ fun QuickAddExpenseSheet(
         dragHandle = {
             Box(
                 modifier = Modifier
-                    .padding(top = 10.dp, bottom = 4.dp)
+                    .padding(top = 12.dp, bottom = 4.dp)
                     .width(40.dp)
                     .height(4.dp)
                     .clip(CircleShape)
@@ -110,9 +109,9 @@ fun QuickAddExpenseSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 6.dp)
+                .padding(horizontal = 20.dp, vertical = 8.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header Row: Title & Close Button
             Row(
@@ -124,17 +123,11 @@ fun QuickAddExpenseSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xB39E8CFC))
-                            .background(colors.primary, CircleShape)
-                    )
                     Text(
-                        text = "Quick Log",
+                        text = "Add expense",
                         fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
                         color = colors.textPrimary
                     )
                 }
@@ -151,18 +144,18 @@ fun QuickAddExpenseSheet(
             // Merchant / Payee input
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Merchant / Payee",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
+                    text = "Merchant",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
                     color = colors.textSecondary,
                     modifier = Modifier.padding(horizontal = 2.dp)
                 )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (colors.isDark) Color(0xFF08080D) else colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colors.containerLow)
+                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -170,7 +163,7 @@ fun QuickAddExpenseSheet(
                     Icon(
                         imageVector = Icons.Default.Storefront,
                         contentDescription = null,
-                        tint = colors.primary,
+                        tint = colors.textSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                     BasicTextField(
@@ -200,40 +193,40 @@ fun QuickAddExpenseSheet(
             // Date & Source Row (2 columns)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Date & Time
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Date & Time",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = "Date",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
                         color = colors.textSecondary,
                         modifier = Modifier.padding(horizontal = 2.dp)
                     )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (colors.isDark) Color(0xFF08080D) else colors.containerLow)
-                            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 9.dp),
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(colors.containerLow)
+                            .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
                                 contentDescription = null,
                                 tint = colors.textSecondary,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "Today, ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("h:mm a"))}",
-                                fontSize = 11.sp,
+                                text = "Today",
+                                fontSize = 13.sp,
                                 color = colors.textPrimary,
                                 fontWeight = FontWeight.Medium
                             )
@@ -244,45 +237,39 @@ fun QuickAddExpenseSheet(
                 // Logging Mode
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Logging Mode",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = "Source",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
                         color = colors.textSecondary,
                         modifier = Modifier.padding(horizontal = 2.dp)
                     )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (colors.isDark) Color(0xFF08080D) else colors.containerLow)
-                            .border(1.dp, colors.secondary.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 9.dp),
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(colors.containerLow)
+                            .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Verified,
+                                imageVector = Icons.Default.EditNote,
                                 contentDescription = null,
-                                tint = colors.secondary,
-                                modifier = Modifier.size(15.dp)
+                                tint = colors.textSecondary,
+                                modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "Manual Slip",
-                                fontSize = 11.sp,
-                                color = colors.secondary,
-                                fontWeight = FontWeight.SemiBold
+                                text = "Manual",
+                                fontSize = 13.sp,
+                                color = colors.textPrimary,
+                                fontWeight = FontWeight.Medium
                             )
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .shadow(6.dp, CircleShape, spotColor = Color(0x992FE575))
-                                .background(colors.secondary, CircleShape)
-                        )
                     }
                 }
             }
@@ -290,18 +277,18 @@ fun QuickAddExpenseSheet(
             // Notes Field
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Notes (Optional)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
+                    text = "Notes (optional)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
                     color = colors.textSecondary,
                     modifier = Modifier.padding(horizontal = 2.dp)
                 )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (colors.isDark) Color(0xFF08080D) else colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colors.containerLow)
+                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -310,7 +297,7 @@ fun QuickAddExpenseSheet(
                         imageVector = Icons.Default.EditNote,
                         contentDescription = null,
                         tint = colors.textSecondary,
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     BasicTextField(
                         value = notes,
@@ -340,18 +327,18 @@ fun QuickAddExpenseSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (colors.isDark) Color(0xFF050508) else colors.containerLow)
-                    .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                    .padding(vertical = 14.dp, horizontal = 12.dp),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.containerLow)
+                    .border(1.dp, colors.border, RoundedCornerShape(16.dp))
+                    .padding(vertical = 16.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 // Currency Selector Pill
                 Surface(
-                    shape = CircleShape,
-                    color = if (colors.isDark) Color(0xFF0E0E16) else colors.container,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.primary.copy(alpha = 0.25f)),
+                    shape = RoundedCornerShape(8.dp),
+                    color = colors.containerHigh,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                     onClick = { currencyDropdownExpanded = !currencyDropdownExpanded }
                 ) {
                     Row(
@@ -362,27 +349,27 @@ fun QuickAddExpenseSheet(
                         Icon(
                             imageVector = Icons.Default.CurrencyRupee,
                             contentDescription = null,
-                            tint = colors.primary,
-                            modifier = Modifier.size(13.dp)
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = "$selectedCurrency ($currencySymbol)",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = colors.primary
+                            color = colors.textPrimary
                         )
                         Icon(
                             imageVector = Icons.Default.ExpandMore,
                             contentDescription = null,
                             tint = colors.textSecondary,
-                            modifier = Modifier.size(13.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Big Numerical Amount with Glowing Neon Cursor
+                // Amount being typed
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
@@ -392,41 +379,34 @@ fun QuickAddExpenseSheet(
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Medium,
-                        color = colors.primary.copy(alpha = 0.8f),
+                        color = colors.textSecondary,
                         modifier = Modifier.padding(end = 4.dp)
                     )
                     Text(
                         text = if (amountStr.isEmpty()) "0" else amountStr,
                         fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 38.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        letterSpacing = (-1).sp
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textPrimary,
+                        letterSpacing = (-0.8).sp
                     )
-                    Text(
+                    if (!amountStr.contains(".")) Text(
                         text = ".00",
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = colors.textSecondary.copy(alpha = 0.7f)
                     )
-                    // Glowing Neon Cursor
+                    // Caret
                     Box(
                         modifier = Modifier
-                            .padding(start = 3.dp)
-                            .width(3.dp)
+                            .padding(start = 4.dp)
+                            .width(2.dp)
                             .height(28.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xB3CABEFE))
                             .background(colors.primary, CircleShape)
                     )
                 }
 
-                Text(
-                    text = "Outflow recorded to Personal Ledger",
-                    fontSize = 11.sp,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
             }
 
             // Category Picker Grid
@@ -439,17 +419,16 @@ fun QuickAddExpenseSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "SELECT CATEGORY",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textSecondary,
-                        letterSpacing = 0.8.sp
+                        text = "Category",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colors.textSecondary
                     )
                     Text(
-                        text = "${selectedCategory.displayName} active",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.primary
+                        text = selectedCategory.displayName,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colors.textSecondary
                     )
                 }
 
@@ -464,7 +443,7 @@ fun QuickAddExpenseSheet(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     categories.forEach { cat ->
                         val isSelected = cat == selectedCategory
@@ -475,47 +454,34 @@ fun QuickAddExpenseSheet(
                                 .weight(1f)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { selectedCategory = cat }
-                                .background(
-                                    if (isSelected) {
-                                        if (colors.isDark) Color(0xFF17112C) else colors.primary.copy(alpha = 0.12f)
-                                    } else {
-                                        if (colors.isDark) Color(0xFF0E0E16) else colors.containerLow
-                                    }
-                                )
+                                .background(if (isSelected) colors.containerHigh else colors.containerLow)
                                 .border(
-                                    if (isSelected) 1.5.dp else 1.dp,
+                                    1.dp,
                                     if (isSelected) colors.primary else colors.border,
                                     RoundedCornerShape(12.dp)
                                 )
-                                .padding(vertical = 10.dp, horizontal = 2.dp),
+                                .padding(vertical = 12.dp, horizontal = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(catColor.copy(alpha = if (isSelected) 0.25f else 0.12f))
-                                    .then(
-                                        if (isSelected) {
-                                            Modifier.shadow(8.dp, RoundedCornerShape(8.dp), spotColor = Color(0x66CABEFE))
-                                        } else Modifier
-                                    ),
+                                    .size(32.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = cat.getIcon(),
                                     contentDescription = cat.displayName,
-                                    tint = if (isSelected) colors.primary else catColor,
+                                    tint = if (isSelected) colors.textPrimary else colors.textSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(
-                                text = cat.displayName.split(" ").first(),
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else colors.textSecondary,
+                                text = cat.shortName,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isSelected) colors.textPrimary else colors.textSecondary,
                                 maxLines = 1
                             )
                         }
@@ -526,7 +492,7 @@ fun QuickAddExpenseSheet(
             // Numeric Keypad
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val numpad = listOf(
                     listOf("1", "2", "3"),
@@ -538,7 +504,7 @@ fun QuickAddExpenseSheet(
                 numpad.forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         row.forEach { key ->
                             Surface(
@@ -546,7 +512,7 @@ fun QuickAddExpenseSheet(
                                     .weight(1f)
                                     .height(44.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (colors.isDark) Color(0xFF0E0E16) else colors.containerHigh,
+                                color = colors.containerHigh,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                                 onClick = {
                                     when (key) {
@@ -585,7 +551,7 @@ fun QuickAddExpenseSheet(
                                             text = key,
                                             fontFamily = SpaceGroteskFontFamily,
                                             fontSize = 18.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                     }
@@ -601,36 +567,35 @@ fun QuickAddExpenseSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Clear button
                 Surface(
                     modifier = Modifier
                         .weight(0.35f)
                         .height(48.dp),
-                    shape = CircleShape,
-                    color = if (colors.isDark) Color(0xFF0E0E16) else colors.containerHigh,
+                    shape = RoundedCornerShape(10.dp),
+                    color = colors.containerHigh,
                     border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                     onClick = { amountStr = "0" }
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = "Clear",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textSecondary
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textPrimary
                         )
                     }
                 }
 
-                // Save Outflow Button (Luminous Gradient Pill)
+                // Save: the primary action, off-white fill with dark text
                 Surface(
                     modifier = Modifier
                         .weight(0.65f)
-                        .height(48.dp)
-                        .shadow(12.dp, CircleShape, spotColor = Color(0xB39E8CFC)),
-                    shape = CircleShape,
-                    color = Color.Transparent,
+                        .height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = colors.textPrimary,
                     onClick = {
                         val finalAmount = parsedAmount.coerceAtLeast(1.0)
                         val finalMerchant = if (merchant.isBlank()) selectedCategory.displayName else merchant
@@ -639,34 +604,31 @@ fun QuickAddExpenseSheet(
                     }
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(FabGradient),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = Color(0xFF18103D),
+                                tint = colors.background,
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = "Save Outflow",
-                                fontFamily = SpaceGroteskFontFamily,
+                                text = "Save expense",
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF18103D)
+                                fontWeight = FontWeight.Medium,
+                                color = colors.background
                             )
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
         }
     }
 }

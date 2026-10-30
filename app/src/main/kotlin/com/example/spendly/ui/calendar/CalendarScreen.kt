@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -73,6 +74,8 @@ fun CalendarScreen(
     val daysWithTx = txByDate.keys.count { it.year == selectedMonth.year && it.month == selectedMonth.month }
     val dayTransactions = txByDate[selectedDate] ?: emptyList()
     val dayTotal = dayTransactions.sumOf { it.amount }
+    val monthTotal = txByDate.filterKeys { it.year == selectedMonth.year && it.month == selectedMonth.month }
+        .values.sumOf { list -> list.sumOf { it.amount } }
 
     Scaffold(
         modifier = modifier,
@@ -84,7 +87,7 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Month Switcher & Quick Meta Row
             item {
@@ -119,8 +122,8 @@ fun CalendarScreen(
                         Text(
                             text = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
                             fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
                             color = colors.textPrimary,
                             letterSpacing = (-0.2).sp
                         )
@@ -143,32 +146,13 @@ fun CalendarScreen(
                         }
                     }
 
-                    // Active Days Chip
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(colors.container)
-                            .border(1.dp, colors.border, CircleShape)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .shadow(6.dp, CircleShape, spotColor = Color(0xB39E8CFC))
-                                    .background(colors.primary, CircleShape)
-                            )
-                            Text(
-                                text = "$daysWithTx Active Days",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colors.textPrimary
-                            )
-                        }
-                    }
+                    // Days with spending, as quiet meta text
+                    Text(
+                        text = "$daysWithTx ${if (daysWithTx == 1) "day" else "days"} with spending",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colors.textSecondary
+                    )
                 }
             }
 
@@ -177,7 +161,7 @@ fun CalendarScreen(
                 SpendlyCard(shape = RoundedCornerShape(16.dp)) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Day headers (S, M, T, W, T, F, S)
                         Row(
@@ -189,10 +173,10 @@ fun CalendarScreen(
                                     text = day,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = colors.textSecondary,
-                                    modifier = Modifier.width(36.dp),
+                                    color = colors.textMuted,
+                                    modifier = Modifier.width(40.dp),
                                     textAlign = TextAlign.Center,
-                                    letterSpacing = 0.5.sp
+                                    letterSpacing = 0.sp
                                 )
                             }
                         }
@@ -203,7 +187,7 @@ fun CalendarScreen(
                         val leadingEmpty = firstDayOfMonth.dayOfWeek.value % 7 // Sunday = 0
                         val totalCells = ((leadingEmpty + daysInMonth + 6) / 7) * 7
 
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (week in 0 until (totalCells / 7)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -220,15 +204,14 @@ fun CalendarScreen(
 
                                             Column(
                                                 modifier = Modifier
-                                                    .width(38.dp)
-                                                    .height(42.dp)
-                                                    .clip(CircleShape)
+                                                    .width(40.dp)
+                                                    .height(44.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
                                                     .clickable { selectedDate = date }
                                                     .then(
                                                         if (isSelected) {
                                                             Modifier
                                                                 .background(colors.primary)
-                                                                .shadow(8.dp, CircleShape, spotColor = Color(0x809E8CFC))
                                                         } else {
                                                             Modifier
                                                         }
@@ -238,8 +221,8 @@ fun CalendarScreen(
                                             ) {
                                                 Text(
                                                     text = dayNumber.toString(),
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                                                     color = if (isSelected) colors.onPrimary else colors.textPrimary,
                                                     textAlign = TextAlign.Center
                                                 )
@@ -254,30 +237,30 @@ fun CalendarScreen(
                                                                 .size(4.dp)
                                                                 .background(
                                                                     if (isSelected) colors.onPrimary
-                                                                    else colors.secondary,
+                                                                    else colors.textSecondary,
                                                                     CircleShape
                                                                 )
                                                         )
                                                     }
                                                 } else {
-                                                    Spacer(Modifier.height(6.dp))
+                                                    Spacer(Modifier.height(8.dp))
                                                 }
                                             }
                                         } else {
                                             // Overflow cell from previous or next month
                                             Box(
                                                 modifier = Modifier
-                                                    .width(38.dp)
-                                                    .height(42.dp),
+                                                    .width(40.dp)
+                                                    .height(44.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 val prevMonthDays = selectedMonth.minusMonths(1).lengthOfMonth()
                                                 val overflowDay = if (dayNumber <= 0) prevMonthDays + dayNumber else dayNumber - daysInMonth
                                                 Text(
                                                     text = overflowDay.toString(),
-                                                    fontSize = 13.sp,
+                                                    fontSize = 14.sp,
                                                     fontWeight = FontWeight.Normal,
-                                                    color = colors.textMuted.copy(alpha = 0.35f),
+                                                    color = colors.textMuted.copy(alpha = 0.4f),
                                                     textAlign = TextAlign.Center
                                                 )
                                             }
@@ -293,7 +276,7 @@ fun CalendarScreen(
             // Daily Outflow Stream / Day Details Card
             item {
                 SpendlyCard(shape = RoundedCornerShape(16.dp)) {
-                    Column(modifier = Modifier.padding(18.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,36 +286,29 @@ fun CalendarScreen(
                                 Text(
                                     text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),
                                     fontFamily = SpaceGroteskFontFamily,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
                                     color = colors.textPrimary
                                 )
                                 Text(
-                                    text = if (dayTransactions.isNotEmpty()) "${dayTransactions.size} entries recorded" else "No spending recorded",
+                                    text = if (dayTransactions.isNotEmpty()) "${dayTransactions.size} ${if (dayTransactions.size == 1) "expense" else "expenses"}" else "No spending recorded",
                                     fontSize = 12.sp,
                                     color = colors.textSecondary
                                 )
                             }
                             if (dayTotal > 0) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(colors.error.copy(alpha = 0.15f))
-                                        .border(1.dp, colors.error.copy(alpha = 0.3f), CircleShape)
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = "-$currencySymbol${String.format("%,.2f", dayTotal)}",
-                                        fontFamily = SpaceGroteskFontFamily,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.error
-                                    )
-                                }
+                                Text(
+                                    text = "-$currencySymbol${String.format("%,.2f", dayTotal)}",
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colors.textPrimary,
+                                    style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
+                                )
                             }
                         }
 
-                        Spacer(Modifier.height(14.dp))
+                        Spacer(Modifier.height(16.dp))
 
                         if (dayTransactions.isEmpty()) {
                             // Empty State Container
@@ -345,29 +321,28 @@ fun CalendarScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(44.dp)
+                                        .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(colors.containerHigh)
-                                        .border(1.dp, colors.border, CircleShape),
+                                        .background(colors.containerHigh),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.FreeBreakfast,
                                         contentDescription = null,
                                         tint = colors.textSecondary,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
-                                Spacer(Modifier.height(10.dp))
+                                Spacer(Modifier.height(12.dp))
                                 Text(
-                                    text = "Quiet Spending Day",
+                                    text = "Nothing spent",
                                     fontFamily = SpaceGroteskFontFamily,
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Medium,
                                     color = colors.textPrimary
                                 )
                                 Text(
-                                    text = "No expenses recorded on this day. Tap + to add an entry.",
+                                    text = "Tap + to add an expense for this day",
                                     fontSize = 12.sp,
                                     color = colors.textSecondary,
                                     textAlign = TextAlign.Center,
@@ -383,7 +358,7 @@ fun CalendarScreen(
                                 )
                                 if (index < dayTransactions.lastIndex) {
                                     HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 2.dp),
+                                        modifier = Modifier.padding(start = 56.dp),
                                         color = colors.divider
                                     )
                                 }
@@ -393,53 +368,37 @@ fun CalendarScreen(
                 }
             }
 
-            // Ledger Wisdom Card
+            // Month summary: a real figure instead of a slogan
             item {
                 SpendlyCard(shape = RoundedCornerShape(16.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(colors.containerHigh)
-                                .border(1.dp, colors.border, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.EditNote,
-                                contentDescription = null,
-                                tint = colors.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "LEDGER WISDOM",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textSecondary,
-                                letterSpacing = 0.8.sp
-                            )
-                            Text(
-                                text = "Awareness over restriction. Daily logs create lasting clarity.",
-                                fontSize = 12.sp,
-                                color = colors.textPrimary,
-                                fontWeight = FontWeight.Normal
-                            )
-                        }
+                        Text(
+                            text = "${selectedMonth.format(DateTimeFormatter.ofPattern("MMMM"))} total",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = colors.textSecondary
+                        )
+                        Text(
+                            text = "$currencySymbol${String.format("%,.2f", monthTotal)}",
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textPrimary,
+                            style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
+                        )
                     }
                 }
             }
 
             // Bottom clearance for dock
             item {
-                Spacer(Modifier.height(64.dp))
+                Spacer(Modifier.navigationBarsPadding().height(96.dp))
             }
         }
     }

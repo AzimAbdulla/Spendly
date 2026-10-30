@@ -146,7 +146,7 @@ fun SettingsScreen(
                     text = "Settings",
                     fontFamily = SpaceGroteskFontFamily,
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = colors.textPrimary,
                     letterSpacing = (-0.5).sp,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -161,20 +161,19 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(16.dp),
                         verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(colors.secondary.copy(alpha = 0.12f))
-                                .border(1.dp, colors.secondary.copy(alpha = 0.3f), CircleShape),
+                                .background(colors.containerHigh),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Shield,
                                 contentDescription = null,
-                                tint = colors.secondary,
+                                tint = colors.textSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -184,32 +183,19 @@ fun SettingsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "Offline Ledger Security",
+                                    text = "Stays on this phone",
                                     fontFamily = SpaceGroteskFontFamily,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
                                     color = colors.textPrimary
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(colors.secondary.copy(alpha = 0.15f))
-                                        .border(1.dp, colors.secondary.copy(alpha = 0.35f), CircleShape)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "Local Only",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.secondary
-                                    )
-                                }
+
                             }
                             Text(
-                                text = "Spendly operates completely isolated from third-party servers. Your SMS texts and spend logs never leave this handset.",
+                                text = "Spendly has no internet permission. Your SMS and expenses never leave this phone.",
                                 fontSize = 12.sp,
                                 color = colors.textSecondary,
-                                lineHeight = 17.sp,
+                                lineHeight = 20.sp,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
@@ -221,16 +207,16 @@ fun SettingsScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "GENERAL PREFERENCES",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.primary,
-                        letterSpacing = 0.8.sp,
+                        text = "General",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textSecondary,
+                        letterSpacing = 0.sp,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
                     SpendlyCard(shape = RoundedCornerShape(16.dp)) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Currency Row
                             Row(
                                 modifier = Modifier
@@ -256,21 +242,21 @@ fun SettingsScreen(
                                         Icon(
                                             imageVector = Icons.Default.CurrencyRupee,
                                             contentDescription = null,
-                                            tint = colors.primary,
+                                            tint = colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Column {
                                         Text(
-                                            text = "Default Reporting Currency",
+                                            text = "Currency",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
                                             text = "$defaultCurrency (${when(defaultCurrency) { "INR" -> "₹ - Indian Rupee"; "USD" -> "$ - US Dollar"; "EUR" -> "€ - Euro"; "GBP" -> "£ - British Pound"; "AED" -> "د.إ - Dirham"; else -> defaultCurrency }})",
                                             fontSize = 12.sp,
-                                            color = colors.primary,
+                                            color = colors.textSecondary,
                                             fontWeight = FontWeight.Medium
                                         )
                                     }
@@ -289,19 +275,19 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                        .background(colors.containerLow)
                                         .border(1.dp, colors.border, RoundedCornerShape(10.dp))
                                         .padding(10.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        text = "Select Reporting Denomination:",
+                                        text = "Choose currency",
                                         fontSize = 11.sp,
                                         color = colors.textSecondary
                                     )
                                     FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         currencyChipList.forEach { (code, label) ->
                                             val isSelected = code == defaultCurrency
@@ -320,9 +306,9 @@ fun SettingsScreen(
                                                 Text(
                                                     text = label,
                                                     fontSize = 11.sp,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Medium,
                                                     color = if (isSelected) colors.onPrimary else colors.textPrimary,
-                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
                                                 )
                                             }
                                         }
@@ -335,7 +321,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .background(colors.containerLow)
                                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.Top,
@@ -345,10 +331,10 @@ fun SettingsScreen(
                                     imageVector = Icons.Default.Info,
                                     contentDescription = null,
                                     tint = colors.textSecondary,
-                                    modifier = Modifier.size(15.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Stored transactions retain original logged currency. No volatile online exchange rate dependencies or remote sync.",
+                                    text = "Existing expenses keep the currency they were saved in. Nothing is converted.",
                                     fontSize = 11.sp,
                                     color = colors.textSecondary,
                                     lineHeight = 15.sp
@@ -386,7 +372,7 @@ fun SettingsScreen(
                                         Text(
                                             text = "Appearance",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
@@ -404,7 +390,7 @@ fun SettingsScreen(
                                 // Segmented Control (Auto, Light, Dark)
                                 Surface(
                                     shape = CircleShape,
-                                    color = if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow,
+                                    color = colors.containerLow,
                                     border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
                                 ) {
                                     Row(modifier = Modifier.padding(2.dp)) {
@@ -423,7 +409,7 @@ fun SettingsScreen(
                                                 Text(
                                                     text = label,
                                                     fontSize = 11.sp,
-                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                                    fontWeight = if (isSel) FontWeight.Medium else FontWeight.Medium,
                                                     color = if (isSel) colors.onPrimary else colors.textSecondary
                                                 )
                                             }
@@ -447,33 +433,33 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "SMS EXPENSE TRACKING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary,
-                            letterSpacing = 0.8.sp
+                            text = "SMS tracking",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textSecondary,
+                            letterSpacing = 0.sp
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            val smsActive = smsAutoSave && hasSmsPermissions
                             Box(
                                 modifier = Modifier
                                     .size(6.dp)
-                                    .shadow(6.dp, CircleShape, spotColor = Color(0x992FE575))
-                                    .background(colors.secondary, CircleShape)
+                                    .background(if (smsActive) colors.secondary else colors.textMuted, CircleShape)
                             )
                             Text(
-                                text = "Active Daemon",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.secondary
+                                text = if (smsActive) "On" else "Off",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = colors.textSecondary
                             )
                         }
                     }
 
                     SpendlyCard(shape = RoundedCornerShape(16.dp)) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Master Ingestion Switch
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -489,26 +475,25 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(CircleShape)
-                                            .background(colors.primary.copy(alpha = 0.12f))
-                                            .border(1.dp, colors.primary.copy(alpha = 0.25f), CircleShape),
+                                            .background(colors.containerHigh),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Sms,
                                             contentDescription = null,
-                                            tint = colors.primary,
+                                            tint = colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Column {
                                         Text(
-                                            text = "Automated SMS Ingestion",
+                                            text = "Read bank SMS",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "Instant spend detection from bank SMS",
+                                            text = "Adds an expense when a debit SMS arrives",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -531,7 +516,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .background(colors.containerLow)
                                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -544,30 +529,22 @@ fun SettingsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Memory,
                                         contentDescription = null,
-                                        tint = colors.primary,
+                                        tint = colors.textSecondary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
-                                        text = "Detection Engine",
+                                        text = "Parsing",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = colors.textPrimary
                                     )
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(colors.primary.copy(alpha = 0.15f))
-                                        .border(1.dp, colors.primary.copy(alpha = 0.3f), CircleShape)
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = "On-Device Parsing (100% Private)",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.primary
-                                    )
-                                }
+                                Text(
+                                    text = "On this device",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = colors.textSecondary
+                                )
                             }
 
                             // Permission Status Row
@@ -585,26 +562,25 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(CircleShape)
-                                            .background(colors.secondary.copy(alpha = 0.12f))
-                                            .border(1.dp, colors.secondary.copy(alpha = 0.25f), CircleShape),
+                                            .background(colors.containerHigh),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.VerifiedUser,
                                             contentDescription = null,
-                                            tint = colors.secondary,
+                                            tint = colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Column {
                                         Text(
-                                            text = "SMS Read Permission",
+                                            text = "SMS permission",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "Standard Android runtime privilege",
+                                            text = if (hasSmsPermissions) "Allowed" else "Needed to read bank SMS",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -613,11 +589,7 @@ fun SettingsScreen(
 
                                 if (hasSmsPermissions) {
                                     Box(
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .background(colors.secondary.copy(alpha = 0.15f))
-                                            .border(1.dp, colors.secondary.copy(alpha = 0.35f), CircleShape)
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
@@ -626,14 +598,14 @@ fun SettingsScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = null,
-                                                tint = colors.secondary,
-                                                modifier = Modifier.size(13.dp)
+                                                tint = colors.textSecondary,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                             Text(
                                                 text = "Granted",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = colors.secondary
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = colors.textSecondary
                                             )
                                         }
                                     }
@@ -647,14 +619,14 @@ fun SettingsScreen(
                                                 )
                                             )
                                         },
-                                        shape = CircleShape,
+                                        shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                                     ) {
                                         Text(
-                                            text = "Grant",
-                                            fontSize = 11.sp,
+                                            text = "Allow",
+                                            fontSize = 13.sp,
                                             color = colors.onPrimary,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Medium
                                         )
                                     }
                                 }
@@ -678,47 +650,34 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(CircleShape)
-                                            .background(colors.tertiary.copy(alpha = 0.12f))
-                                            .border(1.dp, colors.tertiary.copy(alpha = 0.25f), CircleShape),
+                                            .background(colors.containerHigh),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.MarkEmailUnread,
                                             contentDescription = null,
-                                            tint = colors.tertiary,
+                                            tint = colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Column {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Text(
-                                                text = "Review Inbox",
+                                                text = "Review inbox",
                                                 fontSize = 14.sp,
-                                                fontWeight = FontWeight.SemiBold,
+                                                fontWeight = FontWeight.Medium,
                                                 color = colors.textPrimary
                                             )
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(CircleShape)
-                                                    .background(colors.tertiary)
-                                                    .padding(horizontal = 6.dp, vertical = 1.dp)
-                                            ) {
-                                                Text(
-                                                    text = "2",
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color(0xFF1C0F00)
-                                                )
-                                            }
+
                                         }
                                         Text(
-                                            text = "2 transactions need attention",
+                                            text = "SMS expenses waiting for a check",
                                             fontSize = 12.sp,
-                                            color = colors.tertiary,
-                                            fontWeight = FontWeight.Medium
+                                            color = colors.textSecondary,
+                                            fontWeight = FontWeight.Normal
                                         )
                                     }
                                 }
@@ -734,23 +693,23 @@ fun SettingsScreen(
                             OutlinedButton(
                                 onClick = {
                                     onScanSms { res ->
-                                        scanResultMessage = "Scanned ${res.scannedCount} SMS • ${res.importedCount} new imported • ${res.skippedDuplicates} duplicates"
+                                        scanResultMessage = "Scanned ${res.scannedCount} SMS · ${res.importedCount} added · ${res.skippedDuplicates} already saved"
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = CircleShape,
+                                modifier = Modifier.fillMaxWidth().height(44.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 enabled = !isScanningSms
                             ) {
                                 if (isScanningSms) {
                                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Scanning SMS Inbox...")
+                                    Text("Scanning SMS…")
                                 } else {
                                     Text(
-                                        "Scan Past SMS for Expenses",
-                                        fontFamily = SpaceGroteskFontFamily,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 12.sp
+                                        "Scan past SMS",
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 14.sp,
+                                        color = colors.textPrimary
                                     )
                                 }
                             }
@@ -769,7 +728,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (colors.isDark) Color(0xFF0E0E13) else colors.containerLow)
+                                    .background(colors.containerLow)
                                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.Top,
@@ -778,11 +737,11 @@ fun SettingsScreen(
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = null,
-                                    tint = colors.secondary,
+                                    tint = colors.textSecondary,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Incoming bank & UPI SMS messages are parsed entirely inside Android sandbox memory. No raw SMS text, account numbers, or spend metrics ever transmit across the network.",
+                                    text = "Bank and UPI SMS are read on this phone only. Message text and account numbers are never sent anywhere.",
                                     fontSize = 11.sp,
                                     color = colors.textSecondary,
                                     lineHeight = 15.sp
@@ -797,16 +756,16 @@ fun SettingsScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "DATA MANAGEMENT & BACKUP",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.primary,
-                        letterSpacing = 0.8.sp,
+                        text = "Data",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textSecondary,
+                        letterSpacing = 0.sp,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
                     SpendlyCard(shape = RoundedCornerShape(16.dp)) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             // Export Transactions
                             Row(
                                 modifier = Modifier
@@ -838,13 +797,13 @@ fun SettingsScreen(
                                     }
                                     Column {
                                         Text(
-                                            text = "Export Transactions",
+                                            text = "Export expenses",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "Generate clean CSV or encrypted JSON ledger",
+                                            text = "Save your expenses as a file",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -888,19 +847,19 @@ fun SettingsScreen(
                                         Icon(
                                             imageVector = Icons.Default.Storage,
                                             contentDescription = null,
-                                            tint = colors.primary,
+                                            tint = colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Column {
                                         Text(
-                                            text = "Load Sample Data",
+                                            text = "Load sample data",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "Add demo entries for testing & preview",
+                                            text = "Adds demo expenses for testing",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -947,13 +906,13 @@ fun SettingsScreen(
                                     }
                                     Column {
                                         Text(
-                                            text = "Wipe Local Ledger",
+                                            text = "Delete all data",
                                             fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             color = colors.error
                                         )
                                         Text(
-                                            text = "Permanently delete all logs and cached data",
+                                            text = "Removes every expense from this phone",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -986,8 +945,8 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Local SQLite Room Ledger • No Network Permissions",
-                        fontSize = 10.sp,
+                        text = "Stored on device · No network access",
+                        fontSize = 11.sp,
                         color = colors.textMuted
                     )
                 }
@@ -1005,15 +964,15 @@ fun SettingsScreen(
             onDismissRequest = { showWipeDialog = false },
             title = {
                 Text(
-                    text = "Wipe Local Ledger?",
+                    text = "Delete all data?",
                     fontFamily = SpaceGroteskFontFamily,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = colors.textPrimary
                 )
             },
             text = {
                 Text(
-                    text = "This will permanently remove all expense logs from your device storage. This action cannot be undone.",
+                    text = "This removes every expense from this phone. It cannot be undone.",
                     fontSize = 13.sp,
                     color = colors.textSecondary
                 )
@@ -1025,7 +984,7 @@ fun SettingsScreen(
                         showWipeDialog = false
                     }
                 ) {
-                    Text("Wipe All", color = colors.error, fontWeight = FontWeight.Bold)
+                    Text("Delete all", color = colors.error, fontWeight = FontWeight.Medium)
                 }
             },
             dismissButton = {

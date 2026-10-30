@@ -70,7 +70,7 @@ fun EditTransactionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Edit Expense", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.W600) },
+                title = { Text("Edit expense", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -127,7 +127,7 @@ fun EditTransactionScreen(
             OutlinedTextField(
                 value = merchant,
                 onValueChange = { merchant = it },
-                label = { Text("Merchant / Description") },
+                label = { Text("Merchant") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -161,7 +161,7 @@ fun EditTransactionScreen(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Notes") },
+                label = { Text("Notes (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
@@ -185,7 +185,7 @@ fun EditTransactionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = amount.isNotBlank() && merchant.isNotBlank()
             ) {
-                Text("Save Changes", modifier = Modifier.padding(vertical = 4.dp))
+                Text("Save changes", modifier = Modifier.padding(vertical = 4.dp))
             }
             OutlinedButton(
                 onClick = {
@@ -194,7 +194,7 @@ fun EditTransactionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = SpendlyExpense)
             ) {
-                Text("Delete Transaction")
+                Text("Delete expense")
             }
         }
     }

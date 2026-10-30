@@ -62,7 +62,7 @@ fun AddTransactionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Add Expense", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.W600) },
+                title = { Text("Add expense", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) { Icon(Icons.Default.Close, contentDescription = "Cancel") }
                 },
@@ -119,7 +119,7 @@ fun AddTransactionScreen(
             OutlinedTextField(
                 value = merchant,
                 onValueChange = { merchant = it },
-                label = { Text("Merchant / Description") },
+                label = { Text("Merchant") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -169,7 +169,7 @@ fun AddTransactionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = amount.isNotBlank() && merchant.isNotBlank()
             ) {
-                Text("Save Expense", modifier = Modifier.padding(vertical = 4.dp))
+                Text("Save expense", modifier = Modifier.padding(vertical = 4.dp))
             }
             OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
                 Text("Cancel")

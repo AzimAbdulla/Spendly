@@ -68,7 +68,7 @@ fun ActivityScreen(
                     Text(
                         "Activity",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.W600
+                        fontWeight = FontWeight.Medium
                     )
                 },
                 navigationIcon = {
@@ -110,7 +110,7 @@ fun ActivityScreen(
                     onClick = { filter = ActivityFilter.REVIEW },
                     label = {
                         val reviewCount = transactions.count { it.status == TransactionStatus.NEEDS_REVIEW }
-                        Text("Needs Review ($reviewCount)")
+                        Text(if (reviewCount > 0) "Needs review · $reviewCount" else "Needs review")
                     }
                 )
             }
@@ -129,7 +129,7 @@ fun ActivityScreen(
                         Text(
                             text = if (filter == ActivityFilter.REVIEW) "No transactions need review" else "No transactions yet",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.W600,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -149,13 +149,14 @@ fun ActivityScreen(
                             Text(
                                 text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                                 style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.W600,
+                                fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
                         }
                         item(key = "${date}_card") {
                             SpendlyCard {
+                              Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                                 dayTransactions.forEachIndexed { index, transaction ->
                                     TransactionItem(
                                         transaction = transaction,
@@ -164,9 +165,9 @@ fun ActivityScreen(
                                     if (index < dayTransactions.lastIndex) {
                                         Box(
                                             modifier = Modifier
+                                                .padding(start = 56.dp)
                                                 .fillMaxWidth()
                                                 .height(1.dp)
-                                                .padding(horizontal = 16.dp)
                                         ) {
                                             Surface(
                                                 modifier = Modifier.fillMaxSize(),
@@ -175,6 +176,7 @@ fun ActivityScreen(
                                         }
                                     }
                                 }
+                              }
                             }
                         }
                     }

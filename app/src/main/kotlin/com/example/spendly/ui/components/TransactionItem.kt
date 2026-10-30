@@ -23,7 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Transaction
+import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Sms
+import androidx.compose.foundation.layout.height
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.getIcon
@@ -37,44 +41,41 @@ fun TransactionItem(
     currencySymbol: String = "₹"
 ) {
     val colors = SpendlyTheme.colors
-    val catColor = stitchCategoryColors[transaction.category] ?: colors.primary
+    val catColor = stitchCategoryColors[transaction.category] ?: colors.textMuted
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(56.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Leading category badge with category-tinted glow
+        // Leading category badge: neutral surface, icon in the secondary text role
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(catColor.copy(alpha = if (colors.isDark) 0.18f else 0.12f))
-                .border(
-                    1.dp,
-                    catColor.copy(alpha = if (colors.isDark) 0.35f else 0.25f),
-                    CircleShape
-                ),
+                .background(colors.containerHigh),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = transaction.category.getIcon(),
                 contentDescription = transaction.category.displayName,
-                tint = catColor,
+                tint = colors.textSecondary,
                 modifier = Modifier.size(18.dp)
             )
         }
 
         // Title & metadata
         Column(modifier = Modifier.weight(1f)) {
+            val title = transaction.merchant.ifBlank { transaction.category.displayName }
             Text(
-                text = transaction.merchant,
+                text = title,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = colors.textPrimary,
                 maxLines = 1
             )
@@ -90,15 +91,38 @@ fun TransactionItem(
                     }
                 }
             }
-            Text(
-                text = "${transaction.category.displayName} • $formattedDate",
-                fontSize = 11.sp,
-                color = colors.textSecondary,
-                fontWeight = FontWeight.Normal
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Category dot carries the category hue, nothing else does
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(catColor, CircleShape)
+                )
+                val meta = if (title == transaction.category.displayName) formattedDate
+                else "${transaction.category.displayName} · $formattedDate"
+                Text(
+                    text = meta,
+                    fontSize = 12.sp,
+                    color = colors.textSecondary,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1
+                )
+                // Signature: quiet mark on entries read from a bank SMS
+                if (transaction.source == TransactionSource.SMS) {
+                    Icon(
+                        imageVector = Icons.Outlined.Sms,
+                        contentDescription = "From bank SMS",
+                        tint = colors.textMuted,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
         }
 
-        // Trailing amount in Expense Outflow color (Space Grotesk tabular)
+        // Trailing amount (Space Grotesk, tabular)
         Column(horizontalAlignment = Alignment.End) {
             val curr = if (transaction.currency == "INR" || transaction.currency == "USD") currencySymbol else "${transaction.currency} "
             Text(
@@ -106,24 +130,16 @@ fun TransactionItem(
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = colors.error
+                color = colors.textPrimary,
+                style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
             )
             if (transaction.status == TransactionStatus.NEEDS_REVIEW) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(colors.tertiary.copy(alpha = 0.2f))
-                        .border(1.dp, colors.tertiary.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = "Review",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.tertiary
-                    )
-                }
+                Text(
+                    text = "Needs review",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = colors.tertiary
+                )
             }
         }
     }

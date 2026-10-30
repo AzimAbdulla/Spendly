@@ -64,7 +64,7 @@ fun DonutChart(
     val colors = SpendlyTheme.colors
     val total = categoryTotals.values.sum()
     val nonZero = categoryTotals.filter { it.value > 0 }.entries.sortedByDescending { it.value }
-    val trackColor = if (colors.isDark) Color(0xFF101018) else colors.container
+    val trackColor = colors.containerHigh
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -116,19 +116,19 @@ fun DonutChart(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "$currencySymbol${String.format("%,.0f", total)}",
+                    text = "$currencySymbol${String.format("%,.2f", total)}",
                     fontFamily = SpaceGroteskFontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
                     color = colors.textPrimary,
-                    letterSpacing = (-0.5).sp
+                    style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
                 )
                 Text(
-                    text = "TOTAL SPENT",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "Spent",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
                     color = colors.textSecondary,
-                    letterSpacing = 0.8.sp
+                    letterSpacing = 0.sp
                 )
             }
         }
@@ -138,7 +138,7 @@ fun DonutChart(
         // Donut Legend Rows
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             val legendItems = if (nonZero.isNotEmpty()) nonZero.take(5) else emptyList()
             legendItems.forEach { (cat, amt) ->
@@ -146,14 +146,8 @@ fun DonutChart(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (colors.isDark) Color(0x331F1F2A) else colors.containerLow)
-                        .border(
-                            1.dp,
-                            if (colors.isDark) Color(0x26FFFFFF) else colors.border,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                        .height(36.dp)
+                        .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -168,16 +162,17 @@ fun DonutChart(
                         )
                         Text(
                             text = cat.displayName,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
                             color = colors.textPrimary
                         )
                     }
                     Text(
-                        text = "$currencySymbol${String.format("%,.0f", amt)}",
+                        text = "$currencySymbol${String.format("%,.2f", amt)}",
                         fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
                         color = colors.textPrimary
                     )
                 }
