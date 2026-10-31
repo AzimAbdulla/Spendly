@@ -114,7 +114,8 @@ class SpendlyViewModel(
         merchant: String,
         category: Category,
         notes: String = "",
-        status: TransactionStatus = TransactionStatus.CONFIRMED
+        status: TransactionStatus = TransactionStatus.CONFIRMED,
+        item: String = ""
     ) {
         viewModelScope.launch {
             repository.addTransaction(
@@ -125,6 +126,7 @@ class SpendlyViewModel(
                     category = category,
                     date = LocalDate.now(),
                     notes = notes,
+                    item = item,
                     source = TransactionSource.MANUAL,
                     status = status
                 )

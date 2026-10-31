@@ -68,7 +68,7 @@ fun StitchBottomDock(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -149,13 +149,15 @@ private fun DockItem(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            // Pill-shaped highlight, concentric with the pill dock, so its ends
+            // follow the dock's curve instead of being cut off by it
+            .clip(CircleShape)
             .clickable(onClick = onClick)
             .then(
                 if (isSelected) Modifier.background(activeBg)
                 else Modifier
             )
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(

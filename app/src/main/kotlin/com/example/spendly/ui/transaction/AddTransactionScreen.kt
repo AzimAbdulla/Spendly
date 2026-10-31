@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -58,7 +59,7 @@ import com.example.spendly.ui.theme.getIcon
 fun AddTransactionScreen(
     prefillAmount: Double? = null,
     defaultCurrency: String = "INR",
-    onSaved: (Double, String, String, Category, String) -> Unit,
+    onSaved: (amount: Double, currency: String, merchant: String, category: Category, notes: String, item: String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -66,6 +67,7 @@ fun AddTransactionScreen(
 
     var amountStr by remember { mutableStateOf(prefillAmount?.let { String.format("%.0f", it) } ?: "0") }
     var selectedCategory by remember { mutableStateOf(Category.FOOD) }
+    var item by remember { mutableStateOf("") }
     var merchant by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
 
@@ -119,10 +121,59 @@ fun AddTransactionScreen(
                 }
             }
 
+            // Item: what was bought, the main detail of an expense
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Item",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = colors.textSecondary,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colors.containerLow)
+                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingBag,
+                        contentDescription = null,
+                        tint = colors.textSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    BasicTextField(
+                        value = item,
+                        onValueChange = { item = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = TextStyle(
+                            fontFamily = GeistFontFamily,
+                            fontSize = 14.sp,
+                            color = colors.textPrimary
+                        ),
+                        cursorBrush = SolidColor(colors.primary),
+                        decorationBox = { innerTextField ->
+                            if (item.isEmpty()) {
+                                Text(
+                                    text = "e.g. Masala dosa, Cab to office",
+                                    fontSize = 14.sp,
+                                    color = colors.textSecondary.copy(alpha = 0.6f)
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+                }
+            }
+
             // Merchant / Payee input
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Merchant",
+                    text = "Merchant (optional)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Normal,
                     color = colors.textSecondary,
@@ -290,20 +341,13 @@ fun AddTransactionScreen(
                     )
                 }
 
-                // Grid of 5 categories per row
-                val categories = listOf(
-                    Category.FOOD,
-                    Category.GROCERIES,
-                    Category.TRANSPORT,
-                    Category.ENTERTAINMENT,
-                    Category.UTILITIES
-                )
-
+                // Every category, 5 per row (two rows for all 10)
+                Category.entries.chunked(5).forEach { rowCategories ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    categories.forEach { cat ->
+                    rowCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
 
                         Column(
@@ -317,7 +361,7 @@ fun AddTransactionScreen(
                                     if (isSelected) colors.primary else colors.border,
                                     RoundedCornerShape(12.dp)
                                 )
-                                .padding(vertical = 12.dp, horizontal = 2.dp),
+                                .padding(vertical = 8.dp, horizontal = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
@@ -332,7 +376,7 @@ fun AddTransactionScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(4.dp))
                             Text(
                                 text = cat.shortName,
                                 fontSize = 11.sp,
@@ -342,6 +386,7 @@ fun AddTransactionScreen(
                             )
                         }
                     }
+                }
                 }
             }
 
@@ -454,8 +499,7 @@ fun AddTransactionScreen(
                     color = colors.textPrimary,
                     onClick = {
                         val finalAmount = parsedAmount.coerceAtLeast(1.0)
-                        val finalMerchant = if (merchant.isBlank()) selectedCategory.displayName else merchant
-                        onSaved(finalAmount, defaultCurrency, finalMerchant, selectedCategory, notes)
+                        onSaved(finalAmount, defaultCurrency, merchant.trim(), selectedCategory, notes, item.trim())
                     }
                 ) {
                     Box(

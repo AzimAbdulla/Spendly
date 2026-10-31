@@ -8,6 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -26,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import com.example.spendly.data.SampleData
 import com.example.spendly.data.model.Category
 import com.example.spendly.ui.settings.supportedCurrencies
-import com.example.spendly.ui.theme.SpendlyExpense
 import com.example.spendly.ui.theme.SpendlyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +64,8 @@ fun EditTransactionScreen(
         ?: SampleData.transactions.find { it.id == transactionId }
         ?: SampleData.transactions.first()
 
-    var amount by remember(currentTransaction) { mutableStateOf(currentTransaction.amount.toString()) }
+    var amount by remember(currentTransaction) { mutableStateOf(String.format(java.util.Locale.US, "%.2f", currentTransaction.amount)) }
+    var item by remember(currentTransaction) { mutableStateOf(currentTransaction.item) }
     var merchant by remember(currentTransaction) { mutableStateOf(currentTransaction.merchant) }
     var notes by remember(currentTransaction) { mutableStateOf(currentTransaction.notes) }
     var currency by remember(currentTransaction) { mutableStateOf(currentTransaction.currency) }
@@ -67,26 +73,43 @@ fun EditTransactionScreen(
     var currencyExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
 
+    // Same field treatment as Quick Add: raised surface, hairline border, 10dp corners
+    val colors = SpendlyTheme.colors
+    val fieldShape = RoundedCornerShape(10.dp)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = colors.containerLow,
+        unfocusedContainerColor = colors.containerLow,
+        focusedBorderColor = colors.primary,
+        unfocusedBorderColor = colors.border,
+        focusedLabelColor = colors.textSecondary,
+        unfocusedLabelColor = colors.textSecondary,
+        focusedTextColor = colors.textPrimary,
+        unfocusedTextColor = colors.textPrimary,
+        cursorColor = colors.primary,
+        focusedTrailingIconColor = colors.textSecondary,
+        unfocusedTrailingIconColor = colors.textSecondary
+    )
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Edit expense", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium) },
+                title = { Text("Edit expense", fontFamily = SpaceGroteskFontFamily, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = colors.background
     ) { innerPadding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(
@@ -103,6 +126,8 @@ fun EditTransactionScreen(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Currency") },
+                        shape = fieldShape,
+                        colors = fieldColors,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
@@ -119,15 +144,31 @@ fun EditTransactionScreen(
                     value = amount,
                     onValueChange = { amount = it },
                     label = { Text("Amount") },
+                    shape = fieldShape,
+                    colors = fieldColors,
+                    textStyle = TextStyle(fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, fontFeatureSettings = "tnum"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(0.6f)
                 )
             }
 
             OutlinedTextField(
+                value = item,
+                onValueChange = { item = it },
+                label = { Text("Item") },
+                shape = fieldShape,
+                colors = fieldColors,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
                 value = merchant,
                 onValueChange = { merchant = it },
-                label = { Text("Merchant") },
+                label = { Text("Merchant (optional)") },
+                shape = fieldShape,
+                colors = fieldColors,
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -140,6 +181,8 @@ fun EditTransactionScreen(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
+                    shape = fieldShape,
+                    colors = fieldColors,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -162,6 +205,8 @@ fun EditTransactionScreen(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes (optional)") },
+                shape = fieldShape,
+                colors = fieldColors,
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
@@ -174,7 +219,8 @@ fun EditTransactionScreen(
                     onSaved(
                         currentTransaction.copy(
                             amount = parsedAmount,
-                            merchant = merchant,
+                            merchant = merchant.trim(),
+                            item = item.trim(),
                             currency = currency,
                             category = category,
                             notes = notes,
@@ -182,19 +228,32 @@ fun EditTransactionScreen(
                         )
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = amount.isNotBlank() && merchant.isNotBlank()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                enabled = amount.toDoubleOrNull() != null,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.textPrimary,
+                    contentColor = colors.background,
+                    disabledContainerColor = colors.containerHigh,
+                    disabledContentColor = colors.textMuted
+                )
             ) {
-                Text("Save changes", modifier = Modifier.padding(vertical = 4.dp))
+                Text("Save changes", fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
             OutlinedButton(
                 onClick = {
                     onDelete(transactionId)
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = SpendlyExpense)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, colors.border),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error)
             ) {
-                Text("Delete expense")
+                Text("Delete expense", fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
         }
     }

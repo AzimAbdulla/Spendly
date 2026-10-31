@@ -63,6 +63,7 @@ fun HomeScreen(
     onTransactionClick: (Long) -> Unit,
     onReviewClick: () -> Unit,
     onViewAllClick: () -> Unit = {},
+    onCategoriesClick: () -> Unit = onViewAllClick,
     modifier: Modifier = Modifier,
     monthlyTotal: Double = SampleData.monthlyTotal,
     transactionCount: Int = SampleData.transactions.size,
@@ -266,7 +267,7 @@ fun HomeScreen(
                             shape = RoundedCornerShape(10.dp),
                             color = colors.containerHigh,
                             border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                            onClick = onViewAllClick
+                            onClick = onCategoriesClick
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxSize(),
@@ -310,7 +311,7 @@ fun HomeScreen(
                             )
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable(onClick = onViewAllClick)
+                                modifier = Modifier.clickable(onClick = onCategoriesClick)
                             ) {
                                 Text(
                                     text = "View all",

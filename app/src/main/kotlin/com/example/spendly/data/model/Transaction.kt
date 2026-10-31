@@ -1,5 +1,6 @@
 package com.example.spendly.data.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDate
@@ -13,6 +14,8 @@ data class Transaction(
     val category: Category,
     val date: LocalDate,
     val notes: String = "",
+    // What was bought, e.g. "Masala dosa". Blank for SMS imports, which only know the merchant
+    @ColumnInfo(defaultValue = "") val item: String = "",
     val source: TransactionSource = TransactionSource.MANUAL,
     val status: TransactionStatus = TransactionStatus.CONFIRMED
 )

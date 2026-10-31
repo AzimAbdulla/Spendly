@@ -19,6 +19,10 @@ import androidx.navigation3.ui.NavDisplay
 import com.example.spendly.ui.SpendlyViewModel
 import com.example.spendly.ui.activity.ActivityScreen
 import com.example.spendly.ui.calendar.CalendarScreen
+import com.example.spendly.ui.categories.CategoriesScreen
+import com.example.spendly.ui.categories.CategoryDetailScreen
+import com.example.spendly.data.model.Category
+import java.time.YearMonth
 import com.example.spendly.ui.components.StitchBottomDock
 import com.example.spendly.ui.components.StitchNavDestination
 import com.example.spendly.ui.home.HomeScreen
@@ -84,6 +88,9 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
                         onViewAllClick = {
                             backStack.add(ActivityDestination)
                         },
+                        onCategoriesClick = {
+                            backStack.add(CategoriesDestination)
+                        },
                         monthlyTotal = monthlyTotal,
                         transactionCount = transactions.size,
                         recentTransactions = recentTransactions,
@@ -122,6 +129,26 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
                         onThemeModeSelected = { vm.setThemeMode(it) }
                     )
                 }
+                entry<CategoriesDestination> {
+                    CategoriesScreen(
+                        transactions = transactions,
+                        onCategoryClick = { cat, month ->
+                            backStack.add(CategoryDetailDestination(cat.name, month.toString()))
+                        },
+                        onBack = { backStack.removeLastOrNull() },
+                        currencySymbol = currencySymbol
+                    )
+                }
+                entry<CategoryDetailDestination> { key ->
+                    CategoryDetailScreen(
+                        category = Category.valueOf(key.categoryName),
+                        initialMonth = YearMonth.parse(key.yearMonth),
+                        transactions = transactions,
+                        onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
+                        onBack = { backStack.removeLastOrNull() },
+                        currencySymbol = currencySymbol
+                    )
+                }
                 entry<ActivityDestination> {
                     ActivityScreen(
                         transactions = transactions,
@@ -133,8 +160,8 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
                     AddTransactionScreen(
                         prefillAmount = key.prefillAmount,
                         defaultCurrency = defaultCurrency,
-                        onSaved = { amt, curr, merch, cat, notes ->
-                            vm.addTransaction(amt, curr, merch, cat, notes)
+                        onSaved = { amt, curr, merch, cat, notes, item ->
+                            vm.addTransaction(amt, curr, merch, cat, notes, item = item)
                             backStack.removeLastOrNull()
                         },
                         onCancel = { backStack.removeLastOrNull() }

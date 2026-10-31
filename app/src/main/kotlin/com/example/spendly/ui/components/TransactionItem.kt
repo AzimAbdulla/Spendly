@@ -71,7 +71,8 @@ fun TransactionItem(
 
         // Title & metadata
         Column(modifier = Modifier.weight(1f)) {
-            val title = transaction.merchant.ifBlank { transaction.category.displayName }
+            // The item leads; without one (e.g. SMS imports) the category does
+            val title = transaction.item.ifBlank { transaction.category.displayName }
             Text(
                 text = title,
                 fontSize = 14.sp,
@@ -101,8 +102,14 @@ fun TransactionItem(
                         .size(6.dp)
                         .background(catColor, CircleShape)
                 )
-                val meta = if (title == transaction.category.displayName) formattedDate
-                else "${transaction.category.displayName} · $formattedDate"
+                val merchantLabel = transaction.merchant.takeIf {
+                    it.isNotBlank() && it != transaction.category.displayName && it != "Unknown Merchant"
+                }
+                val meta = listOfNotNull(
+                    transaction.category.displayName.takeIf { it != title },
+                    merchantLabel,
+                    formattedDate
+                ).joinToString(" · ")
                 Text(
                     text = meta,
                     fontSize = 12.sp,
