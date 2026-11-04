@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDate
+import java.time.LocalTime
 
 @Entity(tableName = "transactions")
 data class Transaction(
@@ -13,6 +14,8 @@ data class Transaction(
     val merchant: String,
     val category: Category,
     val date: LocalDate,
+    // Time of day it was spent (the SMS time for imports); null for rows saved before v3
+    val time: LocalTime? = null,
     val notes: String = "",
     // What was bought, e.g. "Masala dosa". Blank for SMS imports, which only know the merchant
     @ColumnInfo(defaultValue = "") val item: String = "",

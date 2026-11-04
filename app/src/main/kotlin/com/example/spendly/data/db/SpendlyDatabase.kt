@@ -9,7 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.spendly.data.model.Transaction
 
-@Database(entities = [Transaction::class], version = 2, exportSchema = false)
+@Database(entities = [Transaction::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class SpendlyDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
@@ -22,12 +22,19 @@ abstract class SpendlyDatabase : RoomDatabase() {
             }
         }
 
+        // v3 adds the "time" column; existing rows keep all their data and have no time (null)
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN time TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: SpendlyDatabase? = null
 
         fun getDatabase(context: Context): SpendlyDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(context, SpendlyDatabase::class.java, "spendly_database")
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { INSTANCE = it }
             }

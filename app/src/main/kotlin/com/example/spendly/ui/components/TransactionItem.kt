@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Transaction
@@ -92,6 +94,12 @@ fun TransactionItem(
                     }
                 }
             }
+            // Clock patterns go on transaction.time (a LocalTime), never on the LocalDate
+            val is24Hour = android.text.format.DateFormat.is24HourFormat(LocalContext.current)
+            val formattedTime = transaction.time?.format(
+                DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a")
+            )
+            val whenLabel = listOfNotNull(formattedDate, formattedTime).joinToString(", ")
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -107,11 +115,22 @@ fun TransactionItem(
                 }
                 val meta = listOfNotNull(
                     transaction.category.displayName.takeIf { it != title },
-                    merchantLabel,
-                    formattedDate
+                    merchantLabel
                 ).joinToString(" · ")
+                // Names give way first, so the date and time always stay readable
+                if (meta.isNotEmpty()) {
+                    Text(
+                        text = meta,
+                        fontSize = 12.sp,
+                        color = colors.textSecondary,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
                 Text(
-                    text = meta,
+                    text = if (meta.isNotEmpty()) "· $whenLabel" else whenLabel,
                     fontSize = 12.sp,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.Normal,

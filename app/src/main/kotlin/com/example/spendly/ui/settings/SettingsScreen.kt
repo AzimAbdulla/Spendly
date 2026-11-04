@@ -1,6 +1,7 @@
 package com.example.spendly.ui.settings
 
 import android.Manifest
+import android.os.Build
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -592,11 +593,17 @@ fun SettingsScreen(
                                 } else {
                                     Button(
                                         onClick = {
+                                            val smsPermissions = arrayOf(
+                                                Manifest.permission.RECEIVE_SMS,
+                                                Manifest.permission.READ_SMS
+                                            )
+                                            // Android 13+ also needs consent for the new SMS expense notification
                                             permissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.RECEIVE_SMS,
-                                                    Manifest.permission.READ_SMS
-                                                )
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                    smsPermissions + Manifest.permission.POST_NOTIFICATIONS
+                                                } else {
+                                                    smsPermissions
+                                                }
                                             )
                                         },
                                         shape = RoundedCornerShape(12.dp),

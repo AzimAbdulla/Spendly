@@ -5,6 +5,7 @@ import com.example.spendly.data.model.Transaction
 import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.regex.Pattern
 
 data class ParsedSms(
@@ -15,7 +16,7 @@ data class ParsedSms(
     val isHighConfidence: Boolean,
     val rawBody: String
 ) {
-    fun toTransaction(autoSave: Boolean, date: LocalDate = LocalDate.now()): Transaction {
+    fun toTransaction(autoSave: Boolean, date: LocalDate = LocalDate.now(), time: LocalTime? = null): Transaction {
         val status = if (isHighConfidence && autoSave) {
             TransactionStatus.CONFIRMED
         } else {
@@ -27,6 +28,7 @@ data class ParsedSms(
             merchant = merchant,
             category = category,
             date = date,
+            time = time,
             notes = "From SMS: ${rawBody.take(60)}...",
             source = TransactionSource.SMS,
             status = status

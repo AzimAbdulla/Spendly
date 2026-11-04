@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +38,11 @@ import com.example.spendly.ui.transaction.AddTransactionScreen
 import com.example.spendly.ui.transaction.EditTransactionScreen
 
 @Composable
-fun MainNavigation(viewModel: SpendlyViewModel? = null) {
+fun MainNavigation(
+    viewModel: SpendlyViewModel? = null,
+    openTransactionId: Long? = null,
+    onTransactionOpened: () -> Unit = {}
+) {
     val context = LocalContext.current.applicationContext as SpendlyApplication
     val vm: SpendlyViewModel = viewModel ?: viewModel(
         factory = SpendlyViewModel.provideFactory(context.repository, context.preferences)
@@ -55,6 +60,16 @@ fun MainNavigation(viewModel: SpendlyViewModel? = null) {
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
 
     val backStack = rememberNavBackStack(HomeDestination)
+
+    // From an SMS expense notification: open it once it's loaded, so the edit
+    // screen never starts on its sample-data fallback
+    LaunchedEffect(openTransactionId, transactions) {
+        val id = openTransactionId ?: return@LaunchedEffect
+        if (transactions.any { it.id == id }) {
+            backStack.add(EditTransactionDestination(id))
+            onTransactionOpened()
+        }
+    }
 
     val currencySymbol = when (defaultCurrency) {
         "INR" -> "₹"

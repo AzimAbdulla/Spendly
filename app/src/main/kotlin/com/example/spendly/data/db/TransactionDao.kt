@@ -9,16 +9,17 @@ import java.time.LocalDate
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM transactions ORDER BY date DESC")
+    // Lists run newest first: latest day, then latest time, then most recently added
+    @Query("SELECT * FROM transactions ORDER BY date DESC, time DESC, id DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
 
-    @Query("SELECT * FROM transactions WHERE date >= :startDate AND date <= :endDate ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE date >= :startDate AND date <= :endDate ORDER BY date DESC, time DESC, id DESC")
     fun getTransactionsBetween(startDate: LocalDate, endDate: LocalDate): Flow<List<Transaction>>
 
-    @Query("SELECT * FROM transactions WHERE status = :status ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE status = :status ORDER BY date DESC, time DESC, id DESC")
     fun getTransactionsByStatus(status: TransactionStatus): Flow<List<Transaction>>
 
-    @Query("SELECT * FROM transactions ORDER BY date DESC LIMIT :limit")
+    @Query("SELECT * FROM transactions ORDER BY date DESC, time DESC, id DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int = 10): Flow<List<Transaction>>
 
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")

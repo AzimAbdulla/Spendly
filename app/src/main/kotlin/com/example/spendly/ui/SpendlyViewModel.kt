@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class SpendlyViewModel(
@@ -117,6 +118,7 @@ class SpendlyViewModel(
         status: TransactionStatus = TransactionStatus.CONFIRMED,
         item: String = ""
     ) {
+        val now = LocalDateTime.now()
         viewModelScope.launch {
             repository.addTransaction(
                 Transaction(
@@ -124,7 +126,8 @@ class SpendlyViewModel(
                     currency = currency,
                     merchant = merchant,
                     category = category,
-                    date = LocalDate.now(),
+                    date = now.toLocalDate(),
+                    time = now.toLocalTime().withNano(0),
                     notes = notes,
                     item = item,
                     source = TransactionSource.MANUAL,

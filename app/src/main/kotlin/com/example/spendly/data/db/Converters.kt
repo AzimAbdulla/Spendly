@@ -5,10 +5,13 @@ import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
 import java.time.LocalDate
+import java.time.LocalTime
 
 class Converters {
     @TypeConverter fun fromLocalDate(value: String?): LocalDate? = value?.let { LocalDate.parse(it) }
     @TypeConverter fun toLocalDate(date: LocalDate?): String? = date?.toString()
+    @TypeConverter fun fromLocalTime(value: String?): LocalTime? = value?.let { LocalTime.parse(it) }
+    @TypeConverter fun toLocalTime(time: LocalTime?): String? = time?.toString()
     @TypeConverter fun fromCategory(value: String?): Category? = value?.let { Category.valueOf(it) }
     @TypeConverter fun toCategory(cat: Category?): String? = cat?.name
     @TypeConverter fun fromSource(value: String?): TransactionSource? = value?.let { TransactionSource.valueOf(it) }

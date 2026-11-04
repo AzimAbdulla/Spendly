@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 class SmsReceiver : BroadcastReceiver() {
@@ -29,21 +29,25 @@ class SmsReceiver : BroadcastReceiver() {
         android.util.Log.d("SpendlySms", "parsed=$parsed")
         if (parsed == null) return
 
-        val date = messages.firstOrNull()?.timestampMillis?.let {
+        val sentAt = messages.firstOrNull()?.timestampMillis?.let {
             if (it > 0) {
                 try {
-                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                    Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 } catch (e: Exception) {
-                    LocalDate.now()
+                    LocalDateTime.now()
                 }
             } else {
-                LocalDate.now()
+                LocalDateTime.now()
             }
-        } ?: LocalDate.now()
+        } ?: LocalDateTime.now()
 
         val app = context.applicationContext as? SpendlyApplication ?: return
         val autoSave = app.preferences.isSmsAutoSaveEnabled
-        val transaction = parsed.toTransaction(autoSave = autoSave, date = date)
+        val transaction = parsed.toTransaction(
+            autoSave = autoSave,
+            date = sentAt.toLocalDate(),
+            time = sentAt.toLocalTime().withNano(0)
+        )
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
@@ -57,8 +61,9 @@ class SmsReceiver : BroadcastReceiver() {
                 android.util.Log.d("SpendlySms", "Transaction exists=$exists, adding: $transaction")
 
                 if (!exists) {
-                    app.repository.addTransaction(transaction)
+                    val id = app.repository.addTransaction(transaction)
                     android.util.Log.d("SpendlySms", "Transaction successfully added to repository!")
+                    SmsNotifier.notifyNewExpense(app, transaction.copy(id = id))
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SpendlySms", "Error adding transaction", e)

@@ -7,7 +7,7 @@ import com.example.spendly.data.model.TransactionSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 data class SmsScanResult(
@@ -52,15 +52,16 @@ object SmsReader {
 
                     val parsed = SmsParser.parse(body) ?: continue
 
-                    val date = if (epochMs > 0) {
+                    val sentAt = if (epochMs > 0) {
                         try {
-                            Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()).toLocalDate()
+                            Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()).toLocalDateTime()
                         } catch (e: Exception) {
-                            LocalDate.now()
+                            LocalDateTime.now()
                         }
                     } else {
-                        LocalDate.now()
+                        LocalDateTime.now()
                     }
+                    val date = sentAt.toLocalDate()
 
                     val existingCount = repository.countMatchingTransaction(
                         source = TransactionSource.SMS,
@@ -72,7 +73,11 @@ object SmsReader {
                     if (existingCount > 0) {
                         duplicates++
                     } else {
-                        val transaction = parsed.toTransaction(autoSave = autoSave, date = date)
+                        val transaction = parsed.toTransaction(
+                            autoSave = autoSave,
+                            date = date,
+                            time = sentAt.toLocalTime().withNano(0)
+                        )
                         repository.addTransaction(transaction)
                         imported++
                     }
