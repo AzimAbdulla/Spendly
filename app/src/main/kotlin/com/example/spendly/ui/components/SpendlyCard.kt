@@ -9,6 +9,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
@@ -18,8 +19,8 @@ import com.example.spendly.ui.theme.SpendlyTheme
 fun SpendlyCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = SpendlyTheme.colors.cardBackground,
-    borderColor: Color = SpendlyTheme.colors.border,
-    shape: Shape = RoundedCornerShape(16.dp),
+    borderBrush: Brush = glassRimBrush(),
+    shape: Shape = RoundedCornerShape(24.dp),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -29,7 +30,7 @@ fun SpendlyCard(
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        border = BorderStroke(1.dp, borderColor),
+        border = BorderStroke(1.dp, borderBrush),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         content = content
     )

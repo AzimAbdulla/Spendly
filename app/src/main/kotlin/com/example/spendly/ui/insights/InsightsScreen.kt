@@ -112,7 +112,7 @@ fun InsightsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -133,7 +133,7 @@ fun InsightsScreen(
                 ) {
                     // Month Picker Pill
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         color = colors.container,
                         border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                         modifier = Modifier.clickable {}
@@ -167,7 +167,7 @@ fun InsightsScreen(
 
                     // Monthly vs Weekly Segmented Toggle
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = colors.container,
                         border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
                     ) {
@@ -221,7 +221,7 @@ fun InsightsScreen(
                 ) {
                     SpendlyCard(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
@@ -252,7 +252,7 @@ fun InsightsScreen(
 
                     SpendlyCard(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
@@ -296,7 +296,7 @@ fun InsightsScreen(
 
             // Interactive Category Breakdown
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -409,7 +409,7 @@ fun InsightsScreen(
 
             // Monthly spending: the main chart on Insights
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Monthly spending",
@@ -502,7 +502,7 @@ fun InsightsScreen(
 
             // Editorial Disclaimer / Currency Safety Note
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.spendly.sms.SmsScanResult
+import com.example.spendly.ui.components.GlassSegmentedControl
 import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.theme.ChevronRight
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
@@ -131,7 +132,7 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -155,7 +156,7 @@ fun SettingsScreen(
 
             // Privacy Hero Highlight Banner
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -215,13 +216,13 @@ fun SettingsScreen(
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
-                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Currency Row
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable { currencyExpanded = !currencyExpanded }
                                     .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -274,9 +275,9 @@ fun SettingsScreen(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(14.dp))
                                         .background(colors.containerLow)
-                                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                                         .padding(10.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
@@ -320,9 +321,9 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -388,34 +389,11 @@ fun SettingsScreen(
                                 }
 
                                 // Segmented Control (Auto, Light, Dark)
-                                Surface(
-                                    shape = CircleShape,
-                                    color = colors.containerLow,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
-                                ) {
-                                    Row(modifier = Modifier.padding(2.dp)) {
-                                        listOf("SYSTEM" to "Auto", "LIGHT" to "Light", "DARK" to "Dark").forEach { (mode, label) ->
-                                            val isSel = themeMode == mode
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(CircleShape)
-                                                    .clickable { onThemeModeSelected(mode) }
-                                                    .then(
-                                                        if (isSel) Modifier.background(colors.primary)
-                                                        else Modifier
-                                                    )
-                                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                                            ) {
-                                                Text(
-                                                    text = label,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = if (isSel) FontWeight.Medium else FontWeight.Medium,
-                                                    color = if (isSel) colors.onPrimary else colors.textSecondary
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                                GlassSegmentedControl(
+                                    items = listOf("SYSTEM" to "Auto", "LIGHT" to "Light", "DARK" to "Dark"),
+                                    selected = themeMode,
+                                    onSelect = onThemeModeSelected
+                                )
                             }
                         }
                     }
@@ -458,7 +436,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Master Ingestion Switch
                             Row(
@@ -503,10 +481,12 @@ fun SettingsScreen(
                                     checked = smsAutoSave,
                                     onCheckedChange = onSmsAutoSaveChanged,
                                     colors = SwitchDefaults.colors(
-                                        checkedThumbColor = colors.onPrimary,
-                                        checkedTrackColor = colors.primary,
-                                        uncheckedThumbColor = colors.textSecondary,
-                                        uncheckedTrackColor = colors.containerHigh
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = colors.secondary,
+                                        checkedBorderColor = Color.Transparent,
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedTrackColor = colors.containerHigh,
+                                        uncheckedBorderColor = Color.Transparent
                                     )
                                 )
                             }
@@ -515,9 +495,9 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -619,7 +599,7 @@ fun SettingsScreen(
                                                 )
                                             )
                                         },
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                                     ) {
                                         Text(
@@ -636,7 +616,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable(onClick = onReviewInboxClick)
                                     .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -697,7 +677,7 @@ fun SettingsScreen(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(44.dp),
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 enabled = !isScanningSms
                             ) {
                                 if (isScanningSms) {
@@ -727,9 +707,9 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -764,13 +744,13 @@ fun SettingsScreen(
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
-                    SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             // Export Transactions
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable {}
                                     .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -823,7 +803,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable {
                                         onLoadSampleData()
                                         scanResultMessage = "Sample data loaded successfully."
@@ -879,7 +859,7 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .clickable { showWipeDialog = true }
                                     .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -992,7 +972,7 @@ fun SettingsScreen(
                     Text("Cancel", color = colors.textSecondary)
                 }
             },
-            containerColor = colors.cardBackground
+            containerColor = colors.popup
         )
     }
 }

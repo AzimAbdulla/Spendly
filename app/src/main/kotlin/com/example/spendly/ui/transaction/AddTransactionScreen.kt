@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
@@ -82,7 +83,7 @@ fun AddTransactionScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Column(
@@ -133,9 +134,9 @@ fun AddTransactionScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -182,9 +183,9 @@ fun AddTransactionScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -231,9 +232,9 @@ fun AddTransactionScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(10.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -272,9 +273,9 @@ fun AddTransactionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(colors.containerLow)
-                    .border(1.dp, colors.border, RoundedCornerShape(16.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(24.dp))
                     .padding(vertical = 20.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -353,13 +354,13 @@ fun AddTransactionScreen(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(18.dp))
                                 .clickable { selectedCategory = cat }
                                 .background(if (isSelected) colors.containerHigh else colors.containerLow)
                                 .border(
                                     1.dp,
                                     if (isSelected) colors.primary else colors.border,
-                                    RoundedCornerShape(12.dp)
+                                    RoundedCornerShape(18.dp)
                                 )
                                 .padding(vertical = 8.dp, horizontal = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -412,7 +413,7 @@ fun AddTransactionScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(46.dp),
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 color = colors.containerHigh,
                                 border = BorderStroke(1.dp, colors.border),
                                 onClick = {
@@ -475,7 +476,7 @@ fun AddTransactionScreen(
                     modifier = Modifier
                         .weight(0.35f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = colors.containerHigh,
                     border = BorderStroke(1.dp, colors.border),
                     onClick = { amountStr = "0" }
@@ -495,7 +496,7 @@ fun AddTransactionScreen(
                     modifier = Modifier
                         .weight(0.65f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = colors.textPrimary,
                     onClick = {
                         val finalAmount = parsedAmount.coerceAtLeast(1.0)

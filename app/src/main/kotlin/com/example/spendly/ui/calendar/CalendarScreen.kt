@@ -79,7 +79,7 @@ fun CalendarScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -158,7 +158,7 @@ fun CalendarScreen(
 
             // Monthly Calendar Card
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -206,7 +206,7 @@ fun CalendarScreen(
                                                 modifier = Modifier
                                                     .width(40.dp)
                                                     .height(44.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .clip(RoundedCornerShape(14.dp))
                                                     .clickable { selectedDate = date }
                                                     .then(
                                                         if (isSelected) {
@@ -275,7 +275,7 @@ fun CalendarScreen(
 
             // Daily Outflow Stream / Day Details Card
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -370,7 +370,7 @@ fun CalendarScreen(
 
             // Month summary: a real figure instead of a slogan
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

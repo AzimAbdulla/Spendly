@@ -1,8 +1,9 @@
 package com.example.spendly.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,10 +47,6 @@ fun StitchBottomDock(
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
-    val isDark = colors.isDark
-
-    val dockBg = if (isDark) Color(0xEB07070A) else Color(0xF2FFFFFF)
-    val dockBorder = if (isDark) Color(0x14FFFFFF) else colors.border
 
     Column(
         modifier = modifier
@@ -57,13 +55,10 @@ fun StitchBottomDock(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Floating pill container
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, dockBorder, CircleShape),
+        // Floating glass pill: blurs the screen scrolling underneath
+        GlassSurface(
             shape = CircleShape,
-            color = dockBg
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
@@ -95,12 +90,14 @@ fun StitchBottomDock(
                     modifier = Modifier.padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    val fabInteraction = remember { MutableInteractionSource() }
                     Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .glassPress(fabInteraction)
                             .clip(CircleShape)
                             .background(colors.textPrimary)
-                            .clickable(onClick = onFabClick),
+                            .clickable(interactionSource = fabInteraction, indication = null, onClick = onFabClick),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -143,20 +140,21 @@ private fun DockItem(
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
-    val activeBg = colors.containerHigh
-    val activeColor = colors.textPrimary
-    val inactiveColor = colors.textSecondary
+    val activeColor = colors.primary
+    val inactiveColor = colors.textPrimary
+    val interaction = remember { MutableInteractionSource() }
+    val activeBg by animateColorAsState(
+        if (isSelected) colors.glassSelected else Color.Transparent,
+        label = "dockItemBg"
+    )
 
     Box(
         modifier = modifier
-            // Pill-shaped highlight, concentric with the pill dock, so its ends
-            // follow the dock's curve instead of being cut off by it
+            // Lifted glass pill, concentric with the dock so its ends follow the curve
+            .glassPress(interaction)
             .clip(CircleShape)
-            .clickable(onClick = onClick)
-            .then(
-                if (isSelected) Modifier.background(activeBg)
-                else Modifier
-            )
+            .background(activeBg)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(vertical = 6.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {

@@ -87,7 +87,7 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -119,7 +119,7 @@ fun HomeScreen(
                         )
                         // Month indicator pill
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = colors.container,
                             border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                             modifier = Modifier.clickable {}
@@ -234,7 +234,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(14.dp),
                             color = colors.textPrimary,
                             onClick = onAddTransaction
                         ) {
@@ -264,7 +264,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(44.dp),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(14.dp),
                             color = colors.containerHigh,
                             border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
                             onClick = onCategoriesClick
@@ -295,7 +295,7 @@ fun HomeScreen(
 
             // Spending by Category Donut Chart
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -340,7 +340,7 @@ fun HomeScreen(
 
             // Weekly Spending Cadence (Bar visualization)
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -385,7 +385,7 @@ fun HomeScreen(
 
             // Recent Expenses List
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),

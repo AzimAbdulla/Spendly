@@ -41,6 +41,14 @@ data class SpendlyThemeColors(
     val errorGlow: Color,
     val errorContainer: Color,
     val dockBackground: Color,
+    // Liquid glass
+    val glassTint: Color,
+    val glassFallback: Color,
+    val glassRimTop: Color,
+    val glassRimBottom: Color,
+    val glassSelected: Color,
+    val popup: Color,
+    val wallpaperBlobs: List<Color>,
     val isDark: Boolean
 )
 
@@ -71,6 +79,13 @@ val LightSpendlyColors = SpendlyThemeColors(
     errorGlow = StitchLightError,
     errorContainer = StitchLightErrorContainer,
     dockBackground = StitchLightDockBackground,
+    glassTint = GlassLightTint,
+    glassFallback = GlassLightFallback,
+    glassRimTop = GlassLightRimTop,
+    glassRimBottom = GlassLightRimBottom,
+    glassSelected = GlassLightSelected,
+    popup = GlassLightPopup,
+    wallpaperBlobs = GlassLightWallpaperBlobs,
     isDark = false
 )
 
@@ -101,6 +116,13 @@ val DarkSpendlyColors = SpendlyThemeColors(
     errorGlow = StitchDarkErrorGlow,
     errorContainer = StitchDarkErrorContainer,
     dockBackground = StitchDarkDockBackground,
+    glassTint = GlassDarkTint,
+    glassFallback = GlassDarkFallback,
+    glassRimTop = GlassDarkRimTop,
+    glassRimBottom = GlassDarkRimBottom,
+    glassSelected = GlassDarkSelected,
+    popup = GlassDarkPopup,
+    wallpaperBlobs = GlassDarkWallpaperBlobs,
     isDark = true
 )
 
@@ -130,7 +152,10 @@ private val LightColorScheme = lightColorScheme(
     onBackground = LightSpendlyColors.textPrimary,
     surface = LightSpendlyColors.surface,
     onSurface = LightSpendlyColors.textPrimary,
-    surfaceVariant = LightSpendlyColors.container,
+    surfaceVariant = LightSpendlyColors.popup,
+    surfaceContainer = LightSpendlyColors.popup,
+    surfaceContainerHigh = LightSpendlyColors.popup,
+    surfaceContainerHighest = LightSpendlyColors.popup,
     onSurfaceVariant = LightSpendlyColors.textSecondary,
     outline = LightSpendlyColors.border,
     error = LightSpendlyColors.error,
@@ -154,7 +179,10 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = DarkSpendlyColors.textPrimary,
     surface = DarkSpendlyColors.surface,
     onSurface = DarkSpendlyColors.textPrimary,
-    surfaceVariant = DarkSpendlyColors.container,
+    surfaceVariant = DarkSpendlyColors.popup,
+    surfaceContainer = DarkSpendlyColors.popup,
+    surfaceContainerHigh = DarkSpendlyColors.popup,
+    surfaceContainerHighest = DarkSpendlyColors.popup,
     onSurfaceVariant = DarkSpendlyColors.textSecondary,
     outline = DarkSpendlyColors.border,
     error = DarkSpendlyColors.error,

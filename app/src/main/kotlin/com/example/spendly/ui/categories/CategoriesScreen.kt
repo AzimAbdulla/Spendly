@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +77,7 @@ fun CategoriesScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -122,7 +123,7 @@ fun CategoriesScreen(
             }
 
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     if (byCategory.isEmpty()) {
                         EmptyState(
                             title = "Nothing spent",
@@ -183,7 +184,7 @@ fun CategoryDetailScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp)
     ) { _ ->
         LazyColumn(
@@ -239,7 +240,7 @@ fun CategoryDetailScreen(
             }
 
             item {
-                SpendlyCard(shape = RoundedCornerShape(16.dp)) {
+                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                     if (items.isEmpty()) {
                         EmptyState(
                             title = "Nothing spent",
@@ -381,7 +382,7 @@ private fun CategoryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

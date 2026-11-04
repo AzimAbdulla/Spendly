@@ -47,7 +47,7 @@ fun TransactionItem(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

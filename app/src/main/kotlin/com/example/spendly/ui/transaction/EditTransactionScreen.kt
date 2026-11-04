@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,7 +76,7 @@ fun EditTransactionScreen(
 
     // Same field treatment as Quick Add: raised surface, hairline border, 10dp corners
     val colors = SpendlyTheme.colors
-    val fieldShape = RoundedCornerShape(10.dp)
+    val fieldShape = RoundedCornerShape(14.dp)
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = colors.containerLow,
         unfocusedContainerColor = colors.containerLow,
@@ -99,10 +100,10 @@ fun EditTransactionScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = colors.background
+        containerColor = Color.Transparent
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -232,7 +233,7 @@ fun EditTransactionScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 enabled = amount.toDoubleOrNull() != null,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.textPrimary,
                     contentColor = colors.background,
@@ -249,7 +250,7 @@ fun EditTransactionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.dp, colors.border),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error)
             ) {
