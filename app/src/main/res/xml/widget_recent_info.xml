@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 6x2 by default so One UI can stack the Spendly widgets in one spot; resizable to fit 4 and 5 column grids -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.example.spendly.widget.WidgetSettingsActivity"
+    android:description="@string/widget_recent_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="390dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="100dp"
+    android:previewImage="@drawable/widget_preview_recent"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="6"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="3600000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional" />

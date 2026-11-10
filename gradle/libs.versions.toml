@@ -14,6 +14,7 @@ kotlin = "2.3.20"
 ksp = "2.3.12"
 room = "2.7.1"
 datastorePrefs = "1.1.4"
+glance = "1.2.0"
 nav3Core = "1.0.1"
 lifecycleViewmodelNav3 = "2.10.0"
 
@@ -44,6 +45,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePrefs" }
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

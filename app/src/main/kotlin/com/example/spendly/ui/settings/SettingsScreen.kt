@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,12 +33,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -48,7 +46,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -72,10 +69,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.spendly.sms.SmsScanResult
 import com.example.spendly.ui.components.GlassSegmentedControl
+import com.example.spendly.ui.components.DockClearance
 import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.theme.ChevronRight
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
+import com.example.spendly.ui.components.CategoryChartStyle
+import com.example.spendly.ui.theme.PieChart
+import com.example.spendly.ui.theme.tint
+import android.content.Intent
+import androidx.compose.material.icons.filled.Home
+import com.example.spendly.widget.WidgetSettingsActivity
 
 val supportedCurrencies = listOf("INR", "USD", "EUR", "GBP", "CAD", "AUD", "AED", "CHF", "SGD", "JPY")
 
@@ -105,11 +109,14 @@ fun SettingsScreen(
     onLoadSampleData: () -> Unit = {},
     themeMode: String = "DARK",
     onThemeModeSelected: (String) -> Unit = {},
+    chartStyle: CategoryChartStyle = CategoryChartStyle.DONUT,
+    onChartStyleSelected: (CategoryChartStyle) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
     val context = LocalContext.current
     var currencyExpanded by remember { mutableStateOf(false) }
+    var chartStyleExpanded by remember { mutableStateOf(false) }
     var scanResultMessage by remember { mutableStateOf<String?>(null) }
     var showWipeDialog by remember { mutableStateOf(false) }
 
@@ -147,62 +154,12 @@ fun SettingsScreen(
                 Text(
                     text = "Settings",
                     fontFamily = SpaceGroteskFontFamily,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,
                     letterSpacing = (-0.5).sp,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
-            }
-
-            // Privacy Hero Highlight Banner
-            item {
-                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(colors.containerHigh),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = colors.textSecondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "Stays on this phone",
-                                    fontFamily = SpaceGroteskFontFamily,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textPrimary
-                                )
-
-                            }
-                            Text(
-                                text = "Spendly has no internet permission. Your SMS and expenses never leave this phone.",
-                                fontSize = 12.sp,
-                                color = colors.textSecondary,
-                                lineHeight = 20.sp,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                }
             }
 
             // GROUP 1: General Preferences
@@ -213,7 +170,6 @@ fun SettingsScreen(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = colors.textSecondary,
-                        letterSpacing = 0.sp,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
@@ -318,38 +274,12 @@ fun SettingsScreen(
                                 }
                             }
 
-                            // Currency Footnote
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                                    .padding(10.dp),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "Existing expenses keep the currency they were saved in. Nothing is converted.",
-                                    fontSize = 11.sp,
-                                    color = colors.textSecondary,
-                                    lineHeight = 15.sp
-                                )
-                            }
-
                             HorizontalDivider(color = colors.divider)
 
-                            // Appearance Row
-                            Row(
+                            // Appearance: four themes, so the switcher gets its own line under the label
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -379,7 +309,8 @@ fun SettingsScreen(
                                         )
                                         Text(
                                             text = when (themeMode) {
-                                                "DARK" -> "Dark Mode (OLED)"
+                                                "DARK" -> "Dark Mode"
+                                                "BLACK" -> "Pure black for OLED"
                                                 "LIGHT" -> "Light Mode"
                                                 else -> "System Default"
                                             },
@@ -389,11 +320,164 @@ fun SettingsScreen(
                                     }
                                 }
 
-                                // Segmented Control (Auto, Light, Dark)
+                                // Segmented Control (Auto, Light, Dark, Black), lined up with the label text
                                 GlassSegmentedControl(
-                                    items = listOf("SYSTEM" to "Auto", "LIGHT" to "Light", "DARK" to "Dark"),
+                                    items = listOf("SYSTEM" to "Auto", "LIGHT" to "Light", "DARK" to "Dark", "BLACK" to "Black"),
                                     selected = themeMode,
-                                    onSelect = onThemeModeSelected
+                                    onSelect = onThemeModeSelected,
+                                    modifier = Modifier.padding(start = 48.dp)
+                                )
+                            }
+
+                            HorizontalDivider(color = colors.divider)
+
+                            // Chart style row: how Home draws spending by category
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { chartStyleExpanded = !chartStyleExpanded }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh)
+                                            .border(1.dp, colors.border, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.PieChart,
+                                            contentDescription = null,
+                                            tint = colors.textSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Chart style",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "${chartStyle.label} on Home",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            if (chartStyleExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(colors.containerLow)
+                                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+                                        .padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "How Home shows spending by category",
+                                        fontSize = 11.sp,
+                                        color = colors.textSecondary
+                                    )
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CategoryChartStyle.entries.forEach { style ->
+                                            val isSelected = style == chartStyle
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = if (isSelected) colors.primary else colors.containerHigh,
+                                                border = androidx.compose.foundation.BorderStroke(
+                                                    1.dp,
+                                                    if (isSelected) colors.primary else colors.border
+                                                ),
+                                                onClick = {
+                                                    onChartStyleSelected(style)
+                                                    chartStyleExpanded = false
+                                                }
+                                            ) {
+                                                Text(
+                                                    text = style.label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = if (isSelected) colors.onPrimary else colors.textPrimary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            HorizontalDivider(color = colors.divider)
+
+                            // Home screen widgets: background, transparency and privacy for all of them
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { context.startActivity(Intent(context, WidgetSettingsActivity::class.java)) }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.containerHigh),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Home,
+                                            contentDescription = null,
+                                            tint = colors.textSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Home screen widgets",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = "Background, transparency and privacy",
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -415,8 +499,7 @@ fun SettingsScreen(
                             text = "SMS tracking",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = colors.textSecondary,
-                            letterSpacing = 0.sp
+                            color = colors.textSecondary
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -482,8 +565,8 @@ fun SettingsScreen(
                                     checked = smsAutoSave,
                                     onCheckedChange = onSmsAutoSaveChanged,
                                     colors = SwitchDefaults.colors(
-                                        checkedThumbColor = Color.White,
-                                        checkedTrackColor = colors.secondary,
+                                        checkedThumbColor = colors.onPrimary,
+                                        checkedTrackColor = colors.primary,
                                         checkedBorderColor = Color.Transparent,
                                         uncheckedThumbColor = Color.White,
                                         uncheckedTrackColor = colors.containerHigh,
@@ -677,7 +760,11 @@ fun SettingsScreen(
                             }
 
                             // Scan Past SMS Button
-                            OutlinedButton(
+                            Button(
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colors.containerHigh,
+                                    contentColor = colors.textPrimary
+                                ),
                                 onClick = {
                                     onScanSms { res ->
                                         scanResultMessage = "Scanned ${res.scannedCount} SMS · ${res.importedCount} added · ${res.skippedDuplicates} already saved"
@@ -709,31 +796,6 @@ fun SettingsScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-
-                            // Strict Privacy Stamp
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                                    .padding(10.dp),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = "Bank and UPI SMS are read on this phone only. Message text and account numbers are never sent anywhere.",
-                                    fontSize = 11.sp,
-                                    color = colors.textSecondary,
-                                    lineHeight = 15.sp
-                                )
-                            }
                         }
                     }
                 }
@@ -747,7 +809,6 @@ fun SettingsScreen(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = colors.textSecondary,
-                        letterSpacing = 0.sp,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
@@ -917,31 +978,9 @@ fun SettingsScreen(
                 }
             }
 
-            // Version Footer
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Spendly v1.0.0 (Build 2026.1)",
-                        fontSize = 11.sp,
-                        color = colors.textSecondary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "Stored on device · No network access",
-                        fontSize = 11.sp,
-                        color = colors.textMuted
-                    )
-                }
-            }
-
             // Bottom clearance for dock
             item {
-                Spacer(Modifier.height(64.dp))
+                Spacer(Modifier.navigationBarsPadding().height(DockClearance))
             }
         }
     }

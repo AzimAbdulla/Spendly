@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 
 // =========================================================================
 // Spendly Stitch Exact Theme Architecture (Light & Dark)
@@ -40,7 +41,14 @@ data class SpendlyThemeColors(
     val error: Color,
     val errorGlow: Color,
     val errorContainer: Color,
+    // The dock matches the tiles, with a hairline edge; the green + disc is its one bright control
     val dockBackground: Color,
+    val dockBorder: Color,
+    val dockContent: Color,
+    val dockContentSelected: Color,
+    val dockPill: Color,
+    val dockAction: Color,
+    val onDockAction: Color,
     // Liquid glass
     val glassTint: Color,
     val glassFallback: Color,
@@ -64,7 +72,7 @@ val LightSpendlyColors = SpendlyThemeColors(
     divider = StitchLightDivider,
     textPrimary = StitchLightOnSurface,
     textSecondary = StitchLightOnSurfaceVariant,
-    textMuted = Color(0xFF737373),
+    textMuted = Color(0xFF8A909C),
     primary = StitchLightPrimary,
     primaryGlow = StitchLightPrimary,
     primaryContainer = StitchLightPrimaryContainer,
@@ -79,6 +87,12 @@ val LightSpendlyColors = SpendlyThemeColors(
     errorGlow = StitchLightError,
     errorContainer = StitchLightErrorContainer,
     dockBackground = StitchLightDockBackground,
+    dockBorder = Color(0xFFE2E4EA),
+    dockContent = Color(0xFF7D828B),
+    dockContentSelected = Color(0xFF14161A),
+    dockPill = Color(0xFFECEEF3),
+    dockAction = TintSafe,
+    onDockAction = OnTintSafe,
     glassTint = GlassLightTint,
     glassFallback = GlassLightFallback,
     glassRimTop = GlassLightRimTop,
@@ -116,6 +130,12 @@ val DarkSpendlyColors = SpendlyThemeColors(
     errorGlow = StitchDarkErrorGlow,
     errorContainer = StitchDarkErrorContainer,
     dockBackground = StitchDarkDockBackground,
+    dockBorder = Color(0xFF2A2A2F),
+    dockContent = Color(0xFF8A8F98),
+    dockContentSelected = Color(0xFFF4F4F5),
+    dockPill = Color(0xFF2E2E33),
+    dockAction = TintSafe,
+    onDockAction = OnTintSafe,
     glassTint = GlassDarkTint,
     glassFallback = GlassDarkFallback,
     glassRimTop = GlassDarkRimTop,
@@ -124,6 +144,44 @@ val DarkSpendlyColors = SpendlyThemeColors(
     popup = GlassDarkPopup,
     wallpaperBlobs = GlassDarkWallpaperBlobs,
     isDark = true
+)
+
+// Pure black for OLED: Dark's tokens on a true #000000 canvas with no wallpaper glow and
+// neutral glass, so unlit pixels stay fully off
+val BlackSpendlyColors = DarkSpendlyColors.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    glassTint = Color(0x8C000000),
+    glassFallback = Color(0xF0000000),
+    popup = Color(0xFF111111),
+    wallpaperBlobs = emptyList()
+)
+
+/** A tile's own shade, mixed from one hue: the fill plus matching text, track and accent for its content. */
+data class TileTint(val background: Color, val secondary: Color, val track: Color, val accent: Color)
+
+/** Deep shades on the dark themes, pastels on light; the same hue reads as the same tile in both. */
+fun SpendlyThemeColors.tint(hue: Color): TileTint {
+    val fill = if (isDark) lerp(background, hue, 0.2f) else lerp(Color.White, hue, 0.14f)
+    return TileTint(
+        background = fill,
+        secondary = if (isDark) lerp(hue, Color.White, 0.55f) else lerp(hue, Color.Black, 0.45f),
+        track = lerp(fill, hue, 0.22f),
+        accent = if (isDark) hue else lerp(hue, Color.Black, 0.1f)
+    )
+}
+
+/** These colours as seen inside a tinted tile: secondary text, tracks, dividers and the accent follow the tint. */
+fun SpendlyThemeColors.inTile(tint: TileTint) = copy(
+    cardBackground = tint.background,
+    container = tint.track,
+    containerLow = tint.track,
+    containerHigh = tint.track,
+    divider = lerp(tint.background, tint.track, 0.6f),
+    textSecondary = tint.secondary,
+    textMuted = tint.secondary.copy(alpha = 0.7f),
+    primary = tint.accent,
+    primaryContainer = tint.track
 )
 
 val LocalSpendlyColors = staticCompositionLocalOf { DarkSpendlyColors }
@@ -189,13 +247,31 @@ private val DarkColorScheme = darkColorScheme(
     errorContainer = DarkSpendlyColors.errorContainer,
 )
 
+private val BlackColorScheme = DarkColorScheme.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceVariant = BlackSpendlyColors.popup,
+    surfaceContainer = BlackSpendlyColors.popup,
+    surfaceContainerHigh = BlackSpendlyColors.popup,
+    surfaceContainerHighest = BlackSpendlyColors.popup,
+)
+
 @Composable
 fun SpendlyTheme(
     darkTheme: Boolean = true, // Default to true matching Stitch Dark Design
+    pureBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val spendlyColors = if (darkTheme) DarkSpendlyColors else LightSpendlyColors
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val spendlyColors = when {
+        !darkTheme -> LightSpendlyColors
+        pureBlack -> BlackSpendlyColors
+        else -> DarkSpendlyColors
+    }
+    val colorScheme = when {
+        !darkTheme -> LightColorScheme
+        pureBlack -> BlackColorScheme
+        else -> DarkColorScheme
+    }
 
     CompositionLocalProvider(LocalSpendlyColors provides spendlyColors) {
         MaterialTheme(

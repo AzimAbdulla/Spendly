@@ -20,6 +20,9 @@ android {
     release {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      // Sideloaded builds use the debug key, so a release APK installs over a debug one and
+      // keeps its data; the release build starts and animates noticeably faster
+      signingConfig = signingConfigs.getByName("debug")
     }
   }
   compileOptions {
@@ -92,4 +95,5 @@ dependencies {
 
   // DataStore
   implementation(libs.androidx.datastore.preferences)
+  implementation(libs.androidx.glance.appwidget)
 }

@@ -2,8 +2,8 @@ package com.example.spendly.ui.components
 
 import android.os.Build
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,7 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -38,13 +43,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spendly.ui.theme.Motion
 import com.example.spendly.ui.theme.SpendlyTheme
+import kotlinx.coroutines.launch
 
 // =========================================================================
 // Liquid glass primitives (after glisse.kelvinzhang.com)
@@ -90,6 +99,7 @@ fun GlassSurface(
     modifier: Modifier = Modifier,
     backdrop: GlassBackdrop? = LocalGlassBackdrop.current,
     blurRadius: Dp = 28.dp,
+    tint: Color? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     val colors = SpendlyTheme.colors
@@ -119,7 +129,7 @@ fun GlassSurface(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(if (canBlur) colors.glassTint else colors.glassFallback)
+                .background(tint ?: if (canBlur) colors.glassTint else colors.glassFallback)
                 .border(1.dp, glassRimBrush(), shape)
         )
         content()
@@ -132,6 +142,7 @@ fun GlassWallpaper(modifier: Modifier = Modifier) {
     val colors = SpendlyTheme.colors
     val blobs = colors.wallpaperBlobs
     Canvas(modifier = modifier.background(colors.background)) {
+        if (blobs.isEmpty()) return@Canvas // the pure black theme has no glow
         val w = size.width
         val h = size.height
         val spots = listOf(
@@ -159,12 +170,36 @@ fun Modifier.glassPress(interactionSource: MutableInteractionSource): Modifier {
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
+        animationSpec = Motion.press(),
         label = "glassPress"
     )
     return this.graphicsLayer {
         scaleX = scale
         scaleY = scale
+    }
+}
+
+/**
+ * One glass pill that glides to [target], the selected item's bounds in this node's content box.
+ * Apply it after any padding so it shares the children's coordinates.
+ */
+@Composable
+fun Modifier.selectionPill(target: Rect?, color: Color): Modifier {
+    if (target == null) return this
+    // The first bounds snap into place; later selections slide there
+    val x = remember { Animatable(target.left) }
+    val width = remember { Animatable(target.width) }
+    LaunchedEffect(target) {
+        launch { x.animateTo(target.left, Motion.move()) }
+        launch { width.animateTo(target.width, Motion.move()) }
+    }
+    return this.drawBehind {
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(x.value, target.top),
+            size = Size(width.value, target.height),
+            cornerRadius = CornerRadius(target.height / 2)
+        )
     }
 }
 
@@ -177,26 +212,29 @@ fun <T> GlassSegmentedControl(
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
+    val bounds = remember { mutableStateMapOf<T, Rect>() }
     Row(
         modifier = modifier
             .clip(CircleShape)
             .background(colors.containerLow)
             .border(1.dp, glassRimBrush(), CircleShape)
-            .padding(3.dp),
+            .padding(3.dp)
+            .selectionPill(bounds[selected], colors.glassSelected),
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEach { (value, label) ->
             val isSel = value == selected
             val interaction = remember { MutableInteractionSource() }
-            val bg by animateColorAsState(
-                if (isSel) colors.glassSelected else Color.Transparent,
-                label = "segmentBg"
+            val textColor by animateColorAsState(
+                if (isSel) colors.primary else colors.textSecondary,
+                animationSpec = Motion.move(),
+                label = "segmentText"
             )
             Box(
                 modifier = Modifier
+                    .onPlaced { bounds[value] = it.boundsInParent() }
                     .glassPress(interaction)
                     .clip(CircleShape)
-                    .background(bg)
                     .clickable(interactionSource = interaction, indication = null) { onSelect(value) }
                     .padding(horizontal = 12.dp, vertical = 5.dp),
                 contentAlignment = Alignment.Center
@@ -205,7 +243,7 @@ fun <T> GlassSegmentedControl(
                     text = label,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isSel) colors.textPrimary else colors.textSecondary
+                    color = textColor
                 )
             }
         }

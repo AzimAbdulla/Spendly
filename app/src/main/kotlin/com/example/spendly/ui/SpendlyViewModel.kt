@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.combine
+import java.time.YearMonth
+import com.example.spendly.ui.components.CategoryChartStyle
 
 class SpendlyViewModel(
     private val repository: TransactionRepository,
@@ -34,11 +37,18 @@ class SpendlyViewModel(
     private val _themeMode = MutableStateFlow(preferences.themeMode)
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
+    private val _chartStyle = MutableStateFlow(CategoryChartStyle.fromName(preferences.chartStyle))
+    val chartStyle: StateFlow<CategoryChartStyle> = _chartStyle.asStateFlow()
+
     private val _smsAutoSave = MutableStateFlow(preferences.isSmsAutoSaveEnabled)
     val smsAutoSave: StateFlow<Boolean> = _smsAutoSave.asStateFlow()
 
     private val _isScanningSms = MutableStateFlow(false)
     val isScanningSms: StateFlow<Boolean> = _isScanningSms.asStateFlow()
+
+    // Month shown on Home and Insights; their month pills change it
+    private val _selectedMonth = MutableStateFlow(YearMonth.now())
+    val selectedMonth: StateFlow<YearMonth> = _selectedMonth.asStateFlow()
 
     val transactions: StateFlow<List<Transaction>> = repository.getAllTransactions()
         .stateIn(
@@ -63,11 +73,8 @@ class SpendlyViewModel(
             initialValue = 0
         )
 
-    val monthlyTotal: StateFlow<Double> = transactions
-        .map { list ->
-            val now = LocalDate.now()
-            list.filter { it.date.month == now.month && it.date.year == now.year }
-                .sumOf { it.amount }
+    val monthlyTotal: StateFlow<Double> = combine(transactions, _selectedMonth) { list, month ->
+            list.filter { YearMonth.from(it.date) == month }.sumOf { it.amount }
         }
         .stateIn(
             scope = viewModelScope,
@@ -75,14 +82,12 @@ class SpendlyViewModel(
             initialValue = 0.0
         )
 
-    val categoryTotals: StateFlow<Map<Category, Double>> = transactions
-        .map { list ->
-            val now = LocalDate.now()
-            val currentMonth = list.filter { it.date.month == now.month && it.date.year == now.year }
-            if (currentMonth.isEmpty()) {
+    val categoryTotals: StateFlow<Map<Category, Double>> = combine(transactions, _selectedMonth) { list, month ->
+            val inMonth = list.filter { YearMonth.from(it.date) == month }
+            if (inMonth.isEmpty()) {
                 emptyMap()
             } else {
-                currentMonth.groupBy { it.category }
+                inMonth.groupBy { it.category }
                     .mapValues { (_, txs) -> txs.sumOf { it.amount } }
             }
         }
@@ -149,6 +154,10 @@ class SpendlyViewModel(
         }
     }
 
+    fun setSelectedMonth(month: YearMonth) {
+        _selectedMonth.value = month
+    }
+
     fun setDefaultCurrency(currency: String) {
         preferences.defaultCurrency = currency
         _defaultCurrency.value = currency
@@ -157,6 +166,11 @@ class SpendlyViewModel(
     fun setThemeMode(mode: String) {
         preferences.themeMode = mode
         _themeMode.value = mode
+    }
+
+    fun setChartStyle(style: CategoryChartStyle) {
+        preferences.chartStyle = style.name
+        _chartStyle.value = style
     }
 
     fun setSmsAutoSave(enabled: Boolean) {

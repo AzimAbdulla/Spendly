@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.HorizontalDivider
@@ -45,13 +44,17 @@ import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
-import com.example.spendly.ui.components.TransactionItem
+import com.example.spendly.ui.components.DockClearance
 import com.example.spendly.ui.components.stitchCategoryColors
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.getIcon
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import com.example.spendly.ui.components.TransactionRows
+import com.example.spendly.ui.components.ScreenHeader
+import com.example.spendly.ui.components.TintedTile
+import com.example.spendly.ui.theme.tint
 
 /**
  * Categories overview: every category with spending in the chosen month,
@@ -109,7 +112,7 @@ fun CategoriesScreen(
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 32.sp,
                         lineHeight = 36.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                         style = TextStyle(fontFeatureSettings = "tnum")
                     )
@@ -153,7 +156,7 @@ fun CategoriesScreen(
             }
 
             item {
-                Spacer(Modifier.navigationBarsPadding().height(96.dp))
+                Spacer(Modifier.navigationBarsPadding().height(DockClearance))
             }
         }
     }
@@ -225,7 +228,7 @@ fun CategoryDetailScreen(
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 32.sp,
                         lineHeight = 36.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                         style = TextStyle(fontFeatureSettings = "tnum")
                     )
@@ -240,73 +243,28 @@ fun CategoryDetailScreen(
             }
 
             item {
-                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.tint(stitchCategoryColors[category] ?: colors.textMuted), shape = RoundedCornerShape(24.dp)) {
                     if (items.isEmpty()) {
                         EmptyState(
                             title = "Nothing spent",
                             body = "No ${category.displayName.lowercase()} expenses in ${month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))}"
                         )
                     } else {
-                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-                            items.forEachIndexed { index, tx ->
-                                TransactionItem(
-                                    transaction = tx,
-                                    onClick = { onTransactionClick(tx.id) },
-                                    currencySymbol = currencySymbol
-                                )
-                                if (index < items.lastIndex) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 56.dp),
-                                        color = colors.divider
-                                    )
-                                }
-                            }
-                        }
+                        TransactionRows(
+                            transactions = items,
+                            onTransactionClick = onTransactionClick,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            currencySymbol = currencySymbol,
+                            resetKey = month
+                        )
                     }
                 }
             }
 
             item {
-                Spacer(Modifier.navigationBarsPadding().height(96.dp))
+                Spacer(Modifier.navigationBarsPadding().height(DockClearance))
             }
         }
-    }
-}
-
-@Composable
-private fun ScreenHeader(title: String, onBack: () -> Unit) {
-    val colors = SpendlyTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            modifier = Modifier.size(36.dp),
-            shape = CircleShape,
-            color = colors.container,
-            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-            onClick = onBack
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = colors.textPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        Text(
-            text = title,
-            fontFamily = SpaceGroteskFontFamily,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            color = colors.textPrimary,
-            maxLines = 1
-        )
     }
 }
 
@@ -392,13 +350,13 @@ private fun CategoryRow(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(colors.containerHigh),
+                .background(colors.tint(catColor).track),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = category.getIcon(),
                 contentDescription = null,
-                tint = colors.textSecondary,
+                tint = colors.tint(catColor).accent,
                 modifier = Modifier.size(18.dp)
             )
         }

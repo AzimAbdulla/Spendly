@@ -1,8 +1,12 @@
 package com.example.spendly.ui.insights
 
 import androidx.compose.foundation.background
+import com.example.spendly.ui.theme.Motion
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.CreditCardOff
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
+import com.example.spendly.ui.components.DockClearance
 import com.example.spendly.ui.components.stitchCategoryColors
 import com.example.spendly.ui.theme.CalendarToday
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
@@ -55,6 +59,17 @@ import com.example.spendly.ui.theme.getIcon
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import com.example.spendly.ui.components.GlassSegmentedControl
+import com.example.spendly.ui.components.MonthPickerMenu
+import androidx.compose.runtime.mutableIntStateOf
+import com.example.spendly.ui.components.WeekPickerMenu
+import com.example.spendly.ui.components.weekLabel
+import com.example.spendly.ui.components.weekRange
+import com.example.spendly.ui.components.TintedTile
+import com.example.spendly.ui.theme.tint
+import com.example.spendly.ui.theme.TintMoney
+import com.example.spendly.ui.theme.TintTime
+import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,32 +77,47 @@ fun InsightsScreen(
     transactions: List<Transaction>,
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹",
-    defaultCurrency: String = "INR"
+    defaultCurrency: String = "INR",
+    selectedMonth: YearMonth = YearMonth.now(),
+    onMonthSelected: (YearMonth) -> Unit = {},
+    weeklyRequest: Int = 0
 ) {
     val colors = SpendlyTheme.colors
     var isMonthlySelected by remember { mutableStateOf(true) }
+    // The This week widget opens Insights in weekly view
+    LaunchedEffect(weeklyRequest) {
+        if (weeklyRequest > 0) isMonthlySelected = false
+    }
+    var monthPickerOpen by remember { mutableStateOf(false) }
+    // Weekly mode: 0 is the last 7 days, 1 the 7 days before that, and so on
+    var weekOffset by remember { mutableIntStateOf(0) }
+    var weekPickerOpen by remember { mutableStateOf(false) }
 
     val today = LocalDate.now()
-    val currentMonth = YearMonth.now()
 
     // Dynamically filter transactions based on selected timeframe
-    val periodTransactions = remember(transactions, isMonthlySelected) {
+    val (weekStart, weekEnd) = weekRange(weekOffset, today)
+    val periodTransactions = remember(transactions, isMonthlySelected, selectedMonth, weekOffset) {
         if (isMonthlySelected) {
-            transactions.filter { YearMonth.from(it.date) == currentMonth }
+            transactions.filter { YearMonth.from(it.date) == selectedMonth }
         } else {
-            val startOfWeek = today.minusDays(6)
-            transactions.filter { !it.date.isBefore(startOfWeek) && !it.date.isAfter(today) }
+            transactions.filter { !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd) }
         }
     }
 
     val periodLabel = if (isMonthlySelected) {
-        currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+        selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     } else {
-        "Last 7 days"
+        weekLabel(weekOffset, today)
     }
 
     val periodTotal = periodTransactions.sumOf { it.amount }
-    val elapsedUnits = if (isMonthlySelected) today.dayOfMonth.coerceAtLeast(1) else 7
+    // A finished month averages over all its days; the current one over the days so far
+    val elapsedUnits = when {
+        !isMonthlySelected -> 7
+        selectedMonth == YearMonth.from(today) -> today.dayOfMonth.coerceAtLeast(1)
+        else -> selectedMonth.lengthOfMonth()
+    }
     val dailyAverage = if (periodTotal > 0) periodTotal / elapsedUnits else 0.0
 
     val categorySums = remember(periodTransactions) {
@@ -99,16 +129,31 @@ fun InsightsScreen(
     val topCategoryAmount = topCategoryEntry?.value ?: 0.0
     val topCategoryPct = if (periodTotal > 0) ((topCategoryAmount / periodTotal) * 100).toInt() else 0
 
-    // 6-Month dynamic historical data from transactions
-    val monthlyHistoricalData = remember(transactions) {
-        val past6 = (5 downTo 0).map { YearMonth.now().minusMonths(it.toLong()) }
-        past6.map { ym ->
-            val sum = transactions.filter { YearMonth.from(it.date) == ym }.sumOf { it.amount }
-            val label = ym.format(DateTimeFormatter.ofPattern("MMM"))
-            label to sum
+    // The trend chart: six months ending at the selected one, or the selected week's seven days.
+    // Each bar is (short label, full label, amount)
+    val trendBars = remember(transactions, isMonthlySelected, selectedMonth, weekStart) {
+        if (isMonthlySelected) {
+            (5 downTo 0).map { selectedMonth.minusMonths(it.toLong()) }.map { ym ->
+                Triple(
+                    ym.format(DateTimeFormatter.ofPattern("MMM")),
+                    ym.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    transactions.filter { YearMonth.from(it.date) == ym }.sumOf { it.amount }
+                )
+            }
+        } else {
+            (0..6).map { weekStart.plusDays(it.toLong()) }.map { date ->
+                Triple(
+                    date.format(DateTimeFormatter.ofPattern("EEE")),
+                    if (date == today) "Today" else date.format(DateTimeFormatter.ofPattern("EEEE, d MMM")),
+                    transactions.filter { it.date == date }.sumOf { it.amount }
+                )
+            }
         }
     }
-    val maxHistoricalVal = (monthlyHistoricalData.maxOfOrNull { it.second } ?: 1.0).coerceAtLeast(1.0)
+    val maxTrendVal = (trendBars.maxOfOrNull { it.third } ?: 1.0).coerceAtLeast(1.0)
+    // The picked bar starts on the latest one, again whenever the period changes
+    var pickedBar by remember(isMonthlySelected, selectedMonth, weekStart) { mutableIntStateOf(trendBars.lastIndex) }
+    val picked = trendBars[pickedBar.coerceIn(0, trendBars.lastIndex)]
 
     Scaffold(
         modifier = modifier,
@@ -131,12 +176,13 @@ fun InsightsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Month Picker Pill
+                    // Period pill: a month picker in Monthly, a week picker in Weekly
+                    Box {
                     Surface(
+                        onClick = { if (isMonthlySelected) monthPickerOpen = true else weekPickerOpen = true },
                         shape = RoundedCornerShape(12.dp),
                         color = colors.container,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                        modifier = Modifier.clickable {}
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -164,52 +210,32 @@ fun InsightsScreen(
                             )
                         }
                     }
-
-                    // Monthly vs Weekly Segmented Toggle
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = colors.container,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
-                    ) {
-                        Row(modifier = Modifier.padding(4.dp)) {
-                            // Monthly
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { isMonthlySelected = true }
-                                    .then(
-                                        if (isMonthlySelected) Modifier.background(colors.containerHigh)
-                                        else Modifier
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "Monthly",
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isMonthlySelected) FontWeight.Medium else FontWeight.Medium,
-                                    color = if (isMonthlySelected) colors.textPrimary else colors.textSecondary
-                                )
-                            }
-                            // Weekly
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { isMonthlySelected = false }
-                                    .then(
-                                        if (!isMonthlySelected) Modifier.background(colors.containerHigh)
-                                        else Modifier
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "Weekly",
-                                    fontSize = 12.sp,
-                                    fontWeight = if (!isMonthlySelected) FontWeight.Medium else FontWeight.Medium,
-                                    color = if (!isMonthlySelected) colors.textPrimary else colors.textSecondary
-                                )
-                            }
+                    MonthPickerMenu(
+                        expanded = monthPickerOpen,
+                        selected = selectedMonth,
+                        onDismiss = { monthPickerOpen = false },
+                        onSelect = {
+                            onMonthSelected(it)
+                            monthPickerOpen = false
                         }
+                    )
+                    WeekPickerMenu(
+                        expanded = weekPickerOpen,
+                        selectedOffset = weekOffset,
+                        onDismiss = { weekPickerOpen = false },
+                        onSelect = {
+                            weekOffset = it
+                            weekPickerOpen = false
+                        }
+                    )
                     }
+
+                    // Monthly vs Weekly: one full-height pill slides to the selected half
+                    GlassSegmentedControl(
+                        items = listOf(true to "Monthly", false to "Weekly"),
+                        selected = isMonthlySelected,
+                        onSelect = { isMonthlySelected = it }
+                    )
                 }
             }
 
@@ -219,24 +245,26 @@ fun InsightsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    SpendlyCard(
+                    TintedTile(
+                        tint = colors.tint(TintMoney),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(24.dp)
                     ) {
+                        val tile = SpendlyTheme.colors
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Spent",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Normal,
-                                color = colors.textSecondary
+                                color = tile.textSecondary
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "$currencySymbol${String.format("%,.2f", periodTotal)}",
                                 fontFamily = SpaceGroteskFontFamily,
                                 fontSize = 24.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colors.textPrimary,
+                                fontWeight = FontWeight.Bold,
+                                color = tile.textPrimary,
                                 maxLines = 1,
                                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
                             )
@@ -244,22 +272,24 @@ fun InsightsScreen(
                             Text(
                                 text = "$currencySymbol${String.format("%,.2f", dailyAverage)} a day on average",
                                 fontSize = 12.sp,
-                                color = colors.textSecondary,
+                                color = tile.textSecondary,
                                 maxLines = 1
                             )
                         }
                     }
 
-                    SpendlyCard(
+                    TintedTile(
+                        tint = colors.tint(topCategoryEntry?.key?.let { stitchCategoryColors[it] } ?: colors.textMuted),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(24.dp)
                     ) {
+                        val tile = SpendlyTheme.colors
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Top category",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Normal,
-                                color = colors.textSecondary
+                                color = tile.textSecondary
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
@@ -268,7 +298,7 @@ fun InsightsScreen(
                                 fontSize = 20.sp,
                                 lineHeight = 28.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = colors.textPrimary,
+                                color = tile.textPrimary,
                                 maxLines = 1
                             )
                             Spacer(Modifier.height(4.dp))
@@ -280,13 +310,13 @@ fun InsightsScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(6.dp)
-                                            .background(stitchCategoryColors[topCategory] ?: colors.textMuted, CircleShape)
+                                            .background(stitchCategoryColors[topCategory] ?: tile.textMuted, CircleShape)
                                     )
                                 }
                                 Text(
                                     text = if (topCategoryEntry != null) "$topCategoryPct% of spending" else "No spending yet",
                                     fontSize = 12.sp,
-                                    color = colors.textSecondary
+                                    color = tile.textSecondary
                                 )
                             }
                         }
@@ -407,21 +437,36 @@ fun InsightsScreen(
                 }
             }
 
-            // Monthly spending: the main chart on Insights
+            // Spending trend, the main chart on Insights: months in monthly mode, days in weekly.
+            // Tap a bar, or drag sideways across them, to see its spend in the header
             item {
-                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.tint(TintTime), shape = RoundedCornerShape(24.dp)) {
+                    val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isMonthlySelected) "Monthly spending" else "Daily spending",
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = tile.textPrimary
+                            )
+                            Text(
+                                text = "$currencySymbol${String.format("%,.0f", picked.third)}",
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = tile.textPrimary
+                            )
+                        }
                         Text(
-                            text = "Monthly spending",
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = colors.textPrimary
-                        )
-                        Text(
-                            text = "Last 6 months",
+                            text = picked.second,
                             fontSize = 12.sp,
-                            color = colors.textSecondary
+                            color = tile.textSecondary
                         )
 
                         Spacer(Modifier.height(20.dp))
@@ -429,38 +474,34 @@ fun InsightsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp)
-                                .padding(horizontal = 4.dp),
+                                .height(140.dp)
+                                .padding(horizontal = 4.dp)
+                                .pointerInput(trendBars.size) {
+                                    detectTapGestures(onTap = { pickedBar = barAt(it.x, size.width, trendBars.size) })
+                                }
+                                .pointerInput(trendBars.size) {
+                                    detectHorizontalDragGestures(onDragStart = { pickedBar = barAt(it.x, size.width, trendBars.size) }) { change, _ ->
+                                        pickedBar = barAt(change.position.x, size.width, trendBars.size)
+                                    }
+                                },
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            monthlyHistoricalData.forEachIndexed { index, (label, amt) ->
-                                val isCurrent = index == monthlyHistoricalData.lastIndex
-                                val fraction = (amt / maxHistoricalVal).toFloat().coerceIn(0f, 1f)
+                            trendBars.forEachIndexed { index, (label, _, amt) ->
+                                val isPicked = index == pickedBar
+                                val fraction = (amt / maxTrendVal).toFloat().coerceIn(0f, 1f)
                                 val barShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+                                val barColor by animateColorAsState(
+                                    if (isPicked) tile.primary else tile.textMuted.copy(alpha = 0.45f),
+                                    animationSpec = Motion.move(Motion.Short),
+                                    label = "trendBar"
+                                )
 
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Bottom,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    // Figure above the current month, as quiet text
-                                    Box(modifier = Modifier.height(20.dp), contentAlignment = Alignment.BottomCenter) {
-                                        if (isCurrent && amt > 0) {
-                                            val compact = if (amt >= 1000) "$currencySymbol${String.format("%,.1f", amt / 1000)}k"
-                                            else "$currencySymbol${String.format("%,.0f", amt)}"
-                                            Text(
-                                                text = compact,
-                                                fontFamily = SpaceGroteskFontFamily,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = colors.textPrimary,
-                                                maxLines = 1
-                                            )
-                                        }
-                                    }
-                                    Spacer(Modifier.height(4.dp))
-
                                     Box(
                                         modifier = Modifier
                                             .width(24.dp)
@@ -471,7 +512,7 @@ fun InsightsScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(2.dp)
-                                                .background(colors.textPrimary.copy(alpha = 0.08f))
+                                                .background(tile.textPrimary.copy(alpha = 0.08f))
                                         )
                                         if (amt > 0) {
                                             Box(
@@ -479,7 +520,7 @@ fun InsightsScreen(
                                                     .fillMaxWidth()
                                                     .height(maxOf((100 * fraction).dp, 4.dp))
                                                     .clip(barShape)
-                                                    .background(if (isCurrent) colors.primary else colors.textMuted.copy(alpha = 0.45f))
+                                                    .background(barColor)
                                             )
                                         }
                                     }
@@ -490,7 +531,7 @@ fun InsightsScreen(
                                         text = label,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Normal,
-                                        color = if (isCurrent) colors.textPrimary else colors.textMuted,
+                                        color = if (isPicked) tile.textPrimary else tile.textMuted,
                                         maxLines = 1
                                     )
                                 }
@@ -500,36 +541,13 @@ fun InsightsScreen(
                 }
             }
 
-            // Editorial Disclaimer / Currency Safety Note
-            item {
-                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VerifiedUser,
-                            contentDescription = null,
-                            tint = colors.textMuted,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = "Totals are in $defaultCurrency. Expenses in other currencies keep their original amount and are not converted.",
-                            fontSize = 12.sp,
-                            color = colors.textSecondary,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
-            }
-
             // Bottom clearance for dock
             item {
-                Spacer(Modifier.navigationBarsPadding().height(96.dp))
+                Spacer(Modifier.navigationBarsPadding().height(DockClearance))
             }
         }
     }
 }
+
+/** Which of [count] equal columns sits under [x] in a row [width] wide. */
+private fun barAt(x: Float, width: Int, count: Int): Int = (x / width * count).toInt().coerceIn(0, count - 1)

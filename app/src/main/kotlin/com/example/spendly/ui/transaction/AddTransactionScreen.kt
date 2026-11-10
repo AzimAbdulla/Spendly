@@ -6,13 +6,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,8 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +47,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,22 +61,85 @@ import com.example.spendly.ui.theme.GeistFontFamily
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
 import com.example.spendly.ui.theme.getIcon
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.unit.lerp
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.LocalTextStyle
+import com.example.spendly.ui.components.RollingText
+import com.example.spendly.ui.components.glassPress
+import com.example.spendly.ui.theme.Motion
+import com.example.spendly.ui.theme.tint
+import com.example.spendly.ui.theme.OnTintSafe
+import com.example.spendly.ui.theme.TintSafe
+import androidx.compose.ui.graphics.lerp
 
 @Composable
 fun AddTransactionScreen(
     prefillAmount: Double? = null,
+    prefillCategory: Category? = null,
     defaultCurrency: String = "INR",
-    onSaved: (amount: Double, currency: String, merchant: String, category: Category, notes: String, item: String) -> Unit,
+    onSaved: (amount: Double, currency: String, category: Category, item: String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colors = SpendlyTheme.colors
+    val theme = SpendlyTheme.colors
+    // Add expense is the green the + button opens into: a deep green screen (mint in light), its
+    // fields and keys a step lighter and the amount a step lighter again. Category colours still
+    // come from the app's own theme, and a few small touches take the chosen category's colour
+    val moneyTint = theme.tint(TintSafe)
+    val colors = theme.copy(
+        background = if (theme.isDark) lerp(theme.background, TintSafe, 0.1f) else lerp(Color.White, TintSafe, 0.12f),
+        container = if (theme.isDark) lerp(theme.background, TintSafe, 0.17f) else Color.White,
+        textSecondary = moneyTint.secondary,
+        textMuted = moneyTint.secondary.copy(alpha = 0.7f),
+        primary = TintSafe,
+        onPrimary = OnTintSafe
+    )
+    val amountWell = if (theme.isDark) lerp(theme.background, TintSafe, 0.26f) else lerp(Color.White, TintSafe, 0.24f)
 
     var amountStr by remember { mutableStateOf(prefillAmount?.let { String.format("%.0f", it) } ?: "0") }
-    var selectedCategory by remember { mutableStateOf(Category.FOOD) }
+    var selectedCategory by remember { mutableStateOf(prefillCategory ?: Category.FOOD) }
+    var saved by remember { mutableStateOf(false) }
+    LaunchedEffect(saved) {
+        if (saved) {
+            delay(SavedHold)
+            onCancel()
+        }
+    }
+    val categoryAccent by animateColorAsState(
+        theme.tint(stitchCategoryColors[selectedCategory] ?: theme.textMuted).accent,
+        animationSpec = Motion.move(Motion.Short),
+        label = "categoryAccent"
+    )
     var item by remember { mutableStateOf("") }
-    var merchant by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
+
+    // Height the screen doesn't need, measured at the spacer above the keypad; up to
+    // MaxAmountRoom of it goes to the amount
+    var spare by remember(LocalConfiguration.current.screenHeightDp) { mutableStateOf(0.dp) }
+    val amountRoom = spare.coerceAtMost(MaxAmountRoom)
+    val density = LocalDensity.current
+
+    // The amount grows by up to half again into that room, and shrinks smoothly when it's too long
+    // for the well, so it never runs off the screen
+    var amountWidth by remember { mutableIntStateOf(0) }
+    var amountSpace by remember { mutableIntStateOf(0) }
+    val amountScale by animateFloatAsState(
+        targetValue = minOf(
+            1f + amountRoom / MaxAmountRoom * 0.5f,
+            // a little short of the edges, so even the longest amount has room around it
+            if (amountWidth > 0 && amountSpace > 0) amountSpace * 0.92f / amountWidth else Float.MAX_VALUE
+        ),
+        animationSpec = Motion.move(Motion.Short),
+        label = "amountScale"
+    )
 
     val currencySymbol = when (defaultCurrency) {
         "INR" -> "₹"
@@ -83,18 +152,17 @@ fun AddTransactionScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
-        containerColor = Color.Transparent,
+        containerColor = colors.background,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        FillOrScrollColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header Row: Title & Close Button
             Row(
@@ -105,8 +173,8 @@ fun AddTransactionScreen(
                 Text(
                     text = "Add expense",
                     fontFamily = SpaceGroteskFontFamily,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
                     color = colors.textPrimary
                 )
                 IconButton(
@@ -135,7 +203,7 @@ fun AddTransactionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(colors.containerLow)
+                        .background(colors.container)
                         .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -144,7 +212,7 @@ fun AddTransactionScreen(
                     Icon(
                         imageVector = Icons.Default.ShoppingBag,
                         contentDescription = null,
-                        tint = colors.textSecondary,
+                        tint = categoryAccent,
                         modifier = Modifier.size(18.dp)
                     )
                     BasicTextField(
@@ -171,117 +239,28 @@ fun AddTransactionScreen(
                 }
             }
 
-            // Merchant / Payee input
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Merchant (optional)",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Storefront,
-                        contentDescription = null,
-                        tint = colors.textSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    BasicTextField(
-                        value = merchant,
-                        onValueChange = { merchant = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(
-                            fontFamily = GeistFontFamily,
-                            fontSize = 14.sp,
-                            color = colors.textPrimary
-                        ),
-                        cursorBrush = SolidColor(colors.primary),
-                        decorationBox = { innerTextField ->
-                            if (merchant.isEmpty()) {
-                                Text(
-                                    text = "e.g. Starbucks, Uber, Swiggy",
-                                    fontSize = 14.sp,
-                                    color = colors.textSecondary.copy(alpha = 0.6f)
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
-                }
-            }
-
-            // Notes Field
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Notes (optional)",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(colors.containerLow)
-                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EditNote,
-                        contentDescription = null,
-                        tint = colors.textSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    BasicTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(
-                            fontFamily = GeistFontFamily,
-                            fontSize = 12.sp,
-                            color = colors.textPrimary
-                        ),
-                        cursorBrush = SolidColor(colors.primary),
-                        decorationBox = { innerTextField ->
-                            if (notes.isEmpty()) {
-                                Text(
-                                    text = "Add receipt details or memo",
-                                    fontSize = 12.sp,
-                                    color = colors.textSecondary.copy(alpha = 0.6f)
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
-                }
-            }
-
-            // Amount Hero Input Section (OLED Dark Well)
+            // Amount Hero Input Section (OLED Dark Well): taller when the screen has room to spare
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(colors.containerLow)
+                    .background(amountWell)
                     .border(1.dp, colors.border, RoundedCornerShape(24.dp))
-                    .padding(vertical = 20.dp, horizontal = 12.dp),
+                    .padding(vertical = 14.dp + amountRoom / 2, horizontal = 12.dp)
+                    .onSizeChanged { amountSpace = it.width },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Amount being typed
+                // Amount being typed, measured at its full width and scaled to [amountScale];
+                // scaling leaves the layout alone, so the room stays exact
                 Row(
+                    modifier = Modifier
+                        .wrapContentWidth(unbounded = true)
+                        .onSizeChanged { amountWidth = it.width }
+                        .graphicsLayer {
+                            scaleX = amountScale
+                            scaleY = amountScale
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -290,23 +269,28 @@ fun AddTransactionScreen(
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Medium,
-                        color = colors.textSecondary,
+                        color = moneyTint.secondary,
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    Text(
+                    // Digits roll up into place as they're typed
+                    RollingText(
                         text = if (amountStr.isEmpty()) "0" else amountStr,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = colors.textPrimary,
-                        letterSpacing = (-0.8).sp
+                        style = LocalTextStyle.current.merge(
+                            TextStyle(
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 42.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colors.textPrimary,
+                                letterSpacing = (-0.8).sp
+                            )
+                        )
                     )
                     if (!amountStr.contains(".")) Text(
                         text = ".00",
                         fontFamily = SpaceGroteskFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = colors.textSecondary.copy(alpha = 0.7f)
+                        color = moneyTint.secondary.copy(alpha = 0.7f)
                     )
                     // Caret
                     Box(
@@ -314,7 +298,7 @@ fun AddTransactionScreen(
                             .padding(start = 4.dp)
                             .width(2.dp)
                             .height(28.dp)
-                            .background(colors.primary, CircleShape)
+                            .background(moneyTint.accent, CircleShape)
                     )
                 }
             }
@@ -337,8 +321,8 @@ fun AddTransactionScreen(
                     Text(
                         text = selectedCategory.displayName,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = colors.textSecondary
+                        fontWeight = FontWeight.Medium,
+                        color = categoryAccent
                     )
                 }
 
@@ -350,18 +334,30 @@ fun AddTransactionScreen(
                 ) {
                     rowCategories.forEach { cat ->
                         val isSelected = cat == selectedCategory
+                        val catTint = theme.tint(stitchCategoryColors[cat] ?: theme.textMuted)
+                        val tileInteraction = remember { MutableInteractionSource() }
+                        val tileFill by animateColorAsState(
+                            if (isSelected) catTint.background else colors.container,
+                            animationSpec = Motion.move(Motion.Short),
+                            label = "tileFill"
+                        )
+                        val tileBorder by animateColorAsState(
+                            if (isSelected) catTint.accent else colors.border,
+                            animationSpec = Motion.move(Motion.Short),
+                            label = "tileBorder"
+                        )
 
                         Column(
                             modifier = Modifier
                                 .weight(1f)
+                                .glassPress(tileInteraction)
                                 .clip(RoundedCornerShape(18.dp))
-                                .clickable { selectedCategory = cat }
-                                .background(if (isSelected) colors.containerHigh else colors.containerLow)
-                                .border(
-                                    1.dp,
-                                    if (isSelected) colors.primary else colors.border,
-                                    RoundedCornerShape(18.dp)
-                                )
+                                .clickable(
+                                    interactionSource = tileInteraction,
+                                    indication = LocalIndication.current
+                                ) { selectedCategory = cat }
+                                .background(tileFill)
+                                .border(1.dp, tileBorder, RoundedCornerShape(18.dp))
                                 .padding(vertical = 8.dp, horizontal = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
@@ -373,7 +369,7 @@ fun AddTransactionScreen(
                                 Icon(
                                     imageVector = cat.getIcon(),
                                     contentDescription = cat.displayName,
-                                    tint = if (isSelected) colors.textPrimary else colors.textSecondary,
+                                    tint = if (isSelected) catTint.accent else colors.textSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -382,7 +378,7 @@ fun AddTransactionScreen(
                                 text = cat.shortName,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = if (isSelected) colors.textPrimary else colors.textSecondary,
+                                color = if (isSelected) catTint.accent else colors.textSecondary,
                                 maxLines = 1
                             )
                         }
@@ -390,6 +386,14 @@ fun AddTransactionScreen(
                 }
                 }
             }
+
+            // Spare height goes here, keeping the keypad and Save at the bottom within thumb reach;
+            // measuring it tells the amount how much room it can take
+            Spacer(
+                Modifier
+                    .weight(1f)
+                    .onSizeChanged { spare = amountRoom + with(density) { it.height.toDp() } }
+            )
 
             // Numeric Keypad
             Column(
@@ -409,13 +413,16 @@ fun AddTransactionScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         row.forEach { key ->
+                            val keyInteraction = remember { MutableInteractionSource() }
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(46.dp),
+                                    .height(46.dp)
+                                    .glassPress(keyInteraction),
                                 shape = RoundedCornerShape(14.dp),
-                                color = colors.containerHigh,
+                                color = colors.container,
                                 border = BorderStroke(1.dp, colors.border),
+                                interactionSource = keyInteraction,
                                 onClick = {
                                     when (key) {
                                         "BACKSPACE" -> {
@@ -431,10 +438,13 @@ fun AddTransactionScreen(
                                             }
                                         }
                                         else -> {
-                                            if (amountStr == "0") {
-                                                amountStr = key
-                                            } else {
-                                                amountStr += key
+                                            // Up to nine digits and two decimals: plenty for an
+                                            // expense, and the figure stays readable
+                                            val decimals = amountStr.substringAfter(".", missingDelimiterValue = "")
+                                            when {
+                                                amountStr == "0" -> amountStr = key
+                                                amountStr.contains(".") -> if (decimals.length < 2) amountStr += key
+                                                amountStr.length < 9 -> amountStr += key
                                             }
                                         }
                                     }
@@ -477,7 +487,7 @@ fun AddTransactionScreen(
                         .weight(0.35f)
                         .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
-                    color = colors.containerHigh,
+                    color = colors.container,
                     border = BorderStroke(1.dp, colors.border),
                     onClick = { amountStr = "0" }
                 ) {
@@ -491,42 +501,88 @@ fun AddTransactionScreen(
                     }
                 }
 
-                // Save: the primary action, off-white fill with dark text
-                Surface(
+                // Save: the primary action, mint fill with dark text. Once tapped it folds into a
+                // tick, and the screen closes a moment later
+                BoxWithConstraints(
                     modifier = Modifier
                         .weight(0.65f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    color = colors.textPrimary,
-                    onClick = {
-                        val finalAmount = parsedAmount.coerceAtLeast(1.0)
-                        onSaved(finalAmount, defaultCurrency, merchant.trim(), selectedCategory, notes, item.trim())
-                    }
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    val fold by animateFloatAsState(if (saved) 1f else 0f, Motion.move(), label = "saveFold")
+                    Surface(
+                        modifier = Modifier
+                            .width(lerp(maxWidth, 48.dp, fold))
+                            .height(48.dp),
+                        shape = RoundedCornerShape(lerp(14.dp, 24.dp, fold)),
+                        color = colors.primary,
+                        onClick = {
+                            if (!saved) {
+                                saved = true
+                                // Saved straight away, so leaving early never loses the expense
+                                onSaved(parsedAmount.coerceAtLeast(1.0), defaultCurrency, selectedCategory, item.trim())
+                            }
+                        }
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxSize(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = colors.background,
-                                modifier = Modifier.size(18.dp)
+                                tint = colors.onPrimary,
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .graphicsLayer {
+                                        scaleX = 1f + 0.4f * fold
+                                        scaleY = 1f + 0.4f * fold
+                                    }
                             )
-                            Text(
-                                text = "Save expense",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.background
-                            )
+                            AnimatedVisibility(
+                                visible = !saved,
+                                exit = fadeOut(Motion.exit()) + shrinkHorizontally(Motion.move())
+                            ) {
+                                Text(
+                                    text = "Save expense",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.onPrimary,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** How long the tick shows before Add expense closes. */
+private const val SavedHold = 480L
+
+/** The most spare height the amount takes; the rest stays above the keypad. */
+private val MaxAmountRoom = 120.dp
+
+/** Fills the available height, and scrolls only when the content can't fit (landscape, large text). */
+@Composable
+private fun FillOrScrollColumn(
+    modifier: Modifier,
+    verticalArrangement: Arrangement.Vertical,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight),
+            verticalArrangement = verticalArrangement,
+            content = content
+        )
     }
 }

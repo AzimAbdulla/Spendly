@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Spendly</string>
+    <string name="widget_overview_label">Spendly overview</string>
+    <string name="widget_overview_description">This month\'s total, top category and category split</string>
+    <string name="widget_week_label">Spendly this week</string>
+    <string name="widget_week_description">The last 7 days of spending, with today highlighted</string>
+    <string name="widget_recent_label">Spendly recent</string>
+    <string name="widget_recent_description">Your latest expenses and what needs review</string>
+    <string name="widget_today_label">Spendly today</string>
+    <string name="widget_today_description">What you\'ve spent today against your daily average</string>
+    <string name="widget_quick_add_label">Spendly quick add</string>
+    <string name="widget_quick_add_description">Add an expense in a tap, with a category already picked</string>
+    <string name="widget_settings_title">Spendly widgets</string>
 </resources>

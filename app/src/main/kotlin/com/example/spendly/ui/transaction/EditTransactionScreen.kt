@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
@@ -17,24 +16,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +44,7 @@ import com.example.spendly.data.SampleData
 import com.example.spendly.data.model.Category
 import com.example.spendly.ui.settings.supportedCurrencies
 import com.example.spendly.ui.theme.SpendlyTheme
+import com.example.spendly.ui.components.ScreenHeader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,8 +73,8 @@ fun EditTransactionScreen(
     val colors = SpendlyTheme.colors
     val fieldShape = RoundedCornerShape(14.dp)
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = colors.containerLow,
-        unfocusedContainerColor = colors.containerLow,
+        focusedContainerColor = colors.container,
+        unfocusedContainerColor = colors.container,
         focusedBorderColor = colors.primary,
         unfocusedBorderColor = colors.border,
         focusedLabelColor = colors.textSecondary,
@@ -92,17 +87,6 @@ fun EditTransactionScreen(
     )
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Edit expense", fontFamily = SpaceGroteskFontFamily, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
-        },
         containerColor = Color.Transparent
     ) { innerPadding ->
         Column(
@@ -113,6 +97,8 @@ fun EditTransactionScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            ScreenHeader(title = "Edit expense", onBack = onCancel)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -235,15 +221,15 @@ fun EditTransactionScreen(
                 enabled = amount.toDoubleOrNull() != null,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = colors.textPrimary,
-                    contentColor = colors.background,
+                    containerColor = colors.primary,
+                    contentColor = colors.onPrimary,
                     disabledContainerColor = colors.containerHigh,
                     disabledContentColor = colors.textMuted
                 )
             ) {
                 Text("Save changes", fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
-            OutlinedButton(
+            Button(
                 onClick = {
                     onDelete(transactionId)
                 },
@@ -251,8 +237,7 @@ fun EditTransactionScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, colors.border),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error)
+                colors = ButtonDefaults.buttonColors(containerColor = colors.container, contentColor = colors.error)
             ) {
                 Text("Delete expense", fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }

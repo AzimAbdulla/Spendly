@@ -39,6 +39,7 @@ import com.example.spendly.ui.theme.StitchCatSubscriptions
 import com.example.spendly.ui.theme.StitchCatTransport
 import com.example.spendly.ui.theme.StitchCatTravel
 import com.example.spendly.ui.theme.StitchCatUtilities
+import androidx.compose.runtime.getValue
 
 val stitchCategoryColors = mapOf(
     Category.FOOD to StitchCatFood,
@@ -65,6 +66,10 @@ fun DonutChart(
     val total = categoryTotals.values.sum()
     val nonZero = categoryTotals.filter { it.value > 0 }.entries.sortedByDescending { it.value }
     val trackColor = colors.containerHigh
+    // Segments keep category order so they can grow and shrink without trading places
+    val targets = Category.entries.map { (categoryTotals[it] ?: 0.0).toFloat() }
+    val shown = rememberAnimatedValues(targets)
+    val shownTotal by animateAmountAsState(total)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -85,27 +90,26 @@ fun DonutChart(
                     style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
                 )
 
-                if (total > 0 && nonZero.isNotEmpty()) {
+                val values = shown.map { it.value }
+                // Growing: scale to the target so the ring fills in. Shrinking: scale to what's drawn
+                val scale = maxOf(values.sum(), targets.sum())
+                if (scale > 0f) {
                     var currentStartAngle = -90f
                     val gapDegrees = 4f
-                    val totalGap = nonZero.size * gapDegrees
-                    val availableAngle = (360f - totalGap).coerceAtLeast(0f)
+                    val drawn = values.indices.filter { values[it] > scale * 0.002f }
+                    val availableAngle = (360f - drawn.size * gapDegrees).coerceAtLeast(0f)
 
-                    nonZero.forEach { (category, amount) ->
-                        val proportion = (amount / total).toFloat()
-                        val sweep = proportion * availableAngle
-                        val catColor = stitchCategoryColors[category] ?: StitchCatOther
-
-                        if (sweep > 0f) {
-                            drawArc(
-                                color = catColor,
-                                startAngle = currentStartAngle,
-                                sweepAngle = sweep,
-                                useCenter = false,
-                                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
-                            )
-                            currentStartAngle += sweep + gapDegrees
-                        }
+                    drawn.forEach { index ->
+                        val sweep = values[index] / scale * availableAngle
+                        val catColor = stitchCategoryColors[Category.entries[index]] ?: StitchCatOther
+                        drawArc(
+                            color = catColor,
+                            startAngle = currentStartAngle,
+                            sweepAngle = sweep,
+                            useCenter = false,
+                            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                        )
+                        currentStartAngle += sweep + gapDegrees
                     }
                 }
             }
@@ -116,7 +120,7 @@ fun DonutChart(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "$currencySymbol${String.format("%,.2f", total)}",
+                    text = "$currencySymbol${String.format("%,.2f", shownTotal)}",
                     fontFamily = SpaceGroteskFontFamily,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,

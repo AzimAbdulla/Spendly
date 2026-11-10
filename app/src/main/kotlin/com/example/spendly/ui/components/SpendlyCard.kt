@@ -14,6 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.example.spendly.ui.theme.SpendlyTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.spendly.ui.theme.LocalSpendlyColors
+import com.example.spendly.ui.theme.TileTint
+import com.example.spendly.ui.theme.inTile
 
 @Composable
 fun SpendlyCard(
@@ -34,4 +38,18 @@ fun SpendlyCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         content = content
     )
+}
+
+/** A card in a tile tint. Content that reads SpendlyTheme.colors inside it gets the tinted text, tracks and accent. */
+@Composable
+fun TintedTile(
+    tint: TileTint,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(24.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val colors = SpendlyTheme.colors
+    CompositionLocalProvider(LocalSpendlyColors provides colors.inTile(tint)) {
+        SpendlyCard(modifier = modifier, backgroundColor = tint.background, shape = shape, content = content)
+    }
 }
