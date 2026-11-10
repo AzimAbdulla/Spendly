@@ -51,6 +51,10 @@ object SmsParser {
         "debited", "spent", "paid", "charged", "purchase", "txn of", "sent to", "withdrawn", "used at"
     )
 
+    // Only money leaving a bank account counts. Card, wallet and FASTag alerts don't name an account
+    // (a toll comes out of the FASTag balance, which was already counted when it was topped up)
+    private val ACCOUNT_PATTERN = Pattern.compile("(?i)\\b(?:a/c|acct|account)\\b")
+
     // Regex for amounts with currency
     // Matches: $45.50, USD 45.50, INR 350.00, Rs. 350, EUR 18.50, etc.
     private val AMOUNT_PATTERN = Pattern.compile(
@@ -85,7 +89,12 @@ object SmsParser {
             }
         }
 
-        // 3. Extract Amount & Currency
+        // 3. Only debits from a bank account
+        if (!ACCOUNT_PATTERN.matcher(trimmed).find()) {
+            return null
+        }
+
+        // 4. Extract Amount & Currency
         val amountMatcher = AMOUNT_PATTERN.matcher(trimmed)
         if (!amountMatcher.find()) {
             return null
@@ -109,7 +118,7 @@ object SmsParser {
 
         val normalizedCurrency = normalizeCurrency(rawCurrency)
 
-        // 4. Extract Merchant
+        // 5. Extract Merchant
         var merchant = extractMerchant(trimmed)
         val isHighConfidence = merchant.isNotBlank() && merchant.length >= 3 && cleanAmount > 0.0
 
@@ -117,7 +126,7 @@ object SmsParser {
             merchant = "Unknown Merchant"
         }
 
-        // 5. Categorize
+        // 6. Categorize
         val category = inferCategory(merchant, trimmed)
 
         return ParsedSms(
