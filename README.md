@@ -1,4 +1,4 @@
-# Spendly 💸
+# Spendly 
 
 A native Android personal expense tracker built with Jetpack Compose, Material 3, and Room SQLite database.
 
