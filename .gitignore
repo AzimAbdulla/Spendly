@@ -9,3 +9,9 @@
 .cxx
 local.properties
 *.apk
+
+# Scratch and backup folders
+.agent/
+_squircle_backup/
+_to_delete/
+_unslop_backup/

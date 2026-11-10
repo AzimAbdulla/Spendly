@@ -1,9 +1,8 @@
 name: Build APK
 
-# Builds a debug APK on GitHub's servers for every push, and on demand from the Actions tab.
+# Builds a debug APK on GitHub's servers, on demand from the Actions tab (it doesn't run on every push).
 # Download it from the run's "Artifacts" section.
 on:
-  push:
   workflow_dispatch:
 
 jobs:
