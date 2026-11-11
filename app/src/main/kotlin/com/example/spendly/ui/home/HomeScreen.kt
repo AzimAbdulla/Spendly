@@ -49,7 +49,10 @@ import com.example.spendly.ui.theme.SpendlyTheme
 import java.time.format.DateTimeFormatter
 import androidx.compose.runtime.getValue
 import com.example.spendly.ui.components.TransactionRows
-import com.example.spendly.ui.components.RollingAmount
+import com.example.spendly.ui.components.animateAmountAsState
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -239,11 +242,12 @@ fun HomeScreen(
 
             // Total tile: the month's spend, how many expenses, and the daily average
             item {
+                val shownTotal by animateAmountAsState(monthlyTotal)
                 // A finished month averages over all its days; the current one over the days so far
                 val today = LocalDate.now()
                 val days = if (selectedMonth == YearMonth.from(today)) today.dayOfMonth else selectedMonth.lengthOfMonth()
                 val dailyAverage = monthlyTotal / days.coerceAtLeast(1)
-                val (whole, cents) = String.format("%,.2f", monthlyTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
+                val (whole, cents) = String.format("%,.2f", shownTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
                 val squish = rememberSquish()
                 TintedTile(
                     tint = colors.tint(TintMoney),
@@ -258,21 +262,18 @@ fun HomeScreen(
                             color = tile.textSecondary
                         )
                         Spacer(Modifier.height(4.dp))
-                        val figure = androidx.compose.ui.text.TextStyle(
+                        Text(
+                            text = buildAnnotatedString {
+                                append("$currencySymbol$whole")
+                                withStyle(SpanStyle(fontSize = 22.sp, color = tile.textSecondary)) { append(".$cents") }
+                            },
                             fontFamily = SpaceGroteskFontFamily,
                             fontSize = 40.sp,
                             lineHeight = 44.sp,
                             fontWeight = FontWeight.Bold,
                             color = tile.textPrimary,
                             letterSpacing = (-0.8).sp,
-                            fontFeatureSettings = "tnum"
-                        )
-                        RollingAmount(
-                            amount = monthlyTotal,
-                            parts = listOf(
-                                "$currencySymbol$whole" to figure,
-                                ".$cents" to figure.copy(fontSize = 22.sp, color = tile.textSecondary)
-                            )
+                            style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(

@@ -44,10 +44,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import com.example.spendly.ui.theme.TintSafe
-import kotlinx.coroutines.delay
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -194,69 +190,6 @@ fun TransactionRows(
         }
     }
 }
-
-/**
- * A total whose digits roll like a counter when it changes: only the digits that differ move, up
- * when the amount grew and down when it fell, the last digit first. [parts] are runs of text with
- * their own style (the whole amount, then smaller decimals), aligned on one baseline. Like the
- * other data animations it waits for the screen to settle and rolls from what it last showed.
- */
-@Composable
-fun RollingAmount(amount: Double, parts: List<Pair<String, TextStyle>>, modifier: Modifier = Modifier) {
-    val memory = LocalShownMemory.current
-    val slot = shownSlot(4)
-    var shown by remember { mutableStateOf(memory?.slots?.get(slot) as? RolledAmount ?: RolledAmount(amount, parts, up = true)) }
-    LaunchedEffect(amount, parts) {
-        val next = RolledAmount(amount, parts, up = amount >= shown.amount)
-        memory?.slots?.set(slot, next)
-        if (next.amount != shown.amount) {
-            LaunchGate.await()
-            delay(Motion.AfterScreen.toLong())
-        }
-        shown = next
-    }
-    val chars = shown.parts.flatMap { (text, style) -> text.map { it to style } }
-    Row(modifier = modifier) {
-        chars.forEachIndexed { index, (char, style) ->
-            // Keyed from the right, so a digit keeps its place when the amount gains one
-            val place = chars.lastIndex - index
-            key(place) {
-                // The last digit goes first
-                val wait = (place * 35).coerceAtMost(280)
-                AnimatedContent(
-                    targetState = char,
-                    modifier = Modifier.alignByBaseline(),
-                    transitionSpec = {
-                        fadeIn(Motion.enter(Motion.Long, wait))
-                            .togetherWith(fadeOut(tween(Motion.Medium, wait, Motion.ExitEasing)))
-                            .using(SizeTransform(clip = false))
-                    },
-                    label = "rollingDigit"
-                ) { digit ->
-                    // Moved in the draw layer: a layout offset would shift the baseline the row
-                    // aligns on and make the tile jump
-                    val shift by transition.animateFloat(
-                        transitionSpec = { tween(Motion.Long, wait, Motion.EnterEasing) },
-                        label = "rollingDigitShift"
-                    ) { state ->
-                        when (state) {
-                            EnterExitState.PreEnter -> 0.5f
-                            EnterExitState.Visible -> 0f
-                            EnterExitState.PostExit -> -0.5f
-                        }
-                    }
-                    Text(
-                        text = digit.toString(),
-                        style = style,
-                        modifier = Modifier.graphicsLayer { translationY = shift * size.height * if (shown.up) 1 else -1 }
-                    )
-                }
-            }
-        }
-    }
-}
-
-private class RolledAmount(val amount: Double, val parts: List<Pair<String, TextStyle>>, val up: Boolean)
 
 /** Each character rolls up into place when it appears or changes, like a counter wheel. */
 @Composable

@@ -57,7 +57,7 @@ Widget settings apply instantly and cover a dark or light base, transparency, th
 
 **Appearance and motion**
 - Themes: Auto, Light, Dark and Black (true black for OLED screens).
-- Add expense grows out of the + button, the total rolls like a counter when it changes, a saved expense folds the Save button into a tick, and a new row slides into the list. All of it follows the system animation setting.
+- Add expense grows out of the + button, the total counts up to its new value, a saved expense folds the Save button into a tick, and a new row slides into the list. All of it follows the system animation setting.
 
 ## Screenshots
 
