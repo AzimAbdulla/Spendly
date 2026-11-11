@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -510,17 +511,22 @@ fun AddTransactionScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     val fold by animateFloatAsState(if (saved) 1f else 0f, Motion.move(), label = "saveFold")
+                    // Nothing to save until there's an amount: Save stays dimmed and ignores taps
+                    val canSave = parsedAmount > 0
+                    val saveAlpha by animateFloatAsState(if (canSave || saved) 1f else 0.4f, Motion.move(Motion.Short), label = "saveAlpha")
                     Surface(
                         modifier = Modifier
                             .width(lerp(maxWidth, 48.dp, fold))
-                            .height(48.dp),
+                            .height(48.dp)
+                            .alpha(saveAlpha),
+                        enabled = canSave || saved,
                         shape = RoundedCornerShape(lerp(14.dp, 24.dp, fold)),
                         color = colors.primary,
                         onClick = {
-                            if (!saved) {
+                            if (!saved && canSave) {
                                 saved = true
                                 // Saved straight away, so leaving early never loses the expense
-                                onSaved(parsedAmount.coerceAtLeast(1.0), defaultCurrency, selectedCategory, item.trim())
+                                onSaved(parsedAmount, defaultCurrency, selectedCategory, item.trim())
                             }
                         }
                     ) {

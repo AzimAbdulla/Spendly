@@ -218,7 +218,7 @@ fun EditTransactionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                enabled = amount.toDoubleOrNull() != null,
+                enabled = (amount.toDoubleOrNull() ?: 0.0) > 0,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.primary,
