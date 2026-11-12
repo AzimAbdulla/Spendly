@@ -142,6 +142,10 @@ fun InsightsScreen(
     val topCategoryEntry = activeCategories.firstOrNull()
     val topCategory = topCategoryEntry?.key ?: Category.FOOD
     val topCategoryAmount = topCategoryEntry?.value ?: 0.0
+    // The time-based charts here (the day grid and the trend) share one hue, and it must never
+    // match the Top category tile above them. Every tint is some category's colour, so it's teal
+    // unless teal Travel leads, when it's amber
+    val timeHue = if (topCategoryEntry != null && stitchCategoryColors[topCategory] == TintTimeAlt) TintTime else TintTimeAlt
     val topCategoryPct = if (periodTotal > 0) ((topCategoryAmount / periodTotal) * 100).toInt() else 0
 
     // The trend chart: six months ending at the selected one, or the selected week's seven days.
@@ -339,13 +343,22 @@ fun InsightsScreen(
                 }
             }
 
-            // The month day by day, shaded like GitHub's contribution graph (Monthly only)
-            if (isMonthlySelected) {
-                item {
+            // Spending as a grid of shaded squares, after GitHub's contribution graph: the month
+            // day by day, or the week by day and time of day
+            item {
+                if (isMonthlySelected) {
                     MonthHeatmap(
                         month = selectedMonth,
                         transactions = periodTransactions,
                         dailyAverage = dailyAverage,
+                        hue = timeHue,
+                        currencySymbol = currencySymbol
+                    )
+                } else {
+                    WeekHeatmap(
+                        weekStart = weekStart,
+                        transactions = periodTransactions,
+                        hue = timeHue,
                         currencySymbol = currencySymbol
                     )
                 }
@@ -467,7 +480,7 @@ fun InsightsScreen(
             // Spending trend, the main chart on Insights: months in monthly mode, days in weekly.
             // Tap a bar, or drag sideways across them, to see its spend in the header
             item {
-                TintedTile(tint = colors.tint(TintTime), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.tint(timeHue), shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
@@ -581,28 +594,18 @@ private fun barAt(x: Float, width: Int, count: Int): Int = (x / width * count).t
 
 /**
  * The selected month as a calendar of shaded squares, after GitHub's contribution graph: seven
- * columns starting on Sunday, as Calendar does, each day in one of four teal steps by how its
- * spend ranks among the month's spending days (quartiles, so one huge day doesn't wash the rest
- * out). Teal because the Top category tile above is often amber. Tap a day to show it in the
+ * columns starting on Sunday, as Calendar does, each day in one of four steps of [hue] by how its
+ * spend ranks among the month's spending days. Tap a day to show it in the
  * header; press and hold for its details in a popup that follows the finger across days.
  */
 @Composable
-private fun MonthHeatmap(month: YearMonth, transactions: List<Transaction>, dailyAverage: Double, currencySymbol: String) {
+private fun MonthHeatmap(month: YearMonth, transactions: List<Transaction>, dailyAverage: Double, hue: Color, currencySymbol: String) {
     val colors = SpendlyTheme.colors
     val today = LocalDate.now()
     val byDay = remember(transactions) { transactions.groupBy { it.date.dayOfMonth } }
     val totals = remember(byDay) { byDay.mapValues { (_, txs) -> txs.sumOf { it.amount } } }
-    val spends = totals.values.filter { it > 0 }.sorted()
-    // The upper bounds of the first three steps; anything above the last is the darkest
-    val steps = if (spends.isEmpty()) emptyList() else listOf(0.25, 0.5, 0.75).map { spends[((spends.size - 1) * it).toInt()] }
-    fun level(amount: Double): Int = if (amount <= 0) 0 else 1 + steps.count { amount > it }
-    val ramp = listOf(
-        colors.textPrimary.copy(alpha = 0.07f),
-        TintTimeAlt.copy(alpha = 0.28f),
-        TintTimeAlt.copy(alpha = 0.50f),
-        TintTimeAlt.copy(alpha = 0.75f),
-        TintTimeAlt
-    )
+    val level = heatLevels(totals.values)
+    val ramp = heatRamp(hue, colors.textPrimary)
 
     val days = month.lengthOfMonth()
     val lastShown = if (YearMonth.from(today) == month) today.dayOfMonth else days
@@ -618,10 +621,7 @@ private fun MonthHeatmap(month: YearMonth, transactions: List<Transaction>, dail
 
     // Which day sits under a touch, or null between months and for days still to come
     fun dayAt(position: Offset, size: IntSize): Int? {
-        val cellWidth = (size.width - gapPx * 6) / 7
-        val cellHeight = (size.height - gapPx * (weeks - 1)) / weeks
-        val column = (position.x / (cellWidth + gapPx)).toInt().coerceIn(0, 6)
-        val row = (position.y / (cellHeight + gapPx)).toInt().coerceIn(0, weeks - 1)
+        val (column, row) = heatCellAt(position, size, columns = 7, rows = weeks, gapPx = gapPx)
         return (row * 7 + column - lead + 1).takeIf { it in 1..lastShown }
     }
 
@@ -722,10 +722,13 @@ private fun MonthHeatmap(month: YearMonth, transactions: List<Transaction>, dail
                 }
 
                 held?.let { day ->
-                    HeatDayPopup(
-                        date = month.atDay(day),
-                        expenses = byDay[day].orEmpty(),
-                        dailyAverage = dailyAverage,
+                    val expenses = byDay[day].orEmpty()
+                    val gap = (totals[day] ?: 0.0) - dailyAverage
+                    HeatPopup(
+                        title = month.atDay(day).format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),
+                        expenses = expenses,
+                        note = "${expenseCount(expenses.size)} · " +
+                            "$currencySymbol${String.format("%,.0f", kotlin.math.abs(gap))} ${if (gap >= 0) "above" else "below"} average",
                         currencySymbol = currencySymbol,
                         // Where the held square sits in the grid, as fractions of its width and height
                         centerX = ((day - 1 + lead) % 7 + 0.5f) / 7f,
@@ -736,30 +739,225 @@ private fun MonthHeatmap(month: YearMonth, transactions: List<Transaction>, dail
 
             Spacer(Modifier.height(14.dp))
 
-            // Legend, bottom right like GitHub's
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Less", fontSize = 11.sp, color = colors.textMuted, modifier = Modifier.padding(end = 2.dp))
-                ramp.forEach { Box(Modifier.size(12.dp).clip(RoundedCornerShape(3.dp)).background(it)) }
-                Text("More", fontSize = 11.sp, color = colors.textMuted, modifier = Modifier.padding(start = 2.dp))
-            }
+            HeatLegend(ramp)
         }
     }
 }
 
+/** The parts of the day the weekly grid sorts expenses into, by the hour they start at. */
+private val DayParts = listOf("Morning" to 5, "Afternoon" to 12, "Evening" to 17, "Night" to 21)
+
 /**
- * A held day's details, floating just above its square: the date, the spend, how that compares
- * with the daily average, and the day's largest expense. It can't take focus, so the finger
+ * The selected week as a grid of shaded squares: a column per day and a row per part of the day
+ * (morning from 5am, afternoon from noon, evening from 5pm, night from 9pm), so it shows when in
+ * the day money goes. It works like [MonthHeatmap]: tap a square to show it in the header, press
+ * and hold for its details. Expenses saved without a time of day (before times were recorded)
+ * can't be placed, so they're left out of the grid.
+ */
+@Composable
+private fun WeekHeatmap(weekStart: LocalDate, transactions: List<Transaction>, hue: Color, currencySymbol: String) {
+    val colors = SpendlyTheme.colors
+    val today = LocalDate.now()
+    // Keyed by column (day of the week shown) then row (part of the day)
+    val byCell = remember(transactions, weekStart) {
+        transactions.filter { it.time != null }.groupBy { tx ->
+            val hour = tx.time!!.hour
+            val part = if (hour < DayParts[0].second) DayParts.lastIndex else DayParts.indexOfLast { hour >= it.second }
+            (tx.date.toEpochDay() - weekStart.toEpochDay()).toInt() to part
+        }
+    }
+    val totals = remember(byCell) { byCell.mapValues { (_, txs) -> txs.sumOf { it.amount } } }
+    val level = heatLevels(totals.values)
+    val ramp = heatRamp(hue, colors.textPrimary)
+    val rows = DayParts.size
+
+    // Starts on the week's busiest square, the one most worth a look
+    val busiest = totals.maxByOrNull { it.value }?.key ?: (6 to 0)
+    var picked by remember(weekStart, busiest) { mutableStateOf(busiest) }
+    var held by remember(weekStart) { mutableStateOf<Pair<Int, Int>?>(null) }
+    val shown = held ?: picked
+    val haptics = LocalHapticFeedback.current
+    val gapPx = with(LocalDensity.current) { HeatGap.toPx() }
+    fun title(cell: Pair<Int, Int>, pattern: String) =
+        "${weekStart.plusDays(cell.first.toLong()).format(DateTimeFormatter.ofPattern(pattern))} ${DayParts[cell.second].first.lowercase()}"
+
+    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "When you spend",
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.textPrimary
+                )
+                Text(
+                    text = "$currencySymbol${String.format("%,.0f", totals[shown] ?: 0.0)}",
+                    fontFamily = SpaceGroteskFontFamily,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.textPrimary
+                )
+            }
+            Text(text = title(shown, "EEEE"), fontSize = 12.sp, color = colors.textSecondary)
+
+            Spacer(Modifier.height(14.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(HeatGap)) {
+                Spacer(Modifier.width(HeatRowLabel))
+                for (column in 0..6) {
+                    val date = weekStart.plusDays(column.toLong())
+                    Text(
+                        text = date.format(DateTimeFormatter.ofPattern("EEEEE")),
+                        fontSize = 11.sp,
+                        color = if (date == today) colors.textPrimary else colors.textMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(HeatGap)) {
+                // Row labels sit outside the touch area, sharing each row's height
+                Column(Modifier.width(HeatRowLabel), verticalArrangement = Arrangement.spacedBy(HeatGap)) {
+                    DayParts.forEach { (name, _) ->
+                        Box(Modifier.fillMaxWidth().aspectRatio(HeatRowLabel / WeekCellHeight), contentAlignment = Alignment.CenterStart) {
+                            Text(name, fontSize = 11.sp, color = colors.textMuted, maxLines = 1)
+                        }
+                    }
+                }
+                Box(Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .pointerInput(weekStart) {
+                                detectTapGestures(onTap = { position ->
+                                    picked = heatCellAt(position, size, columns = 7, rows = rows, gapPx = gapPx)
+                                })
+                            }
+                            .pointerInput(weekStart) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { position ->
+                                        held = heatCellAt(position, size, columns = 7, rows = rows, gapPx = gapPx)
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDragEnd = { held?.let { picked = it }; held = null },
+                                    onDragCancel = { held = null }
+                                ) { change, _ ->
+                                    held = heatCellAt(change.position, size, columns = 7, rows = rows, gapPx = gapPx)
+                                }
+                            },
+                        verticalArrangement = Arrangement.spacedBy(HeatGap)
+                    ) {
+                        for (row in 0 until rows) {
+                            Row(Modifier.height(WeekCellHeight), horizontalArrangement = Arrangement.spacedBy(HeatGap)) {
+                                for (column in 0..6) {
+                                    val cell = column to row
+                                    val fill by animateColorAsState(
+                                        ramp[level(totals[cell] ?: 0.0)],
+                                        animationSpec = Motion.move(),
+                                        label = "weekHeatCell"
+                                    )
+                                    Box(
+                                        Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(HeatCellShape)
+                                            .background(fill)
+                                            .then(
+                                                if (cell == shown) Modifier.border(2.dp, colors.textPrimary, HeatCellShape)
+                                                else Modifier
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    held?.let { cell ->
+                        val expenses = byCell[cell].orEmpty()
+                        HeatPopup(
+                            title = title(cell, "EEEE, d MMMM,"),
+                            expenses = expenses,
+                            note = expenseCount(expenses.size),
+                            currencySymbol = currencySymbol,
+                            centerX = (cell.first + 0.5f) / 7f,
+                            top = cell.second.toFloat() / rows
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            HeatLegend(ramp)
+        }
+    }
+}
+
+/** Empty, then four steps of [hue]. */
+private fun heatRamp(hue: Color, ink: Color) = listOf(
+    ink.copy(alpha = 0.07f),
+    hue.copy(alpha = 0.28f),
+    hue.copy(alpha = 0.50f),
+    hue.copy(alpha = 0.75f),
+    hue
+)
+
+/**
+ * Sorts amounts into the ramp's steps by how they rank among [amounts] (quartiles), so one huge
+ * figure doesn't wash the rest out. Zero is always the empty step.
+ */
+private fun heatLevels(amounts: Collection<Double>): (Double) -> Int {
+    val spends = amounts.filter { it > 0 }.sorted()
+    // The upper bounds of the first three steps; anything above the last is the darkest
+    val steps = if (spends.isEmpty()) emptyList() else listOf(0.25, 0.5, 0.75).map { spends[((spends.size - 1) * it).toInt()] }
+    return { amount -> if (amount <= 0) 0 else 1 + steps.count { amount > it } }
+}
+
+/** The column and row under a touch in a grid of equal squares with [gapPx] between them. */
+private fun heatCellAt(position: Offset, size: IntSize, columns: Int, rows: Int, gapPx: Float): Pair<Int, Int> {
+    val cellWidth = (size.width - gapPx * (columns - 1)) / columns
+    val cellHeight = (size.height - gapPx * (rows - 1)) / rows
+    return (position.x / (cellWidth + gapPx)).toInt().coerceIn(0, columns - 1) to
+        (position.y / (cellHeight + gapPx)).toInt().coerceIn(0, rows - 1)
+}
+
+private fun expenseCount(count: Int) = when (count) {
+    0 -> "No spending"
+    1 -> "1 expense"
+    else -> "$count expenses"
+}
+
+/** Less to more, bottom right like GitHub's. */
+@Composable
+private fun HeatLegend(ramp: List<Color>) {
+    val colors = SpendlyTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Less", fontSize = 11.sp, color = colors.textMuted, modifier = Modifier.padding(end = 2.dp))
+        ramp.forEach { Box(Modifier.size(12.dp).clip(RoundedCornerShape(3.dp)).background(it)) }
+        Text("More", fontSize = 11.sp, color = colors.textMuted, modifier = Modifier.padding(start = 2.dp))
+    }
+}
+
+/**
+ * A held square's details, floating just above it: what it covers, the spend, a line of context
+ * ([note]) and the largest expense. It can't take focus, so the finger
  * that opened it keeps sliding across the grid underneath.
  */
 @Composable
-private fun HeatDayPopup(
-    date: LocalDate,
+private fun HeatPopup(
+    title: String,
     expenses: List<Transaction>,
-    dailyAverage: Double,
+    note: String,
     currencySymbol: String,
     centerX: Float,
     top: Float
@@ -792,7 +990,7 @@ private fun HeatDayPopup(
                 .border(1.dp, colors.border, RoundedCornerShape(16.dp))
                 .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
-            Text(date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), fontSize = 12.sp, color = colors.textSecondary)
+            Text(title, fontSize = 12.sp, color = colors.textSecondary)
             Text(
                 text = "$currencySymbol${String.format("%,.2f", total)}",
                 fontFamily = SpaceGroteskFontFamily,
@@ -800,14 +998,7 @@ private fun HeatDayPopup(
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary
             )
-            val gap = total - dailyAverage
-            Text(
-                text = if (expenses.isEmpty()) "No spending" else
-                    "${expenses.size} ${if (expenses.size == 1) "expense" else "expenses"} · " +
-                        "$currencySymbol${String.format("%,.0f", kotlin.math.abs(gap))} ${if (gap >= 0) "above" else "below"} average",
-                fontSize = 12.sp,
-                color = colors.textSecondary
-            )
+            Text(text = note, fontSize = 12.sp, color = colors.textSecondary)
             if (largest != null) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -837,6 +1028,8 @@ private fun HeatDayPopup(
 }
 
 private val HeatGap = 4.dp
+private val HeatRowLabel = 64.dp
+private val WeekCellHeight = 34.dp
 private val HeatCellShape = RoundedCornerShape(8.dp)
 
 /** A day square's width over its height: a little wider than tall, so five weeks stay compact. */

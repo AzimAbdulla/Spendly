@@ -34,7 +34,7 @@ It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from
 **Seeing where the money goes**
 - Home opens on the current month, with arrows to step through months and a month picker for longer jumps. It shows the month's total, a tappable week tile, a by-category chart and recent expenses. The category chart comes in five styles: donut, stacked bar, tiles, rings and half donut.
 - Insights has a six-month or seven-day trend chart. Tap or drag across the bars to see the spend for a single month or day, with the category breakdown below.
-- In Monthly mode, Insights also shows a day-by-day grid in the style of GitHub's contribution graph: a calendar of squares shaded by how much you spent. Tap a day to see its total, or press and hold for its details.
+- Insights also shows a grid in the style of GitHub's contribution graph: a calendar of the month shaded by how much you spent each day, or, in Weekly mode, the week by day and time of day. Tap a square to see its total, or press and hold for its details.
 - Calendar shows a month grid with the spend for each day and the expenses for the selected date.
 - Activity lists every expense, newest first, with filters.
 
