@@ -21,8 +21,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.example.spendly.ui.theme.ChevronLeft
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Surface
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -145,52 +152,54 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Arrows step a month at a time, as on Calendar; the month's name opens the
+                    // grid to jump further. Home doesn't go past the current month
                     var monthPickerOpen by remember { mutableStateOf(false) }
-                    Box {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { monthPickerOpen = true },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                text = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM")),
-                                fontFamily = SpaceGroteskFontFamily,
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textPrimary,
-                                letterSpacing = (-0.5).sp
-                            )
-                            Row(
+                    val atCurrentMonth = !selectedMonth.isBefore(YearMonth.now())
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        MonthStepButton(
+                            icon = Icons.Default.ChevronLeft,
+                            label = "Previous month",
+                            enabled = true,
+                            onClick = { onMonthSelected(selectedMonth.minusMonths(1)) }
+                        )
+                        Box {
+                            AnimatedContent(
+                                targetState = selectedMonth,
+                                transitionSpec = { fadeIn(Motion.fadeInAfter()) togetherWith fadeOut(Motion.fadeOutFirst()) },
+                                label = "homeMonthTitle",
                                 modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(colors.container)
-                                    .padding(start = 10.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable(onClickLabel = "Choose month") { monthPickerOpen = true }
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) { month ->
                                 Text(
-                                    text = selectedMonth.year.toString(),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textPrimary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Choose month",
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(16.dp)
+                                    text = month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                                    fontFamily = SpaceGroteskFontFamily,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary,
+                                    letterSpacing = (-0.2).sp
                                 )
                             }
+                            MonthPickerMenu(
+                                expanded = monthPickerOpen,
+                                selected = selectedMonth,
+                                onDismiss = { monthPickerOpen = false },
+                                onSelect = {
+                                    onMonthSelected(it)
+                                    monthPickerOpen = false
+                                }
+                            )
                         }
-                        MonthPickerMenu(
-                            expanded = monthPickerOpen,
-                            selected = selectedMonth,
-                            onDismiss = { monthPickerOpen = false },
-                            onSelect = {
-                                onMonthSelected(it)
-                                monthPickerOpen = false
-                            }
+                        MonthStepButton(
+                            icon = Icons.Default.ChevronRight,
+                            label = "Next month",
+                            enabled = !atCurrentMonth,
+                            onClick = { onMonthSelected(selectedMonth.plusMonths(1)) }
                         )
                     }
 
@@ -598,4 +607,27 @@ private fun rememberSoftRise(tiles: Int): List<Animatable<Float, AnimationVector
 private fun Modifier.softRise(progress: Animatable<Float, AnimationVector1D>): Modifier = graphicsLayer {
     alpha = progress.value
     translationY = 12.dp.toPx() * (1f - progress.value)
+}
+
+/** A round arrow beside Home's month title, matching Calendar's; dimmed when there's nowhere to go. */
+@Composable
+private fun MonthStepButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = SpendlyTheme.colors
+    Surface(
+        modifier = Modifier.size(32.dp),
+        shape = CircleShape,
+        color = colors.container,
+        border = BorderStroke(1.dp, colors.border),
+        enabled = enabled,
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = if (enabled) colors.textSecondary else colors.textMuted.copy(alpha = 0.4f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
 }
