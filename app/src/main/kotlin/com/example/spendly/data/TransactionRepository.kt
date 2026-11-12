@@ -13,8 +13,11 @@ class TransactionRepository(private val dao: TransactionDao) {
     fun getRecentTransactions(limit: Int = 10) = dao.getRecentTransactions(limit)
     fun getTransactionById(id: Long): Flow<Transaction?> = dao.getTransactionById(id)
     suspend fun getTransactionByIdOnce(id: Long): Transaction? = dao.getTransactionByIdOnce(id)
-    suspend fun countMatchingTransaction(source: com.example.spendly.data.model.TransactionSource, merchant: String, amount: Double, date: LocalDate): Int =
-        dao.countMatchingTransaction(source, merchant, amount, date)
+    suspend fun isSmsRecorded(smsKey: String, merchant: String, amount: Double, date: LocalDate): Boolean =
+        dao.countSmsAlreadyRecorded(smsKey, merchant, amount, date) > 0
+    suspend fun confirm(id: Long) = dao.confirm(id)
+    suspend fun confirmAll() = dao.confirmAll()
+    suspend fun getAllOnce(): List<Transaction> = dao.getAllOnce()
     suspend fun addTransaction(transaction: Transaction) = dao.insertTransaction(transaction)
     suspend fun insertAll(transactions: List<Transaction>) = dao.insertAll(transactions)
     suspend fun updateTransaction(transaction: Transaction) = dao.updateTransaction(transaction)

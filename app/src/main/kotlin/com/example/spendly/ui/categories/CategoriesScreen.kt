@@ -1,5 +1,6 @@
 package com.example.spendly.ui.categories
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,10 +67,12 @@ fun CategoriesScreen(
     onCategoryClick: (Category, YearMonth) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    // Shared with Home, which this opens from
+    month: YearMonth = YearMonth.now(),
+    onMonthChange: (YearMonth) -> Unit = {},
     currencySymbol: String = "₹"
 ) {
     val colors = SpendlyTheme.colors
-    var month by remember { mutableStateOf(YearMonth.now()) }
 
     val monthTransactions = transactions.filter { YearMonth.from(it.date) == month }
     val monthTotal = monthTransactions.sumOf { it.amount }
@@ -95,7 +98,7 @@ fun CategoriesScreen(
             }
 
             item {
-                MonthSwitcher(month = month, onMonthChange = { month = it })
+                MonthSwitcher(month = month, onMonthChange = onMonthChange)
             }
 
             // Month total, set like the Home total but smaller
@@ -183,7 +186,7 @@ fun CategoryDetailScreen(
         .sortedByDescending { it.date }
     val total = items.sumOf { it.amount }
     val monthAll = transactions.filter { YearMonth.from(it.date) == month }.sumOf { it.amount }
-    val sharePct = if (monthAll > 0) ((total / monthAll) * 100).toInt() else 0
+    val sharePct = if (monthAll > 0) ((total / monthAll) * 100).roundToInt() else 0
 
     Scaffold(
         modifier = modifier,
@@ -387,7 +390,7 @@ private fun CategoryRow(
                 )
             }
             Text(
-                text = "$count ${if (count == 1) "expense" else "expenses"} · ${(share * 100).toInt()}%",
+                text = "$count ${if (count == 1) "expense" else "expenses"} · ${(share * 100).roundToInt()}%",
                 fontSize = 12.sp,
                 color = colors.textSecondary
             )

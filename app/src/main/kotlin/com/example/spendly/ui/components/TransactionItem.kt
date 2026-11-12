@@ -1,5 +1,6 @@
 package com.example.spendly.ui.components
 
+import com.example.spendly.data.currencySymbol
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +41,9 @@ fun TransactionItem(
     transaction: Transaction,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    currencySymbol: String = "₹"
+    currencySymbol: String = "₹",
+    // Given on lists where an SMS expense can be confirmed in place, without opening it
+    onConfirm: (() -> Unit)? = null
 ) {
     val colors = SpendlyTheme.colors
     val catColor = stitchCategoryColors[transaction.category] ?: colors.textMuted
@@ -73,8 +76,11 @@ fun TransactionItem(
 
         // Title & metadata
         Column(modifier = Modifier.weight(1f)) {
-            // The item leads; without one (e.g. SMS imports) the category does
-            val title = transaction.item.ifBlank { transaction.category.displayName }
+            val merchantLabel = transaction.merchant.takeIf {
+                it.isNotBlank() && it != transaction.category.displayName && it != "Unknown Merchant"
+            }
+            // The item leads; without one (SMS imports) the payee does, and failing that the category
+            val title = transaction.item.ifBlank { merchantLabel ?: transaction.category.displayName }
             Text(
                 text = title,
                 fontSize = 14.sp,
@@ -110,12 +116,9 @@ fun TransactionItem(
                         .size(6.dp)
                         .background(catColor, CircleShape)
                 )
-                val merchantLabel = transaction.merchant.takeIf {
-                    it.isNotBlank() && it != transaction.category.displayName && it != "Unknown Merchant"
-                }
                 val meta = listOfNotNull(
                     transaction.category.displayName.takeIf { it != title },
-                    merchantLabel
+                    merchantLabel.takeIf { it != title }
                 ).joinToString(" · ")
                 // Names give way first, so the date and time always stay readable
                 if (meta.isNotEmpty()) {
@@ -148,11 +151,13 @@ fun TransactionItem(
             }
         }
 
-        // Trailing amount (Space Grotesk, tabular)
+        // Trailing amount (Space Grotesk, tabular). Everything here is spending, so no minus sign
         Column(horizontalAlignment = Alignment.End) {
-            val curr = if (transaction.currency == "INR" || transaction.currency == "USD") currencySymbol else "${transaction.currency} "
+            // An SMS amount in another currency keeps its own symbol until it's been reviewed
+            val ownSymbol = currencySymbol(transaction.currency)
+            val curr = if (transaction.status == TransactionStatus.NEEDS_REVIEW && ownSymbol != currencySymbol) ownSymbol else currencySymbol
             Text(
-                text = "-$curr${String.format("%,.2f", transaction.amount)}",
+                text = "$curr${String.format("%,.2f", transaction.amount)}",
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -160,12 +165,27 @@ fun TransactionItem(
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
             )
             if (transaction.status == TransactionStatus.NEEDS_REVIEW) {
-                Text(
-                    text = "Needs review",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = colors.tertiary
-                )
+                if (onConfirm != null && ownSymbol == currencySymbol) {
+                    Text(
+                        text = "Confirm",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.onPrimary,
+                        modifier = Modifier
+                            .padding(top = 2.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = onConfirm)
+                            .background(colors.primary)
+                            .padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Needs review",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colors.tertiary
+                    )
+                }
             }
         }
     }

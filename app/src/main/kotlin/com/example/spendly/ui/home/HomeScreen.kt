@@ -1,5 +1,9 @@
 package com.example.spendly.ui.home
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.drawBehind
+import com.example.spendly.data.currencySymbol
+import com.example.spendly.ui.theme.Tune
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +34,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -65,8 +68,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.spendly.ui.components.MonthPickerMenu
 import java.time.YearMonth
-import com.example.spendly.ui.components.CategoryChart
-import com.example.spendly.ui.components.CategoryChartStyle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxHeight
 import com.example.spendly.ui.components.LaunchGate
@@ -106,28 +107,27 @@ fun HomeScreen(
     onReviewClick: () -> Unit,
     onViewAllClick: () -> Unit = {},
     onCategoriesClick: () -> Unit = onViewAllClick,
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     monthlyTotal: Double = SampleData.monthlyTotal,
+    monthlyBudget: Double = 0.0,
     transactionCount: Int = SampleData.transactions.size,
+    hasAnyExpenses: Boolean = true,
     recentTransactions: List<Transaction> = SampleData.transactions.take(5),
     reviewCount: Int = SampleData.reviewCount,
     weeklySpending: List<Double> = SampleData.weeklySpending,
-    weekDayLabels: List<String> = SampleData.weekDayLabels,
+    today: LocalDate = LocalDate.now(),
     categoryTotals: Map<Category, Double> = SampleData.categoryTotals,
     defaultCurrency: String = "INR",
     selectedMonth: YearMonth = YearMonth.now(),
     onMonthSelected: (YearMonth) -> Unit = {},
-    chartStyle: CategoryChartStyle = CategoryChartStyle.DONUT,
 ) {
     val colors = SpendlyTheme.colors
     val monthLabel = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val dateRangeLabel = "${selectedMonth.format(DateTimeFormatter.ofPattern("MMM"))} 1 – ${selectedMonth.lengthOfMonth()}"
-    val currencySymbol = when (defaultCurrency) {
-        "INR" -> "₹"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        else -> "$"
-    }
+    val currencySymbol = currencySymbol(defaultCurrency)
+    val weekDayLabels = (6 downTo 0).map { today.minusDays(it.toLong()).format(DateTimeFormatter.ofPattern("EEE")) }
+    val monthName = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM"))
     // The four tiles fade in and lift into place, one after another, once per app start
     val rise = rememberSoftRise(tiles = 4)
 
@@ -143,7 +143,7 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header: the month as the title, a year pill that opens the month picker, the review bell
+            // Header: the month between its arrows, and Settings
             item {
                 Row(
                     modifier = Modifier
@@ -155,7 +155,7 @@ fun HomeScreen(
                     // Arrows step a month at a time, as on Calendar; the month's name opens the
                     // grid to jump further. Home doesn't go past the current month
                     var monthPickerOpen by remember { mutableStateOf(false) }
-                    val atCurrentMonth = !selectedMonth.isBefore(YearMonth.now())
+                    val atCurrentMonth = !selectedMonth.isBefore(YearMonth.from(today))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -203,48 +203,86 @@ fun HomeScreen(
                         )
                     }
 
-                    // Notification bell with unclipped badge
                     Box(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(colors.container)
+                            .clickable(onClick = onSettingsClick),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(colors.container)
-                                .border(1.dp, colors.border, CircleShape)
-                                .clickable(onClick = onReviewClick),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Reviews",
-                                tint = colors.textSecondary,
-                                modifier = Modifier.size(18.dp)
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Settings",
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            // First run: nothing recorded yet, so say how expenses get in
+            if (!hasAnyExpenses) {
+                item {
+                    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Start tracking",
+                                fontFamily = SpaceGroteskFontFamily,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "Tap + to add an expense. Spendly can also add them for you from your bank's SMS alerts, read only on this phone.",
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = colors.textSecondary
+                            )
+                            Text(
+                                text = "Set up bank SMS",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colors.onPrimary,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .clip(CircleShape)
+                                    .clickable(onClick = onSettingsClick)
+                                    .background(colors.primary)
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
                             )
                         }
+                    }
+                }
+            }
 
-                        if (reviewCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 1.dp, y = (-1).dp)
-                                    .size(18.dp)
-                                    .background(colors.tertiary, CircleShape)
-                                    .border(2.dp, colors.background, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (reviewCount > 9) "9+" else reviewCount.toString(),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1A1100),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    lineHeight = 12.sp
-                                )
-                            }
-                        }
+            // SMS expenses waiting for a check: one tap to the list where each confirms in place
+            if (reviewCount > 0) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable(onClick = onReviewClick)
+                            .background(colors.container)
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(Modifier.size(8.dp).background(colors.tertiary, CircleShape))
+                        Text(
+                            text = if (reviewCount == 1) "1 SMS expense to check" else "$reviewCount SMS expenses to check",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colors.textPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
@@ -253,7 +291,6 @@ fun HomeScreen(
             item {
                 val shownTotal by animateAmountAsState(monthlyTotal)
                 // A finished month averages over all its days; the current one over the days so far
-                val today = LocalDate.now()
                 val days = if (selectedMonth == YearMonth.from(today)) today.dayOfMonth else selectedMonth.lengthOfMonth()
                 val dailyAverage = monthlyTotal / days.coerceAtLeast(1)
                 val (whole, cents) = String.format("%,.2f", shownTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
@@ -266,7 +303,7 @@ fun HomeScreen(
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "Spent in ${selectedMonth.format(DateTimeFormatter.ofPattern("MMMM"))}",
+                            text = "Spent in $monthName",
                             fontSize = 13.sp,
                             color = tile.textSecondary
                         )
@@ -291,6 +328,36 @@ fun HomeScreen(
                             fontSize = 13.sp,
                             color = tile.textSecondary
                         )
+                        // Against the monthly budget, when one is set in Settings
+                        if (monthlyBudget > 0) {
+                            val left = monthlyBudget - monthlyTotal
+                            val used = rememberAnimatedValues(listOf((monthlyTotal / monthlyBudget).toFloat().coerceIn(0f, 1f)))
+                            val over = left < 0
+                            Spacer(Modifier.height(14.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(CircleShape)
+                                    .background(tile.containerHigh)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .drawBehind {
+                                            drawRect(if (over) BudgetOver else tile.primary, size = Size(size.width * used[0].value, size.height))
+                                        }
+                                        .fillMaxWidth()
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "$currencySymbol${String.format("%,.0f", kotlin.math.abs(left))} " +
+                                    (if (over) "over" else "left of") + " your $currencySymbol${String.format("%,.0f", monthlyBudget)} budget",
+                                fontSize = 13.sp,
+                                color = if (over) BudgetOver else tile.textSecondary
+                            )
+                        }
                     }
                 }
             }
@@ -360,14 +427,50 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                        // Style picked in Settings
-                        CategoryChart(
-                            style = chartStyle,
-                            categoryTotals = categoryTotals,
-                            currencySymbol = currencySymbol
-                        )
+                        // The three biggest; the full breakdown is one tap away
+                        val total = categoryTotals.values.sum()
+                        val leading = categoryTotals.entries.filter { it.value > 0 }.sortedByDescending { it.value }.take(3)
+                        if (leading.isEmpty()) {
+                            Text(text = "No expenses in $monthName", fontSize = 14.sp, color = colors.textSecondary)
+                        }
+                        val shares = rememberAnimatedValues(List(3) { leading.getOrNull(it)?.let { e -> (e.value / total).toFloat() } ?: 0f })
+                        leading.forEachIndexed { index, (category, amount) ->
+                            val hue = stitchCategoryColors[category] ?: colors.textMuted
+                            Column(modifier = Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = category.displayName,
+                                        fontSize = 14.sp,
+                                        color = colors.textPrimary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = "$currencySymbol${String.format("%,.0f", amount)}",
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colors.textPrimary
+                                    )
+                                    Text(
+                                        text = "${(amount / total * 100).roundToInt()}%",
+                                        fontSize = 12.sp,
+                                        color = colors.textSecondary,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                        modifier = Modifier.width(40.dp)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.containerHigh)
+                                        .drawBehind { drawRect(hue, size = Size(size.width * shares[index].value, size.height)) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -410,10 +513,19 @@ fun HomeScreen(
 
                         Spacer(Modifier.height(8.dp))
 
+                        if (recentTransactions.isEmpty()) {
+                            Text(
+                                text = "No expenses in $monthName",
+                                fontSize = 14.sp,
+                                color = tile.textSecondary,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
                         TransactionRows(
                             transactions = recentTransactions,
                             onTransactionClick = onTransactionClick,
-                            currencySymbol = currencySymbol
+                            currencySymbol = currencySymbol,
+                            resetKey = selectedMonth
                         )
                     }
                 }
@@ -631,3 +743,6 @@ private fun MonthStepButton(icon: ImageVector, label: String, enabled: Boolean, 
         }
     }
 }
+
+/** The budget bar and its caption once the month's spend has passed the budget. */
+private val BudgetOver = Color(0xFFE2605C)

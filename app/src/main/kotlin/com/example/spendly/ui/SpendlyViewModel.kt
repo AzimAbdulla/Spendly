@@ -21,10 +21,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.combine
 import java.time.YearMonth
-import com.example.spendly.ui.components.CategoryChartStyle
+import android.net.Uri
+import com.example.spendly.data.CsvBackup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class SpendlyViewModel(
     private val repository: TransactionRepository,
@@ -37,8 +39,17 @@ class SpendlyViewModel(
     private val _themeMode = MutableStateFlow(preferences.themeMode)
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
-    private val _chartStyle = MutableStateFlow(CategoryChartStyle.fromName(preferences.chartStyle))
-    val chartStyle: StateFlow<CategoryChartStyle> = _chartStyle.asStateFlow()
+    private val _monthlyBudget = MutableStateFlow(preferences.monthlyBudget)
+    val monthlyBudget: StateFlow<Double> = _monthlyBudget.asStateFlow()
+
+    // Today's date, refreshed whenever the app comes back to the front, so "today" and the last
+    // seven days don't go stale when the app is left open past midnight
+    private val _today = MutableStateFlow(LocalDate.now())
+    val today: StateFlow<LocalDate> = _today.asStateFlow()
+
+    fun refreshToday() {
+        _today.value = LocalDate.now()
+    }
 
     private val _smsAutoSave = MutableStateFlow(preferences.isSmsAutoSaveEnabled)
     val smsAutoSave: StateFlow<Boolean> = _smsAutoSave.asStateFlow()
@@ -46,7 +57,7 @@ class SpendlyViewModel(
     private val _isScanningSms = MutableStateFlow(false)
     val isScanningSms: StateFlow<Boolean> = _isScanningSms.asStateFlow()
 
-    // Month shown on Home and Insights; their month pills change it
+    // Month shown on Home, Calendar, Insights and Categories; changing it on one changes them all
     private val _selectedMonth = MutableStateFlow(YearMonth.now())
     val selectedMonth: StateFlow<YearMonth> = _selectedMonth.asStateFlow()
 
@@ -57,8 +68,10 @@ class SpendlyViewModel(
             initialValue = emptyList()
         )
 
-    val recentTransactions: StateFlow<List<Transaction>> = transactions
-        .map { it.take(5) }
+    // The shown month's latest expenses
+    val recentTransactions: StateFlow<List<Transaction>> = combine(transactions, _selectedMonth) { list, month ->
+            list.filter { YearMonth.from(it.date) == month }.take(5)
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -97,14 +110,9 @@ class SpendlyViewModel(
             initialValue = emptyMap()
         )
 
-    val weekDayLabels: List<String> = (6 downTo 0).map { daysAgo ->
-        LocalDate.now().minusDays(daysAgo.toLong()).format(DateTimeFormatter.ofPattern("EEE"))
-    }
-
-    val weeklySpending: StateFlow<List<Double>> = transactions
-        .map { list ->
+    val weeklySpending: StateFlow<List<Double>> = combine(transactions, _today) { list, today ->
             (6 downTo 0).map { daysAgo ->
-                val date = LocalDate.now().minusDays(daysAgo.toLong())
+                val date = today.minusDays(daysAgo.toLong())
                 list.filter { it.date == date }.sumOf { it.amount }
             }
         }
@@ -114,35 +122,28 @@ class SpendlyViewModel(
             initialValue = List(7) { 0.0 }
         )
 
-    fun addTransaction(
-        amount: Double,
-        currency: String = "USD",
-        merchant: String,
-        category: Category,
-        notes: String = "",
-        status: TransactionStatus = TransactionStatus.CONFIRMED,
-        item: String = ""
-    ) {
+    /** Saves an expense on [date]; one for today gets the time too, a backdated one has none. */
+    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate) {
         val now = LocalDateTime.now()
         viewModelScope.launch {
             repository.addTransaction(
                 Transaction(
                     amount = amount,
-                    currency = currency,
-                    merchant = merchant,
+                    currency = preferences.defaultCurrency,
+                    merchant = "",
                     category = category,
-                    date = now.toLocalDate(),
-                    time = now.toLocalTime().withNano(0),
-                    notes = notes,
+                    date = date,
+                    time = if (date == now.toLocalDate()) now.toLocalTime().withNano(0) else null,
                     item = item,
-                    source = TransactionSource.MANUAL,
-                    status = status
+                    source = TransactionSource.MANUAL
                 )
             )
         }
     }
 
+    /** Saving an expense confirms it, and teaches Spendly that payee's category for next time. */
     fun updateTransaction(transaction: Transaction) {
+        preferences.learnCategory(transaction.merchant, transaction.category)
         viewModelScope.launch {
             repository.updateTransaction(transaction)
         }
@@ -152,6 +153,21 @@ class SpendlyViewModel(
         viewModelScope.launch {
             repository.deleteById(id)
         }
+    }
+
+    /** Puts back an expense that was just deleted, under its old id. */
+    fun restoreTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            repository.addTransaction(transaction)
+        }
+    }
+
+    fun confirmTransaction(id: Long) {
+        viewModelScope.launch { repository.confirm(id) }
+    }
+
+    fun confirmAllReviews() {
+        viewModelScope.launch { repository.confirmAll() }
     }
 
     fun setSelectedMonth(month: YearMonth) {
@@ -168,9 +184,9 @@ class SpendlyViewModel(
         _themeMode.value = mode
     }
 
-    fun setChartStyle(style: CategoryChartStyle) {
-        preferences.chartStyle = style.name
-        _chartStyle.value = style
+    fun setMonthlyBudget(amount: Double) {
+        preferences.monthlyBudget = amount
+        _monthlyBudget.value = amount
     }
 
     fun setSmsAutoSave(enabled: Boolean) {
@@ -182,15 +198,42 @@ class SpendlyViewModel(
         viewModelScope.launch {
             _isScanningSms.value = true
             try {
-                val result = SmsReader.scanInbox(
-                    context = context,
-                    repository = repository,
-                    autoSave = _smsAutoSave.value
-                )
+                val result = SmsReader.scanInbox(context, repository, preferences)
                 onResult(result)
             } finally {
                 _isScanningSms.value = false
             }
+        }
+    }
+
+    /** Writes every expense to [uri] as CSV; [onDone] gets how many, or null if it failed. */
+    fun exportTo(context: android.content.Context, uri: Uri, onDone: (Int?) -> Unit) {
+        viewModelScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                runCatching {
+                    val all = repository.getAllOnce()
+                    context.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(CsvBackup.write(all).toByteArray()) }
+                    all.size
+                }.getOrNull()
+            }
+            onDone(count)
+        }
+    }
+
+    /** Adds the expenses in the CSV at [uri] that aren't here already; null if it couldn't be read. */
+    fun importFrom(context: android.content.Context, uri: Uri, onDone: (Int?) -> Unit) {
+        viewModelScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                runCatching {
+                    val text = context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
+                    val read = CsvBackup.read(text) ?: return@runCatching null
+                    val have = repository.getAllOnce().mapTo(HashSet()) { CsvBackup.sameExpenseKey(it) }
+                    val fresh = read.filter { have.add(CsvBackup.sameExpenseKey(it)) }
+                    repository.insertAll(fresh)
+                    fresh.size
+                }.getOrNull()
+            }
+            onDone(count)
         }
     }
 

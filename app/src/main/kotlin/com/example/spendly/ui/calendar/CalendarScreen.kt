@@ -1,5 +1,7 @@
 package com.example.spendly.ui.calendar
 
+import com.example.spendly.ui.insights.heatLevels
+import com.example.spendly.ui.insights.heatRamp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,11 +74,18 @@ fun CalendarScreen(
     transactions: List<Transaction>,
     onTransactionClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    // The month is shared with Home and Insights
+    selectedMonth: YearMonth = YearMonth.now(),
+    onMonthSelected: (YearMonth) -> Unit = {},
+    today: LocalDate = LocalDate.now(),
+    onAddForDate: (LocalDate) -> Unit = {},
     currencySymbol: String = "₹"
 ) {
     val colors = SpendlyTheme.colors
-    var selectedMonth by remember { mutableStateOf(YearMonth.now()) }
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    // Opens on today in the current month, and on the 1st of any other
+    var selectedDate by remember(selectedMonth) {
+        mutableStateOf(if (YearMonth.from(today) == selectedMonth) today else selectedMonth.atDay(1))
+    }
 
     // Map of dates with transactions in this month
     val txByDate = remember(transactions) {
@@ -118,12 +127,12 @@ fun CalendarScreen(
                             shape = CircleShape,
                             color = colors.container,
                             border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                            onClick = { selectedMonth = selectedMonth.minusMonths(1) }
+                            onClick = { onMonthSelected(selectedMonth.minusMonths(1)) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.ChevronLeft,
-                                    contentDescription = "Prev Month",
+                                    contentDescription = "Previous month",
                                     tint = colors.textSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -150,12 +159,13 @@ fun CalendarScreen(
                             shape = CircleShape,
                             color = colors.container,
                             border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                            onClick = { selectedMonth = selectedMonth.plusMonths(1) }
+                            enabled = selectedMonth < YearMonth.from(today),
+                            onClick = { onMonthSelected(selectedMonth.plusMonths(1)) }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.ChevronRight,
-                                    contentDescription = "Next Month",
+                                    contentDescription = "Next month",
                                     tint = colors.textSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -206,6 +216,13 @@ fun CalendarScreen(
                             val daysInMonth = month.lengthOfMonth()
                             val leadingEmpty = firstDayOfMonth.dayOfWeek.value % 7 // Sunday = 0
                             val totalCells = ((leadingEmpty + daysInMonth + 6) / 7) * 7
+                            // Each day is shaded by how its spend ranks in the month, in four steps
+                            val dayTotals = (1..daysInMonth).associateWith { day ->
+                                txByDate[month.atDay(day)]?.sumOf { it.amount } ?: 0.0
+                            }
+                            val levelOf = heatLevels(dayTotals.values)
+                            val ramp = heatRamp(tile.primary, tile.textPrimary)
+                            val tileBackground = colors.tint(TintMoney).background
 
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 for (week in 0 until (totalCells / 7)) {
@@ -220,52 +237,33 @@ fun CalendarScreen(
                                             if (dayNumber in 1..daysInMonth) {
                                                 val date = month.atDay(dayNumber)
                                                 val isSelected = date == selectedDate
-                                                val hasTx = txByDate.containsKey(date)
+                                                val level = levelOf(dayTotals[dayNumber] ?: 0.0)
 
-                                                Column(
+                                                Box(
                                                     modifier = Modifier
                                                         .width(40.dp)
                                                         .height(44.dp)
                                                         .clip(RoundedCornerShape(14.dp))
                                                         .clickable { selectedDate = date }
+                                                        .then(if (level > 0) Modifier.background(ramp[level]) else Modifier)
                                                         .then(
-                                                            if (isSelected) {
-                                                                Modifier
-                                                                    .background(tile.primaryContainer)
-                                                                    .border(1.dp, tile.primary, RoundedCornerShape(14.dp))
-                                                            } else {
-                                                                Modifier
-                                                            }
+                                                            if (isSelected) Modifier.border(1.5.dp, tile.textPrimary, RoundedCornerShape(14.dp))
+                                                            else Modifier
                                                         ),
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    verticalArrangement = Arrangement.Center
+                                                    contentAlignment = Alignment.Center
                                                 ) {
                                                     Text(
                                                         text = dayNumber.toString(),
                                                         fontSize = 14.sp,
-                                                        fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                                                        color = if (isSelected) tile.primary else tile.textPrimary,
+                                                        fontWeight = if (isSelected || date == today) FontWeight.Medium else FontWeight.Normal,
+                                                        // The two strongest steps are bright, so their number goes dark
+                                                        color = when {
+                                                            level >= 3 -> tileBackground
+                                                            date > today -> tile.textMuted
+                                                            else -> tile.textPrimary
+                                                        },
                                                         textAlign = TextAlign.Center
                                                     )
-                                                    // Activity indicator dots
-                                                    if (hasTx) {
-                                                        Row(
-                                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                                            modifier = Modifier.padding(top = 2.dp)
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(4.dp)
-                                                                    .background(
-                                                                        if (isSelected) tile.primary
-                                                                        else tile.textSecondary,
-                                                                        CircleShape
-                                                                    )
-                                                            )
-                                                        }
-                                                    } else {
-                                                        Spacer(Modifier.height(8.dp))
-                                                    }
                                                 }
                                             } else {
                                                 // Overflow cell from previous or next month
@@ -321,7 +319,7 @@ fun CalendarScreen(
                             }
                             if (dayTotal > 0) {
                                 Text(
-                                    text = "-$currencySymbol${String.format("%,.2f", dayTotal)}",
+                                    text = "$currencySymbol${String.format("%,.2f", dayTotal)}",
                                     fontFamily = SpaceGroteskFontFamily,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
@@ -364,13 +362,20 @@ fun CalendarScreen(
                                     fontWeight = FontWeight.Medium,
                                     color = tile.textPrimary
                                 )
-                                Text(
-                                    text = "Tap + to add an expense for this day",
-                                    fontSize = 12.sp,
-                                    color = tile.textSecondary,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp)
-                                )
+                                if (selectedDate <= today) {
+                                    Text(
+                                        text = "Add an expense for this day",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = tile.textPrimary,
+                                        modifier = Modifier
+                                            .padding(top = 12.dp)
+                                            .clip(CircleShape)
+                                            .clickable { onAddForDate(selectedDate) }
+                                            .background(tile.containerHigh)
+                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                    )
+                                }
                             }
                         } else {
                             TransactionRows(

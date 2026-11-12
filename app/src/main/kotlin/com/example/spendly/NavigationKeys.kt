@@ -10,5 +10,5 @@ import kotlinx.serialization.Serializable
 @Serializable data object SettingsDestination : NavKey
 @Serializable data object CategoriesDestination : NavKey
 @Serializable data class CategoryDetailDestination(val categoryName: String, val yearMonth: String) : NavKey
-@Serializable data class AddTransactionDestination(val prefillAmount: Double? = null, val category: String? = null) : NavKey
+@Serializable data class AddTransactionDestination(val prefillAmount: Double? = null, val category: String? = null, val date: String? = null) : NavKey
 @Serializable data class EditTransactionDestination(val transactionId: Long) : NavKey

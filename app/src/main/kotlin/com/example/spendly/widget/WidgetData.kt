@@ -1,5 +1,6 @@
 package com.example.spendly.widget
 
+import com.example.spendly.data.currencySymbol
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -137,13 +138,6 @@ internal class WidgetStyle(
         val (whole, cents) = String.format("%,.2f", value).split(".").let { it[0] to it.getOrElse(1) { "00" } }
         return "$symbol$whole" to ".$cents"
     }
-}
-
-internal fun currencySymbol(code: String) = when (code) {
-    "INR" -> "₹"
-    "EUR" -> "€"
-    "GBP" -> "£"
-    else -> "$"
 }
 
 internal suspend fun loadWidget(context: Context): Pair<WidgetData, WidgetStyle> {

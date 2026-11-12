@@ -49,7 +49,26 @@ import com.example.spendly.ui.insights.InsightsScreen
 import com.example.spendly.ui.settings.SettingsScreen
 import com.example.spendly.ui.transaction.AddTransactionScreen
 import com.example.spendly.ui.theme.Motion
-import com.example.spendly.ui.transaction.EditTransactionScreen
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.example.spendly.data.currencySymbol
+import com.example.spendly.data.model.Transaction
+import com.example.spendly.data.model.TransactionStatus
+import com.example.spendly.ui.components.DockClearance
+import java.time.LocalDate
+import kotlinx.coroutines.delay
 import androidx.compose.animation.scaleIn
 import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -111,12 +130,16 @@ fun MainNavigation(
     val isScanningSms by vm.isScanningSms.collectAsStateWithLifecycle()
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     val selectedMonth by vm.selectedMonth.collectAsStateWithLifecycle()
-    val chartStyle by vm.chartStyle.collectAsStateWithLifecycle()
+    val monthlyBudget by vm.monthlyBudget.collectAsStateWithLifecycle()
+    val today by vm.today.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(Unit) {
+        vm.refreshToday()
+        onPauseOrDispose { }
+    }
 
     val backStack = rememberNavBackStack(HomeDestination)
 
-    // From an SMS expense notification: open it once it's loaded, so the edit
-    // screen never starts on its sample-data fallback
+    // From an SMS expense notification: open it once it's loaded
     LaunchedEffect(openTransactionId, transactions) {
         val id = openTransactionId ?: return@LaunchedEffect
         if (transactions.any { it.id == id }) {
@@ -143,21 +166,33 @@ fun MainNavigation(
         onWidgetTargetOpened()
     }
 
-    val currencySymbol = when (defaultCurrency) {
-        "INR" -> "₹"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        else -> "$"
-    }
+    val currencySymbol = currencySymbol(defaultCurrency)
 
     val currentKey = backStack.lastOrNull()
     val showDock = currentKey !is EditTransactionDestination && currentKey !is AddTransactionDestination
 
-    val currentDest = when (currentKey) {
+    // The dock marks the tab the current screen was opened from
+    val currentDest = when (backStack.firstOrNull()) {
+        is ActivityDestination -> StitchNavDestination.ACTIVITY
         CalendarDestination -> StitchNavDestination.CALENDAR
         InsightsDestination -> StitchNavDestination.INSIGHTS
-        SettingsDestination -> StitchNavDestination.SETTINGS
         else -> StitchNavDestination.HOME
+    }
+    val goToTab: (NavKey) -> Unit = { tab ->
+        while (backStack.size > 1) backStack.removeLastOrNull()
+        if (backStack.lastOrNull() != tab) {
+            backStack.removeLastOrNull()
+            backStack.add(tab)
+        }
+    }
+
+    // The expense just deleted, offered back for a few seconds
+    var deleted by remember { mutableStateOf<Transaction?>(null) }
+    LaunchedEffect(deleted) {
+        if (deleted != null) {
+            delay(5_000)
+            deleted = null
+        }
     }
 
     val backdrop = rememberGlassBackdrop()
@@ -171,7 +206,7 @@ fun MainNavigation(
     // (A NavEntry's contentKey defaults to its key's toString().)
     val shownMemories = remember { HashMap<Any, ShownMemory>() }
     val tabContentKeys = remember {
-        setOf<NavKey>(HomeDestination, CalendarDestination, InsightsDestination, SettingsDestination)
+        setOf<NavKey>(HomeDestination, ActivityDestination(), ActivityDestination(reviewOnly = true), CalendarDestination, InsightsDestination)
             .map { it.toString() }
             .toSet()
     }
@@ -207,32 +242,42 @@ fun MainNavigation(
                         entry<HomeDestination>(metadata = TabMotion) {
                             HomeScreen(
                                 onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
-                                onReviewClick = {
-                                    backStack.add(ActivityDestination())
-                                },
-                                onViewAllClick = {
-                                    backStack.add(ActivityDestination())
-                                },
-                                onCategoriesClick = {
-                                    backStack.add(CategoriesDestination)
-                                },
+                                onReviewClick = { goToTab(ActivityDestination(reviewOnly = true)) },
+                                onViewAllClick = { goToTab(ActivityDestination()) },
+                                onCategoriesClick = { backStack.add(CategoriesDestination) },
+                                onSettingsClick = { backStack.add(SettingsDestination) },
                                 monthlyTotal = monthlyTotal,
+                                monthlyBudget = monthlyBudget,
                                 transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth },
+                                hasAnyExpenses = transactions.isNotEmpty(),
                                 recentTransactions = recentTransactions,
                                 reviewCount = reviewCount,
                                 weeklySpending = weeklySpending,
-                                weekDayLabels = vm.weekDayLabels,
+                                today = today,
                                 categoryTotals = categoryTotals,
                                 defaultCurrency = defaultCurrency,
                                 selectedMonth = selectedMonth,
-                                onMonthSelected = { vm.setSelectedMonth(it) },
-                                chartStyle = chartStyle
+                                onMonthSelected = { vm.setSelectedMonth(it) }
+                            )
+                        }
+                        entry<ActivityDestination>(metadata = TabMotion) { key ->
+                            ActivityScreen(
+                                transactions = transactions,
+                                initialFilter = if (key.reviewOnly) ActivityFilter.REVIEW else ActivityFilter.ALL,
+                                onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
+                                onConfirm = { vm.confirmTransaction(it) },
+                                onConfirmAll = { vm.confirmAllReviews() },
+                                currencySymbol = currencySymbol
                             )
                         }
                         entry<CalendarDestination>(metadata = TabMotion) {
                             CalendarScreen(
                                 transactions = transactions,
+                                selectedMonth = selectedMonth,
+                                onMonthSelected = { vm.setSelectedMonth(it) },
+                                today = today,
                                 onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
+                                onAddForDate = { date -> backStack.add(AddTransactionDestination(date = date.toString())) },
                                 currencySymbol = currencySymbol
                             )
                         }
@@ -246,25 +291,33 @@ fun MainNavigation(
                                 weeklyRequest = insightsWeeklyRequest
                             )
                         }
-                        entry<SettingsDestination>(metadata = TabMotion) {
+                        entry<SettingsDestination> {
                             SettingsScreen(
+                                onBack = { backStack.removeLastOrNull() },
                                 defaultCurrency = defaultCurrency,
                                 onCurrencySelected = { vm.setDefaultCurrency(it) },
+                                monthlyBudget = monthlyBudget,
+                                onMonthlyBudgetChanged = { vm.setMonthlyBudget(it) },
                                 smsAutoSave = smsAutoSave,
                                 onSmsAutoSaveChanged = { vm.setSmsAutoSave(it) },
                                 isScanningSms = isScanningSms,
                                 onScanSms = { onResult -> vm.scanSmsInbox(context, onResult) },
+                                reviewCount = reviewCount,
+                                onReviewInboxClick = { goToTab(ActivityDestination(reviewOnly = true)) },
+                                expenseCount = transactions.size,
+                                onExport = { uri, onDone -> vm.exportTo(context, uri, onDone) },
+                                onImport = { uri, onDone -> vm.importFrom(context, uri, onDone) },
                                 onClearAllData = { vm.clearAllData() },
                                 onLoadSampleData = { vm.loadSampleData() },
                                 themeMode = themeMode,
-                                onThemeModeSelected = { vm.setThemeMode(it) },
-                                chartStyle = chartStyle,
-                                onChartStyleSelected = { vm.setChartStyle(it) }
+                                onThemeModeSelected = { vm.setThemeMode(it) }
                             )
                         }
                         entry<CategoriesDestination> {
                             CategoriesScreen(
                                 transactions = transactions,
+                                month = selectedMonth,
+                                onMonthChange = { vm.setSelectedMonth(it) },
                                 onCategoryClick = { cat, month ->
                                     backStack.add(CategoryDetailDestination(cat.name, month.toString()))
                                 },
@@ -282,46 +335,91 @@ fun MainNavigation(
                                 currencySymbol = currencySymbol
                             )
                         }
-                        entry<ActivityDestination> { key ->
-                            ActivityScreen(
-                                transactions = transactions,
-                                initialFilter = if (key.reviewOnly) ActivityFilter.REVIEW else ActivityFilter.ALL,
-                                onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
-                                onBack = { backStack.removeLastOrNull() }
-                            )
-                        }
                         entry<AddTransactionDestination>(metadata = RevealMotion) { key ->
                             CircleReveal(origin = addFrom, flash = SpendlyTheme.colors.dockAction) {
                                 AddTransactionScreen(
                                     prefillAmount = key.prefillAmount,
                                     prefillCategory = key.category?.let { name -> Category.entries.firstOrNull { it.name == name } },
+                                    initialDate = key.date?.let { LocalDate.parse(it) } ?: today,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amt, curr, cat, item ->
-                                        vm.addTransaction(amt, curr, merchant = "", category = cat, item = item)
-                                    },
+                                    onSaved = { amount, category, item, date -> vm.addTransaction(amount, category, item, date) },
                                     // Also called a moment after saving, when back may already have closed it
                                     onCancel = { if (backStack.lastOrNull() is AddTransactionDestination) backStack.removeLastOrNull() }
                                 )
                             }
                         }
+                        // Editing is the Add expense screen, opened on an existing expense
                         entry<EditTransactionDestination> { key ->
-                            val tx = transactions.find { it.id == key.transactionId }
-                            EditTransactionScreen(
-                                transactionId = key.transactionId,
-                                transaction = tx,
-                                onSaved = { updated ->
-                                    vm.updateTransaction(updated)
-                                    backStack.removeLastOrNull()
-                                },
-                                onDelete = { id ->
-                                    vm.deleteTransaction(id)
-                                    backStack.removeLastOrNull()
-                                },
-                                onCancel = { backStack.removeLastOrNull() }
-                            )
+                            val close = { if (backStack.lastOrNull() == key) backStack.removeLastOrNull() }
+                            // Kept while the screen slides away after a delete, when the row is gone
+                            var shown by remember { mutableStateOf<Transaction?>(null) }
+                            transactions.find { it.id == key.transactionId }?.let { shown = it }
+                            val tx = shown
+                            if (tx != null) {
+                                AddTransactionScreen(
+                                    editing = tx,
+                                    defaultCurrency = defaultCurrency,
+                                    onSaved = { amount, category, item, date ->
+                                        vm.updateTransaction(
+                                            tx.copy(
+                                                amount = amount,
+                                                currency = defaultCurrency,
+                                                category = category,
+                                                item = item,
+                                                date = date,
+                                                status = TransactionStatus.CONFIRMED
+                                            )
+                                        )
+                                    },
+                                    onDelete = {
+                                        vm.deleteTransaction(tx.id)
+                                        deleted = tx
+                                        close()
+                                    },
+                                    onCancel = { close() }
+                                )
+                            }
                         }
                     }
                 )
+            }
+
+            // Undo for a delete: a pill above the dock (or the bottom edge) for a few seconds
+            AnimatedVisibility(
+                visible = deleted != null,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = if (showDock) DockClearance else 16.dp),
+                enter = fadeIn(Motion.enter()) + slideInVertically(Motion.enter()) { it / 2 },
+                exit = fadeOut(Motion.exit())
+            ) {
+                val colors = SpendlyTheme.colors
+                Row(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(colors.popup)
+                        .border(1.dp, colors.border, CircleShape)
+                        .padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Expense deleted", fontSize = 14.sp, color = colors.textPrimary)
+                    Text(
+                        text = "Undo",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.onPrimary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable {
+                                deleted?.let { vm.restoreTransaction(it) }
+                                deleted = null
+                            }
+                            .background(colors.primary)
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
             }
 
             // Floating Bottom Dock: slides away while adding or editing
@@ -334,17 +432,14 @@ fun MainNavigation(
                 StitchBottomDock(
                     currentDestination = currentDest,
                     onNavigate = { dest ->
-                        val targetKey: NavKey = when (dest) {
-                            StitchNavDestination.HOME -> HomeDestination
-                            StitchNavDestination.CALENDAR -> CalendarDestination
-                            StitchNavDestination.INSIGHTS -> InsightsDestination
-                            StitchNavDestination.SETTINGS -> SettingsDestination
-                        }
-                        while (backStack.size > 1) backStack.removeLastOrNull()
-                        if (backStack.lastOrNull() != targetKey) {
-                            backStack.removeLastOrNull()
-                            backStack.add(targetKey)
-                        }
+                        goToTab(
+                            when (dest) {
+                                StitchNavDestination.HOME -> HomeDestination
+                                StitchNavDestination.ACTIVITY -> ActivityDestination()
+                                StitchNavDestination.CALENDAR -> CalendarDestination
+                                StitchNavDestination.INSIGHTS -> InsightsDestination
+                            }
+                        )
                     },
                     onFabClick = { center ->
                         addFrom = center

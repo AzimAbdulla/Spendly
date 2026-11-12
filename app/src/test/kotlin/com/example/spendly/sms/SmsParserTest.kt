@@ -15,7 +15,7 @@ class SmsParserTest {
         assertEquals(45.50, result!!.amount, 0.001)
         assertEquals("USD", result.currency)
         assertEquals("Whole Foods", result.merchant)
-        assertEquals(Category.FOOD, result.category)
+        assertEquals(Category.GROCERIES, result.category)
         assertTrue(result.isHighConfidence)
     }
 
@@ -113,7 +113,7 @@ class SmsParserTest {
         assertEquals(42.0, result!!.amount, 0.001)
         assertEquals("GBP", result.currency)
         assertEquals("Tesco", result.merchant)
-        assertEquals(Category.FOOD, result.category)
+        assertEquals(Category.GROCERIES, result.category)
     }
 
     @Test
@@ -147,5 +147,73 @@ class SmsParserTest {
 
         val tx = parsed!!.toTransaction(autoSave = false)
         assertEquals(com.example.spendly.data.model.TransactionStatus.NEEDS_REVIEW, tx.status)
+    }
+
+    @Test
+    fun inferCategory_knowsIndianMerchants() {
+        val expected = mapOf(
+            "Swiggy Ltd" to Category.FOOD,
+            "Swiggy Instamart" to Category.GROCERIES,
+            "Blinkit" to Category.GROCERIES,
+            "Zepto" to Category.GROCERIES,
+            "Rapido" to Category.TRANSPORT,
+            "Indian Oil Petrol" to Category.TRANSPORT,
+            "IRCTC" to Category.TRAVEL,
+            "Airtel" to Category.UTILITIES,
+            "KSEB" to Category.UTILITIES,
+            "Bookmyshow" to Category.ENTERTAINMENT,
+            "Apollo Pharmacy" to Category.HEALTH,
+            "Flipkart" to Category.SHOPPING,
+            "Netflix" to Category.SUBSCRIPTIONS
+        )
+        for ((merchant, category) in expected) {
+            assertEquals(merchant, category, SmsParser.inferCategory(merchant, ""))
+        }
+    }
+
+    @Test
+    fun inferCategory_matchesWholeWordsOnly() {
+        // "cab" inside "Cable", "store" inside "Restore"
+        assertEquals(Category.OTHER, SmsParser.inferCategory("Cable Vision", ""))
+        assertEquals(Category.OTHER, SmsParser.inferCategory("Restore Point", ""))
+    }
+
+    @Test
+    fun inferCategory_payeeBeatsTheRestOfTheMessage() {
+        assertEquals(Category.GROCERIES, SmsParser.inferCategory("Blinkit", "paid for food order"))
+    }
+
+    @Test
+    fun isBankSender_rejectsOrdinaryPhoneNumbers() {
+        assertTrue(SmsParser.isBankSender("VM-FEDBNK"))
+        assertTrue(SmsParser.isBankSender("AD-HDFCBK-S"))
+        assertTrue(SmsParser.isBankSender("56161"))
+        assertTrue(SmsParser.isBankSender(null))
+        assertFalse(SmsParser.isBankSender("+919876543210"))
+        assertFalse(SmsParser.isBankSender("98765 43210"))
+    }
+
+    @Test
+    fun smsKey_tellsTwoIdenticalPaymentsApart() {
+        val body = "Debited Rs 20.00 from a/c X1234 on 04Nov26 18:41 via UPI to Tea Stall. Ref 1.Bal Rs 10.00 -Federal Bank"
+        assertEquals(SmsParser.smsKey(1000L, body), SmsParser.smsKey(1000L, " $body "))
+        assertNotEquals(SmsParser.smsKey(1000L, body), SmsParser.smsKey(2000L, body))
+    }
+
+    @Test
+    fun toTransaction_inAnotherCurrency_needsReview() {
+        val parsed = SmsParser.parse("Debited USD 25.00 from a/c XX1234 at Starbucks on 26-Oct-26.")!!
+
+        val tx = parsed.toTransaction(autoSave = true, defaultCurrency = "INR")
+        assertEquals(com.example.spendly.data.model.TransactionStatus.NEEDS_REVIEW, tx.status)
+        assertEquals("USD", tx.currency)
+    }
+
+    @Test
+    fun toTransaction_usesTheLearnedCategory() {
+        val parsed = SmsParser.parse("Debited Rs 140.00 from a/c X1234 on 04Nov26 18:41 via UPI to Arun K. Ref 1.Bal Rs 4958.03 -Federal Bank")!!
+
+        assertEquals(Category.OTHER, parsed.toTransaction(autoSave = true).category)
+        assertEquals(Category.FOOD, parsed.toTransaction(autoSave = true, learnedCategory = Category.FOOD).category)
     }
 }

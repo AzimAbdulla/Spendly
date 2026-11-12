@@ -1,5 +1,18 @@
 package com.example.spendly.ui.settings
 
+import android.content.pm.ApplicationInfo
+import android.net.Uri
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.KeyboardType
+import com.example.spendly.data.currencySymbol
+import com.example.spendly.ui.components.ScreenHeader
+import java.time.LocalDate
+import java.util.Locale
 import android.Manifest
 import android.os.Build
 import android.content.pm.PackageManager
@@ -74,7 +87,6 @@ import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.theme.ChevronRight
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.components.CategoryChartStyle
 import com.example.spendly.ui.theme.PieChart
 import com.example.spendly.ui.theme.tint
 import android.content.Intent
@@ -104,19 +116,40 @@ fun SettingsScreen(
     onSmsAutoSaveChanged: (Boolean) -> Unit = {},
     isScanningSms: Boolean = false,
     onScanSms: ((SmsScanResult) -> Unit) -> Unit = {},
+    reviewCount: Int = 0,
     onReviewInboxClick: () -> Unit = {},
+    onBack: () -> Unit = {},
+    monthlyBudget: Double = 0.0,
+    onMonthlyBudgetChanged: (Double) -> Unit = {},
+    expenseCount: Int = 0,
+    onExport: (Uri, (Int?) -> Unit) -> Unit = { _, _ -> },
+    onImport: (Uri, (Int?) -> Unit) -> Unit = { _, _ -> },
     onClearAllData: () -> Unit = {},
     onLoadSampleData: () -> Unit = {},
     themeMode: String = "DARK",
     onThemeModeSelected: (String) -> Unit = {},
-    chartStyle: CategoryChartStyle = CategoryChartStyle.DONUT,
-    onChartStyleSelected: (CategoryChartStyle) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val colors = SpendlyTheme.colors
     val context = LocalContext.current
     var currencyExpanded by remember { mutableStateOf(false) }
-    var chartStyleExpanded by remember { mutableStateOf(false) }
+    var showBudgetDialog by remember { mutableStateOf(false) }
+    var dataMessage by remember { mutableStateOf<String?>(null) }
+    val isDebugBuild = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) onExport(uri) { count ->
+            dataMessage = if (count == null) "Couldn't save the file" else "Exported $count ${if (count == 1) "expense" else "expenses"}"
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) onImport(uri) { count ->
+            dataMessage = when (count) {
+                null -> "That isn't a Spendly CSV file"
+                0 -> "Nothing new in that file"
+                else -> "Imported $count ${if (count == 1) "expense" else "expenses"}"
+            }
+        }
+    }
     var scanResultMessage by remember { mutableStateOf<String?>(null) }
     var showWipeDialog by remember { mutableStateOf(false) }
 
@@ -134,7 +167,7 @@ fun SettingsScreen(
                       results[Manifest.permission.READ_SMS] == true
         hasSmsPermissions = granted
         if (granted) {
-            scanResultMessage = "SMS permissions granted. Automatic spend ingestion active."
+            scanResultMessage = "SMS allowed. New bank debits will be added"
         }
     }
 
@@ -151,15 +184,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Text(
-                    text = "Settings",
-                    fontFamily = SpaceGroteskFontFamily,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
-                    letterSpacing = (-0.5).sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
+                ScreenHeader(title = "Settings", onBack = onBack)
             }
 
             // GROUP 1: General Preferences
@@ -309,10 +334,10 @@ fun SettingsScreen(
                                         )
                                         Text(
                                             text = when (themeMode) {
-                                                "DARK" -> "Dark Mode"
-                                                "BLACK" -> "Pure black for OLED"
-                                                "LIGHT" -> "Light Mode"
-                                                else -> "System Default"
+                                                "DARK" -> "Dark"
+                                                "BLACK" -> "True black, for OLED screens"
+                                                "LIGHT" -> "Light"
+                                                else -> "Follows the system"
                                             },
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
@@ -331,103 +356,14 @@ fun SettingsScreen(
 
                             HorizontalDivider(color = colors.divider)
 
-                            // Chart style row: how Home draws spending by category
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { chartStyleExpanded = !chartStyleExpanded }
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(colors.containerHigh)
-                                            .border(1.dp, colors.border, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.PieChart,
-                                            contentDescription = null,
-                                            tint = colors.textSecondary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = "Chart style",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = colors.textPrimary
-                                        )
-                                        Text(
-                                            text = "${chartStyle.label} on Home",
-                                            fontSize = 12.sp,
-                                            color = colors.textSecondary,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            // Monthly budget: Home's total tile shows what's left of it
+                            SettingsRow(
+                                icon = Icons.Default.Flag,
+                                title = "Monthly budget",
+                                subtitle = if (monthlyBudget > 0) "${currencySymbol(defaultCurrency)}${String.format("%,.0f", monthlyBudget)} a month" else "Not set",
+                                onClick = { showBudgetDialog = true }
+                            )
 
-                            if (chartStyleExpanded) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(colors.containerLow)
-                                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                                        .padding(10.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "How Home shows spending by category",
-                                        fontSize = 11.sp,
-                                        color = colors.textSecondary
-                                    )
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        CategoryChartStyle.entries.forEach { style ->
-                                            val isSelected = style == chartStyle
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = if (isSelected) colors.primary else colors.containerHigh,
-                                                border = androidx.compose.foundation.BorderStroke(
-                                                    1.dp,
-                                                    if (isSelected) colors.primary else colors.border
-                                                ),
-                                                onClick = {
-                                                    onChartStyleSelected(style)
-                                                    chartStyleExpanded = false
-                                                }
-                                            ) {
-                                                Text(
-                                                    text = style.label,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = if (isSelected) colors.onPrimary else colors.textPrimary,
-                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                             HorizontalDivider(color = colors.divider)
 
                             // Home screen widgets: background, transparency and privacy for all of them
@@ -555,7 +491,7 @@ fun SettingsScreen(
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "Adds an expense when a debit SMS arrives",
+                                            text = if (hasSmsPermissions) "Adds an expense when a debit SMS arrives" else "Needs the SMS permission below",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary
                                         )
@@ -572,42 +508,6 @@ fun SettingsScreen(
                                         uncheckedTrackColor = colors.containerHigh,
                                         uncheckedBorderColor = Color.Transparent
                                     )
-                                )
-                            }
-
-                            // Engine Architecture Pill
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(colors.containerLow)
-                                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Memory,
-                                        contentDescription = null,
-                                        tint = colors.textSecondary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = "Parsing",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = colors.textPrimary
-                                    )
-                                }
-                                Text(
-                                    text = "On this device",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = colors.textSecondary
                                 )
                             }
 
@@ -744,7 +644,11 @@ fun SettingsScreen(
 
                                         }
                                         Text(
-                                            text = "SMS expenses waiting for a check",
+                                            text = when (reviewCount) {
+                                                0 -> "Nothing waiting for a check"
+                                                1 -> "1 SMS expense waiting for a check"
+                                                else -> "$reviewCount SMS expenses waiting for a check"
+                                            },
                                             fontSize = 12.sp,
                                             color = colors.textSecondary,
                                             fontWeight = FontWeight.Normal
@@ -767,7 +671,8 @@ fun SettingsScreen(
                                 ),
                                 onClick = {
                                     onScanSms { res ->
-                                        scanResultMessage = "Scanned ${res.scannedCount} SMS · ${res.importedCount} added · ${res.skippedDuplicates} already saved"
+                                        scanResultMessage = if (!res.readable) "Couldn't read SMS. Allow the SMS permission first"
+                                        else "Checked ${res.scannedCount} SMS from the last 90 days \u00B7 ${res.importedCount} added \u00B7 ${res.skippedDuplicates} already saved"
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(44.dp),
@@ -801,7 +706,7 @@ fun SettingsScreen(
                 }
             }
 
-            // GROUP 3: Data Management & Backup
+            // GROUP 3: the data itself: a file out, a file back in, and delete
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -814,164 +719,43 @@ fun SettingsScreen(
 
                     SpendlyCard(shape = RoundedCornerShape(24.dp)) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            // Export Transactions
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {}
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(colors.containerHigh)
-                                            .border(1.dp, colors.border, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.FileDownload,
-                                            contentDescription = null,
-                                            tint = colors.textPrimary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = "Export expenses",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = colors.textPrimary
-                                        )
-                                        Text(
-                                            text = "Save your expenses as a file",
-                                            fontSize = 12.sp,
-                                            color = colors.textSecondary
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
+                            SettingsRow(
+                                icon = Icons.Default.FileDownload,
+                                title = "Export expenses",
+                                subtitle = if (expenseCount == 0) "Nothing to export yet" else "Save all $expenseCount as a CSV file",
+                                enabled = expenseCount > 0,
+                                onClick = { exportLauncher.launch("spendly-${LocalDate.now()}.csv") }
+                            )
                             HorizontalDivider(color = colors.divider)
-
-                            // Load Sample Data
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
+                            SettingsRow(
+                                icon = Icons.Default.FileUpload,
+                                title = "Import expenses",
+                                subtitle = "Add expenses from a Spendly CSV file",
+                                onClick = { importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }
+                            )
+                            // Demo expenses are for development builds only
+                            if (isDebugBuild) {
+                                HorizontalDivider(color = colors.divider)
+                                SettingsRow(
+                                    icon = Icons.Default.Storage,
+                                    title = "Load sample data",
+                                    subtitle = "Adds demo expenses for testing",
+                                    onClick = {
                                         onLoadSampleData()
-                                        scanResultMessage = "Sample data loaded successfully."
+                                        dataMessage = "Sample data loaded"
                                     }
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(colors.containerHigh)
-                                            .border(1.dp, colors.border, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Storage,
-                                            contentDescription = null,
-                                            tint = colors.textSecondary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = "Load sample data",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = colors.textPrimary
-                                        )
-                                        Text(
-                                            text = "Adds demo expenses for testing",
-                                            fontSize = 12.sp,
-                                            color = colors.textSecondary
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-
                             HorizontalDivider(color = colors.divider)
-
-                            // Wipe Local Ledger
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { showWipeDialog = true }
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(colors.error.copy(alpha = 0.15f))
-                                            .border(1.dp, colors.error.copy(alpha = 0.3f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DeleteForever,
-                                            contentDescription = null,
-                                            tint = colors.error,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = "Delete all data",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = colors.error
-                                        )
-                                        Text(
-                                            text = "Removes every expense from this phone",
-                                            fontSize = 12.sp,
-                                            color = colors.textSecondary
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = colors.textSecondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                            SettingsRow(
+                                icon = Icons.Default.DeleteForever,
+                                title = "Delete all data",
+                                subtitle = "Removes every expense from this phone",
+                                danger = true,
+                                onClick = { showWipeDialog = true }
+                            )
+                            dataMessage?.let {
+                                Text(text = it, fontSize = 12.sp, color = colors.textSecondary)
                             }
                         }
                     }
@@ -979,10 +763,40 @@ fun SettingsScreen(
             }
 
             // Bottom clearance for dock
-            item {
-                Spacer(Modifier.navigationBarsPadding().height(DockClearance))
-            }
+            item { Spacer(Modifier.navigationBarsPadding().height(DockClearance)) }
         }
+    }
+
+    if (showBudgetDialog) {
+        var entry by remember { mutableStateOf(if (monthlyBudget > 0) String.format(Locale.US, "%.0f", monthlyBudget) else "") }
+        AlertDialog(
+            onDismissRequest = { showBudgetDialog = false },
+            containerColor = colors.popup,
+            title = { Text("Monthly budget", color = colors.textPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Home shows how much of it is left each month.", fontSize = 14.sp, color = colors.textSecondary)
+                    OutlinedTextField(
+                        value = entry,
+                        onValueChange = { typed -> entry = typed.filter { it.isDigit() }.take(9) },
+                        singleLine = true,
+                        prefix = { Text(currencySymbol(defaultCurrency)) },
+                        placeholder = { Text("No budget") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onMonthlyBudgetChanged(entry.toDoubleOrNull() ?: 0.0)
+                    showBudgetDialog = false
+                }) { Text("Save", color = colors.textPrimary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBudgetDialog = false }) { Text("Cancel", color = colors.textSecondary) }
+            }
+        )
     }
 
     if (showWipeDialog) {
@@ -1020,5 +834,43 @@ fun SettingsScreen(
             },
             containerColor = colors.popup
         )
+    }
+}
+
+/** One settings line: a round icon, a title over a quieter subtitle, and a chevron. */
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    danger: Boolean = false
+) {
+    val colors = SpendlyTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.5f)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(colors.containerHigh),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(imageVector = icon, contentDescription = null, tint = if (danger) colors.error else colors.textSecondary, modifier = Modifier.size(18.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if (danger) colors.error else colors.textPrimary)
+            Text(text = subtitle, fontSize = 12.sp, color = colors.textSecondary)
+        }
+        Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(18.dp))
     }
 }

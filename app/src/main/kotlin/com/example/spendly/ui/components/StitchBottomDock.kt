@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,13 +56,12 @@ import com.example.spendly.ui.theme.CalendarToday
 import com.example.spendly.ui.theme.Motion
 import com.example.spendly.ui.theme.PieChart
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.theme.Tune
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
 
 enum class StitchNavDestination {
-    HOME, CALENDAR, INSIGHTS, SETTINGS
+    HOME, ACTIVITY, CALENDAR, INSIGHTS
 }
 
 /** How far the fade behind the dock rises above it. */
@@ -136,15 +136,15 @@ fun StitchBottomDock(
                         .onPlaced { tabBounds[StitchNavDestination.HOME] = it.boundsInParent() }
                 )
 
-                // Tab 2: Calendar
+                // Tab 2: Activity, every expense
                 DockItem(
-                    label = "Calendar",
-                    icon = Icons.Filled.CalendarToday,
-                    isSelected = currentDestination == StitchNavDestination.CALENDAR,
-                    onClick = { onNavigate(StitchNavDestination.CALENDAR) },
+                    label = "Activity",
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                    isSelected = currentDestination == StitchNavDestination.ACTIVITY,
+                    onClick = { onNavigate(StitchNavDestination.ACTIVITY) },
                     modifier = Modifier
                         .weight(1f)
-                        .onPlaced { tabBounds[StitchNavDestination.CALENDAR] = it.boundsInParent() }
+                        .onPlaced { tabBounds[StitchNavDestination.ACTIVITY] = it.boundsInParent() }
                 )
 
                 // Center add action: the green disc, the one bright control in the dock; Add
@@ -166,14 +166,25 @@ fun StitchBottomDock(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add Expense",
+                            contentDescription = "Add expense",
                             tint = colors.onDockAction,
                             modifier = Modifier.size(24.dp)
                         )
                     }
                 }
 
-                // Tab 3: Insights
+                // Tab 3: Calendar
+                DockItem(
+                    label = "Calendar",
+                    icon = Icons.Filled.CalendarToday,
+                    isSelected = currentDestination == StitchNavDestination.CALENDAR,
+                    onClick = { onNavigate(StitchNavDestination.CALENDAR) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .onPlaced { tabBounds[StitchNavDestination.CALENDAR] = it.boundsInParent() }
+                )
+
+                // Tab 4: Insights
                 DockItem(
                     label = "Insights",
                     icon = Icons.Filled.PieChart,
@@ -182,17 +193,6 @@ fun StitchBottomDock(
                     modifier = Modifier
                         .weight(1f)
                         .onPlaced { tabBounds[StitchNavDestination.INSIGHTS] = it.boundsInParent() }
-                )
-
-                // Tab 4: Settings
-                DockItem(
-                    label = "Settings",
-                    icon = Icons.Filled.Tune,
-                    isSelected = currentDestination == StitchNavDestination.SETTINGS,
-                    onClick = { onNavigate(StitchNavDestination.SETTINGS) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .onPlaced { tabBounds[StitchNavDestination.SETTINGS] = it.boundsInParent() }
                 )
             }
         }

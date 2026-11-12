@@ -2,6 +2,7 @@ package com.example.spendly.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.spendly.data.model.Category
 
 class SpendlyPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("spendly_prefs", Context.MODE_PRIVATE)
@@ -18,10 +19,21 @@ class SpendlyPreferences(context: Context) {
         get() = prefs.getString(KEY_THEME_MODE, "DARK") ?: "DARK"
         set(value) = prefs.edit().putString(KEY_THEME_MODE, value).apply()
 
-    // How Home draws spending by category; a CategoryChartStyle name
-    var chartStyle: String
-        get() = prefs.getString(KEY_CHART_STYLE, "DONUT") ?: "DONUT"
-        set(value) = prefs.edit().putString(KEY_CHART_STYLE, value).apply()
+    // Monthly spending target in the default currency; 0 means none is set
+    var monthlyBudget: Double
+        get() = prefs.getFloat(KEY_MONTHLY_BUDGET, 0f).toDouble()
+        set(value) = prefs.edit().putFloat(KEY_MONTHLY_BUDGET, value.toFloat()).apply()
+
+    // The category the user last gave a payee, so its next SMS expense arrives already sorted
+    fun learnedCategory(merchant: String): Category? =
+        prefs.getString(KEY_MERCHANT_CATEGORY + merchant.trim().lowercase(), null)
+            ?.let { name -> Category.entries.firstOrNull { it.name == name } }
+
+    fun learnCategory(merchant: String, category: Category) {
+        val name = merchant.trim().lowercase()
+        if (name.isEmpty() || name == "unknown merchant") return
+        prefs.edit().putString(KEY_MERCHANT_CATEGORY + name, category.name).apply()
+    }
 
     // Home screen widgets, shared by every Spendly widget
     var widgetLightBackground: Boolean
@@ -53,7 +65,8 @@ class SpendlyPreferences(context: Context) {
         private const val KEY_DEFAULT_CURRENCY = "key_default_currency"
         private const val KEY_SMS_AUTO_SAVE = "key_sms_auto_save"
         private const val KEY_THEME_MODE = "key_theme_mode"
-        private const val KEY_CHART_STYLE = "key_chart_style"
+        private const val KEY_MONTHLY_BUDGET = "key_monthly_budget"
+        private const val KEY_MERCHANT_CATEGORY = "merchant_category_"
         private const val KEY_WIDGET_LIGHT = "key_widget_light"
         private const val KEY_WIDGET_TRANSPARENCY = "key_widget_transparency"
         private const val KEY_WIDGET_HIDE_AMOUNTS = "key_widget_hide_amounts"

@@ -2,95 +2,83 @@ package com.example.spendly.sms
 
 import android.content.Context
 import android.provider.Telephony
+import com.example.spendly.data.SpendlyPreferences
 import com.example.spendly.data.TransactionRepository
-import com.example.spendly.data.model.TransactionSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 
 data class SmsScanResult(
     val scannedCount: Int,
     val importedCount: Int,
-    val skippedDuplicates: Int
+    val skippedDuplicates: Int,
+    // False when the inbox couldn't be read at all (no permission, or the phone refused)
+    val readable: Boolean = true
 )
 
 object SmsReader {
+    /** How far back "Scan past SMS" looks. */
+    const val ScanDays = 90L
 
     suspend fun scanInbox(
         context: Context,
         repository: TransactionRepository,
-        autoSave: Boolean,
-        limit: Int = 100
+        preferences: SpendlyPreferences
     ): SmsScanResult = withContext(Dispatchers.IO) {
         var scanned = 0
         var imported = 0
         var duplicates = 0
-
-        val contentResolver = context.contentResolver
-        val projection = arrayOf(
-            Telephony.Sms.Inbox.BODY,
-            Telephony.Sms.Inbox.DATE
-        )
+        var readable = true
+        val since = System.currentTimeMillis() - ScanDays * 24 * 60 * 60 * 1000
+        val defaultCurrency = preferences.defaultCurrency
 
         try {
-            contentResolver.query(
+            context.contentResolver.query(
                 Telephony.Sms.Inbox.CONTENT_URI,
-                projection,
-                null,
-                null,
-                "${Telephony.Sms.Inbox.DATE} DESC LIMIT $limit"
+                arrayOf(
+                    Telephony.Sms.Inbox.ADDRESS,
+                    Telephony.Sms.Inbox.BODY,
+                    Telephony.Sms.Inbox.DATE,
+                    Telephony.Sms.Inbox.DATE_SENT
+                ),
+                "${Telephony.Sms.Inbox.DATE} >= ?",
+                arrayOf(since.toString()),
+                "${Telephony.Sms.Inbox.DATE} DESC"
             )?.use { cursor ->
-                val bodyIndex = cursor.getColumnIndex(Telephony.Sms.Inbox.BODY)
-                val dateIndex = cursor.getColumnIndex(Telephony.Sms.Inbox.DATE)
-
                 while (cursor.moveToNext()) {
                     scanned++
-                    val body = if (bodyIndex != -1) cursor.getString(bodyIndex) ?: "" else ""
-                    val epochMs = if (dateIndex != -1) cursor.getLong(dateIndex) else 0L
-
+                    if (!SmsParser.isBankSender(cursor.getString(0))) continue
+                    val body = cursor.getString(1) ?: continue
                     val parsed = SmsParser.parse(body) ?: continue
 
-                    val sentAt = if (epochMs > 0) {
-                        try {
-                            Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                        } catch (e: Exception) {
-                            LocalDateTime.now()
-                        }
-                    } else {
-                        LocalDateTime.now()
-                    }
-                    val date = sentAt.toLocalDate()
+                    // The time the bank sent it, which is what the receiver sees as it arrives
+                    val received = cursor.getLong(2)
+                    val sent = cursor.getLong(3).takeIf { it > 0 } ?: received
+                    val sentAt = Instant.ofEpochMilli(sent).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                    val key = SmsParser.smsKey(sent, body)
 
-                    val existingCount = repository.countMatchingTransaction(
-                        source = TransactionSource.SMS,
-                        merchant = parsed.merchant,
-                        amount = parsed.amount,
-                        date = date
-                    )
-
-                    if (existingCount > 0) {
+                    if (repository.isSmsRecorded(key, parsed.merchant, parsed.amount, sentAt.toLocalDate())) {
                         duplicates++
                     } else {
-                        val transaction = parsed.toTransaction(
-                            autoSave = autoSave,
-                            date = date,
-                            time = sentAt.toLocalTime().withNano(0)
+                        repository.addTransaction(
+                            parsed.toTransaction(
+                                autoSave = true,
+                                date = sentAt.toLocalDate(),
+                                time = sentAt.toLocalTime().withNano(0),
+                                smsKey = key,
+                                defaultCurrency = defaultCurrency,
+                                learnedCategory = preferences.learnedCategory(parsed.merchant)
+                            )
                         )
-                        repository.addTransaction(transaction)
                         imported++
                     }
                 }
-            }
+            } ?: run { readable = false }
         } catch (e: Exception) {
-            e.printStackTrace()
+            readable = false
         }
 
-        SmsScanResult(
-            scannedCount = scanned,
-            importedCount = imported,
-            skippedDuplicates = duplicates
-        )
+        SmsScanResult(scanned, imported, duplicates, readable)
     }
 }

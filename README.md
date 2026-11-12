@@ -2,7 +2,7 @@
 
 Spendly is a native Android expense tracker that keeps everything on your phone. There are no accounts, no cloud sync and no analytics, and the app does not request the internet permission, so your spending data cannot leave the device.
 
-It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from bank SMS messages on the device and turn them into expenses, and it ships five home screen widgets.
+It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from bank SMS messages on the device and turn them into expenses, exports to CSV, and ships five home screen widgets.
 
 <p align="center">
   <img src="docs/screenshots/home.png" alt="Home" width="230">
@@ -26,21 +26,24 @@ It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from
 ## Features
 
 **Tracking**
-- Add an expense in one screen: an amount keypad, a category and an optional item name. The amount scales to use the free space and shrinks to fit long values.
-- Edit or delete any expense later.
-- Record in INR, USD, EUR, GBP and other currencies, with a default currency chosen in Settings.
-- Expenses read from SMS are marked for review, and a review inbox lets you confirm or recategorise them.
+- Add an expense in one screen: an item name, a date, an amount keypad and a category. The same screen edits or deletes an expense later, and a delete can be undone for a few seconds.
+- One currency per install, chosen in Settings from INR, USD, EUR, GBP and others.
+- An optional monthly budget, with what is left of it shown on Home.
 
 **Seeing where the money goes**
-- Home opens on the current month, with arrows to step through months and a month picker for longer jumps. It shows the month's total, a tappable week tile, a by-category chart and recent expenses. The category chart comes in five styles: donut, stacked bar, tiles, rings and half donut.
-- Insights has a six-month or seven-day trend chart. Tap or drag across the bars to see the spend for a single month or day, with the category breakdown below.
-- Insights also shows a grid in the style of GitHub's contribution graph: a calendar of the month shaded by how much you spent each day, or, in Weekly mode, the week by day and time of day. Tap a square to see its total, or press and hold for its details.
-- Calendar shows a month grid with the spend for each day and the expenses for the selected date.
-- Activity lists every expense, newest first, with filters.
+- Home opens on the current month, with arrows to step through months and a month picker for longer jumps. It shows the month's total against the budget, a tappable week tile, the three biggest categories and recent expenses.
+- Activity lists every expense by day, newest first, with day totals, search and filters for category and for expenses that need review.
+- Calendar shows a month grid with each day shaded by how much was spent, and the expenses for the selected date. An expense can be added straight onto a past day.
+- Insights has a six-month or seven-day trend chart with the category breakdown. In Weekly mode a grid in the style of GitHub's contribution graph shows the week by day and time of day.
 
 **Bank SMS**
-- Incoming and past SMS are parsed on the device with regular expressions. Only debits that name an account (`a/c`, `acct` or `account`) are recorded. Credits, card and wallet alerts and FASTag messages are skipped.
+- Incoming SMS, and the last 90 days of the inbox on request, are parsed on the device with regular expressions. Only debits that name an account (`a/c`, `acct` or `account`) are recorded. Credits, card and wallet alerts, FASTag messages and texts from ordinary phone numbers are skipped.
+- Common Indian merchants are categorised automatically, and changing a payee's category is remembered for its next SMS.
+- Expenses Spendly is unsure about are marked for review and can be confirmed with one tap, or all at once.
 - A notification confirms each recorded expense, and tapping it opens that expense.
+
+**Your data**
+- Export every expense to a CSV file, and import it back on this or another phone. Importing the same file twice adds nothing.
 
 **Home screen widgets**
 
@@ -85,9 +88,9 @@ The screenshots use the demo expenses from Settings, Load sample data.
 ## Privacy
 
 - No `INTERNET` permission, no analytics, no accounts and no remote services.
-- Expenses live in a local Room database. Preferences live in DataStore on the same device.
-- The only permissions are `READ_SMS` and `RECEIVE_SMS`, used to parse bank debit alerts locally, and `POST_NOTIFICATIONS`, used only for the alert shown when an SMS expense is recorded. SMS tracking is off until you turn it on in Settings.
-- Expenses can be exported to a file from Settings, and all data can be deleted there too.
+- Expenses live in a local Room database and preferences in the app's private storage. Android backup and device transfer are switched off for the app, so nothing is copied to a cloud account.
+- The only permissions are `READ_SMS` and `RECEIVE_SMS`, used to parse bank debit alerts locally, and `POST_NOTIFICATIONS`, used only for the alert shown when an SMS expense is recorded. SMS is read only after you grant the permission in Settings, and a switch there turns it off again. Message text is never written to the system log.
+- Expenses can be exported to a CSV file from Settings, and all data can be deleted there too.
 
 ## Tech stack
 
@@ -97,7 +100,7 @@ The screenshots use the demo expenses from Settings, Load sample data.
 | UI | Jetpack Compose, Material 3 |
 | Widgets | Jetpack Glance |
 | Architecture | MVVM with a repository, Kotlin Coroutines and Flow |
-| Storage | Room 2.7 and DataStore Preferences |
+| Storage | Room 2.7 and SharedPreferences |
 | Navigation | Navigation 3 with typed `NavKey` destinations |
 | Build | Gradle 9, Kotlin DSL and a version catalog |
 | Android | `minSdk` 26, `targetSdk` 35, `compileSdk` 36 |
@@ -158,7 +161,7 @@ The workflow in `.github/workflows/android-build.yml` builds a debug APK and run
 ./gradlew testDebugUnitTest
 ```
 
-The unit tests cover the SMS parser (including bank alert formats that must be skipped), the sample data and the period picker.
+The unit tests cover the SMS parser (including bank alert formats that must be skipped, sender filtering and categories), CSV export and import, the sample data and the period picker.
 
 ## Design notes
 

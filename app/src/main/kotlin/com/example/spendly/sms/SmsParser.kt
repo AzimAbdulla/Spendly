@@ -16,8 +16,19 @@ data class ParsedSms(
     val isHighConfidence: Boolean,
     val rawBody: String
 ) {
-    fun toTransaction(autoSave: Boolean, date: LocalDate = LocalDate.now(), time: LocalTime? = null): Transaction {
-        val status = if (isHighConfidence && autoSave) {
+    /**
+     * [autoSave] off sends everything to review. An amount in another currency than
+     * [defaultCurrency] always goes to review, since totals are kept in one currency.
+     */
+    fun toTransaction(
+        autoSave: Boolean,
+        date: LocalDate = LocalDate.now(),
+        time: LocalTime? = null,
+        smsKey: String? = null,
+        defaultCurrency: String = currency,
+        learnedCategory: Category? = null
+    ): Transaction {
+        val status = if (isHighConfidence && autoSave && currency == defaultCurrency) {
             TransactionStatus.CONFIRMED
         } else {
             TransactionStatus.NEEDS_REVIEW
@@ -26,12 +37,13 @@ data class ParsedSms(
             amount = amount,
             currency = currency,
             merchant = merchant,
-            category = category,
+            category = learnedCategory ?: category,
             date = date,
             time = time,
             notes = "From SMS: ${rawBody.take(60)}...",
             source = TransactionSource.SMS,
-            status = status
+            status = status,
+            smsKey = smsKey
         )
     }
 }
@@ -190,32 +202,39 @@ object SmsParser {
         return true
     }
 
+    // First match wins, so the narrower lists come first (Instamart before Swiggy, a gas bill
+    // before fuel). Whole words only: "cab" must not match "cable"
+    private val CATEGORY_KEYWORDS: List<Pair<Category, Regex>> = listOf(
+        Category.GROCERIES to "instamart|blinkit|zepto|bigbasket|big basket|dmart|d mart|jiomart|grofers|dunzo|supermarket|hypermarket|grocery|groceries|kirana|provision|provisions|vegetables|fruits|milk|dairy|lulu|more retail|reliance fresh|reliance smart|spencers|nature's basket|whole foods|walmart|costco|tesco|sainsbury|aldi|lidl|carrefour",
+        Category.UTILITIES to "electricity|electric|kseb|bescom|tneb|msedcl|tata power|adani electricity|water bill|water authority|gas bill|indane|bharat gas|hp gas|lpg|utility|broadband|fibernet|wifi|recharge|prepaid|postpaid|jio|airtel|vodafone|bsnl|act fibernet|dth|tata play|d2h",
+        Category.SUBSCRIPTIONS to "netflix|spotify|hotstar|jiocinema|sonyliv|zee5|youtube premium|prime video|amazon prime|apple.com/bill|google one|icloud|disney|patreon|subscription",
+        Category.FOOD to "swiggy|zomato|eatsure|dominos|domino's|pizza hut|pizza|kfc|mcdonald|mcdonalds|burger king|burger|subway|starbucks|cafe coffee day|ccd|chaayos|restaurant|restaurants|hotel and restaurant|cafe|coffee|tea|bakery|bakers|biryani|juice|food|foods|dining|canteen|mess|thattukada|dhaba|sweets",
+        Category.TRAVEL to "irctc|indian railways|makemytrip|goibibo|cleartrip|yatra|ixigo|redbus|abhibus|indigo|air india|vistara|akasa|spicejet|airline|airlines|airways|flight|airbnb|oyo|booking.com|expedia|resort|travels|travel",
+        Category.TRANSPORT to "uber|ola|rapido|namma yatri|blusmart|taxi|cab|cabs|auto|metro|ksrtc|bus|petrol|diesel|fuel|fuels|petroleum|indian oil|iocl|bpcl|bharat petroleum|hpcl|hp petrol|shell|parking|toll|transport|transit|train",
+        Category.ENTERTAINMENT to "bookmyshow|pvr|inox|cinepolis|cinema|cinemas|movie|movies|theatre|theater|steam|playstation|xbox|nintendo|gaming|entertainment",
+        Category.HEALTH to "pharmacy|pharma|medical|medicals|medplus|apollo|netmeds|pharmeasy|1mg|practo|hospital|clinic|doctor|dental|diagnostics|lab|labs|health",
+        Category.SHOPPING to "amazon|flipkart|myntra|ajio|meesho|nykaa|croma|reliance digital|decathlon|ikea|lifestyle|pantaloons|westside|zara|h&m|nike|adidas|shopping|store|stores|mall|mart|textiles|fashion|clothing|footwear|electronics"
+    ).map { (category, words) -> category to Regex("(?<![a-z0-9])(?:${words.replace(".", "\\.")})(?![a-z0-9])") }
+
+    /** The payee decides when it can; the rest of the message is only a fallback. */
     fun inferCategory(merchant: String, fullText: String): Category {
-        val combined = "$merchant $fullText".lowercase()
-        return when {
-            combined.containsAny("food", "restaurant", "cafe", "coffee", "starbucks", "swiggy", "zomato", "uber eats", "mcdonald", "burger", "pizza", "dining", "bakery", "subway") ->
-                Category.FOOD
-            combined.containsAny("uber", "lyft", "grab", "taxi", "cab", "metro", "fuel", "gas", "petrol", "shell", "chevron", "parking", "transport", "train", "flight", "transit") ->
-                Category.TRANSPORT
-            combined.containsAny("supermarket", "grocery", "whole foods", "walmart", "target", "costco", "trader joe", "kroger", "tesco", "sainsbury", "asda", "aldi", "lidl", "carrefour") ->
-                Category.FOOD
-            combined.containsAny("amazon", "zara", "h&m", "nike", "shopping", "store", "ebay", "walmart", "apple store", "mall", "clothing") ->
-                Category.SHOPPING
-            combined.containsAny("netflix", "spotify", "apple.com/bill", "youtube", "prime video", "disney", "hulu", "patreon", "subscription") ->
-                Category.SUBSCRIPTIONS
-            combined.containsAny("cinema", "movie", "theater", "theatre", "amc", "steam", "playstation", "xbox", "nintendo", "entertainment") ->
-                Category.ENTERTAINMENT
-            combined.containsAny("pharmacy", "health", "hospital", "doctor", "clinic", "cvs", "walgreens", "dental", "medical") ->
-                Category.HEALTH
-            combined.containsAny("electric", "water", "gas bill", "utility", "power", "internet", "broadband", "verizon", "at&t", "t-mobile") ->
-                Category.UTILITIES
-            combined.containsAny("hotel", "airbnb", "airline", "booking.com", "expedia", "resort", "travel") ->
-                Category.TRAVEL
-            else -> Category.OTHER
+        for (text in listOf(merchant.lowercase(), fullText.lowercase())) {
+            CATEGORY_KEYWORDS.firstOrNull { it.second.containsMatchIn(text) }?.let { return it.first }
         }
+        return Category.OTHER
     }
 
-    private fun String.containsAny(vararg keywords: String): Boolean {
-        return keywords.any { this.contains(it) }
+    /**
+     * Banks send alerts from a short name ("VM-FEDBNK") or a short code, never from an ordinary
+     * phone number, so a text from a person that happens to mention a payment isn't an expense.
+     */
+    fun isBankSender(address: String?): Boolean {
+        val sender = address?.trim().orEmpty()
+        if (sender.isEmpty()) return true
+        return !Regex("\\+?[0-9]{8,}").matches(sender.replace(" ", "").replace("-", ""))
     }
+
+    /** Stays the same for one message however it's read: as it arrives, or later from the inbox. */
+    fun smsKey(sentMillis: Long, body: String): String = "$sentMillis:${body.trim().hashCode()}"
+
 }

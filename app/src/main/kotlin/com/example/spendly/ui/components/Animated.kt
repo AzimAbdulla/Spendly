@@ -135,6 +135,7 @@ fun TransactionRows(
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹",
     resetKey: Any? = null,
+    onConfirm: ((Long) -> Unit)? = null,
     divider: @Composable () -> Unit = {
         HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = SpendlyTheme.colors.divider)
     }
@@ -181,7 +182,8 @@ fun TransactionRows(
                         TransactionItem(
                             transaction = tx,
                             onClick = { onTransactionClick(tx.id) },
-                            currencySymbol = currencySymbol
+                            currencySymbol = currencySymbol,
+                            onConfirm = onConfirm?.let { confirm -> { confirm(tx.id) } }
                         )
                         if (index < transactions.lastIndex) divider()
                     }

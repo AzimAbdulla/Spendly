@@ -1,5 +1,22 @@
 package com.example.spendly.ui.transaction
 
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.spendly.data.currencySymbol
+import com.example.spendly.data.model.Transaction
+import com.example.spendly.data.model.TransactionSource
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -82,12 +99,20 @@ import com.example.spendly.ui.theme.OnTintSafe
 import com.example.spendly.ui.theme.TintSafe
 import androidx.compose.ui.graphics.lerp
 
+/**
+ * Add expense, and the same screen for changing one: pass [editing] and it opens filled in, with
+ * a delete button, and saves over that expense.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     prefillAmount: Double? = null,
     prefillCategory: Category? = null,
+    initialDate: LocalDate = LocalDate.now(),
+    editing: Transaction? = null,
     defaultCurrency: String = "INR",
-    onSaved: (amount: Double, currency: String, category: Category, item: String) -> Unit,
+    onSaved: (amount: Double, category: Category, item: String, date: LocalDate) -> Unit,
+    onDelete: (() -> Unit)? = null,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -106,8 +131,16 @@ fun AddTransactionScreen(
     )
     val amountWell = if (theme.isDark) lerp(theme.background, TintSafe, 0.26f) else lerp(Color.White, TintSafe, 0.24f)
 
-    var amountStr by remember { mutableStateOf(prefillAmount?.let { String.format("%.0f", it) } ?: "0") }
-    var selectedCategory by remember { mutableStateOf(prefillCategory ?: Category.FOOD) }
+    var amountStr by remember {
+        mutableStateOf(
+            // An amount in another currency starts empty: what it cost in yours has to be typed
+            (editing?.amount?.takeIf { editing.currency == defaultCurrency } ?: prefillAmount)
+                ?.let { String.format(Locale.US, "%.2f", it).removeSuffix("00").removeSuffix(".") } ?: "0"
+        )
+    }
+    var selectedCategory by remember { mutableStateOf(editing?.category ?: prefillCategory ?: Category.FOOD) }
+    var date by remember { mutableStateOf(editing?.date ?: initialDate) }
+    var pickingDate by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
     LaunchedEffect(saved) {
         if (saved) {
@@ -120,7 +153,7 @@ fun AddTransactionScreen(
         animationSpec = Motion.move(Motion.Short),
         label = "categoryAccent"
     )
-    var item by remember { mutableStateOf("") }
+    var item by remember { mutableStateOf(editing?.item.orEmpty()) }
 
     // Height the screen doesn't need, measured at the spacer above the keypad; up to
     // MaxAmountRoom of it goes to the amount
@@ -142,14 +175,33 @@ fun AddTransactionScreen(
         label = "amountScale"
     )
 
-    val currencySymbol = when (defaultCurrency) {
-        "INR" -> "₹"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        else -> "$"
-    }
+    val currencySymbol = currencySymbol(defaultCurrency)
 
     val parsedAmount = amountStr.toDoubleOrNull() ?: 0.0
+
+    if (pickingDate) {
+        // The picker works in UTC days; an expense can't be dated in the future
+        val endOfToday = LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis < endOfToday
+                override fun isSelectableYear(year: Int) = year <= LocalDate.now().year
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { pickingDate = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { date = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                    pickingDate = false
+                }) { Text("Done") }
+            },
+            dismissButton = { TextButton(onClick = { pickingDate = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = pickerState, showModeToggle = false)
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -172,12 +224,23 @@ fun AddTransactionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Add expense",
+                    text = if (editing == null) "Add expense" else "Edit expense",
                     fontFamily = SpaceGroteskFontFamily,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
+                    modifier = Modifier.weight(1f)
                 )
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Delete expense",
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
                 IconButton(
                     onClick = onCancel,
                     modifier = Modifier.size(36.dp)
@@ -236,6 +299,60 @@ fun AddTransactionScreen(
                             }
                             innerTextField()
                         }
+                    )
+                }
+            }
+
+            // When it was spent, and for an SMS expense who was paid
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val today = LocalDate.now()
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { pickingDate = true }
+                        .background(colors.container)
+                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarToday,
+                        contentDescription = "Date",
+                        tint = colors.textSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = when (date) {
+                            today -> "Today"
+                            today.minusDays(1) -> "Yesterday"
+                            else -> date.format(DateTimeFormatter.ofPattern(if (date.year == today.year) "EEE, d MMM" else "d MMM yyyy"))
+                        },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textPrimary
+                    )
+                }
+                val payee = editing?.merchant?.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
+                val origin = when {
+                    editing == null -> null
+                    editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
+                    payee != null -> "Paid to $payee"
+                    editing.source == TransactionSource.SMS -> "From a bank SMS"
+                    else -> null
+                }
+                if (origin != null) {
+                    Text(
+                        text = origin,
+                        fontSize = 12.sp,
+                        color = colors.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -526,7 +643,7 @@ fun AddTransactionScreen(
                             if (!saved && canSave) {
                                 saved = true
                                 // Saved straight away, so leaving early never loses the expense
-                                onSaved(parsedAmount, defaultCurrency, selectedCategory, item.trim())
+                                onSaved(parsedAmount, selectedCategory, item.trim(), date)
                             }
                         }
                     ) {
@@ -551,7 +668,7 @@ fun AddTransactionScreen(
                                 exit = fadeOut(Motion.exit()) + shrinkHorizontally(Motion.move())
                             ) {
                                 Text(
-                                    text = "Save expense",
+                                    text = if (editing == null) "Save expense" else "Save changes",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = colors.onPrimary,

@@ -2,7 +2,6 @@ package com.example.spendly.data.db
 
 import androidx.room.*
 import com.example.spendly.data.model.Transaction
-import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -28,8 +27,19 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     suspend fun getTransactionByIdOnce(id: Long): Transaction?
 
-    @Query("SELECT COUNT(*) FROM transactions WHERE source = :source AND merchant = :merchant AND amount = :amount AND date = :date")
-    suspend fun countMatchingTransaction(source: TransactionSource, merchant: String, amount: Double, date: LocalDate): Int
+    // An SMS is already recorded when its key is, or (for imports made before keys existed)
+    // when an unkeyed SMS expense has the same payee, amount and day
+    @Query("SELECT COUNT(*) FROM transactions WHERE smsKey = :smsKey OR (smsKey IS NULL AND source = 'SMS' AND merchant = :merchant AND amount = :amount AND date = :date)")
+    suspend fun countSmsAlreadyRecorded(smsKey: String, merchant: String, amount: Double, date: LocalDate): Int
+
+    @Query("UPDATE transactions SET status = 'CONFIRMED' WHERE id = :id")
+    suspend fun confirm(id: Long)
+
+    @Query("UPDATE transactions SET status = 'CONFIRMED' WHERE status = 'NEEDS_REVIEW'")
+    suspend fun confirmAll()
+
+    @Query("SELECT * FROM transactions ORDER BY date DESC, time DESC, id DESC")
+    suspend fun getAllOnce(): List<Transaction>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction): Long

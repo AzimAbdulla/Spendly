@@ -14,6 +14,8 @@ import com.example.spendly.MainActivity
 import com.example.spendly.R
 import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
+import com.example.spendly.data.model.TransactionStatus
+import com.example.spendly.data.currencySymbol
 
 /** One notification per expense read from an incoming bank SMS; tapping it opens that expense. */
 object SmsNotifier {
@@ -26,7 +28,7 @@ object SmsNotifier {
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
-    fun notifyNewExpense(context: Context, transaction: Transaction) {
+    fun notifyNewExpense(context: Context, transaction: Transaction, defaultCurrency: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
@@ -42,10 +44,11 @@ object SmsNotifier {
         val amount = "${currencySymbol(transaction.currency)}${String.format("%,.2f", transaction.amount)}"
         val merchant = transaction.merchant.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
         val title = if (merchant != null) "$amount at $merchant" else "$amount from a bank SMS"
-        val text = if (transaction.category == Category.OTHER) {
-            "Tap to choose a category"
-        } else {
-            "Looks like ${transaction.category.displayName}. Tap to confirm or change it"
+        val text = when {
+            transaction.currency != defaultCurrency -> "In another currency. Tap to enter what it cost you"
+            transaction.category == Category.OTHER -> "Tap to choose a category"
+            transaction.status == TransactionStatus.NEEDS_REVIEW -> "Looks like ${transaction.category.displayName}. Tap to check it"
+            else -> "Saved under ${transaction.category.displayName}. Tap to change it"
         }
 
         val open = Intent(context, MainActivity::class.java)
@@ -75,13 +78,5 @@ object SmsNotifier {
             .build()
 
         manager.notify(transaction.id.toInt(), notification)
-    }
-
-    private fun currencySymbol(code: String): String = when (code) {
-        "INR" -> "₹"
-        "USD" -> "$"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        else -> "$code "
     }
 }

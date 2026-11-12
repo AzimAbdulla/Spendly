@@ -4,7 +4,7 @@
 **Spendly** is a native Android personal finance & expense tracker built with Jetpack Compose, Material 3, and Room SQLite.
 - **Privacy First & Offline Only**: No internet permissions (`android.permission.INTERNET` is intentionally omitted), no analytics, no cloud accounts, and zero remote network dependencies. All data is kept strictly on-device in a local Room database.
 - **Design Language**: Dark bento UI: flat near-black with opaque charcoal tiles, a monochrome accent with category hues for data, Space Grotesk for figures, Geist for body copy, an inverted floating pill dock, crisp vector icons.
-- **Core Capabilities**: Dashboard with custom Canvas charts, Calendar view, Insights & spending breakdown, on-device bank SMS parser/ingestion, multi-currency support, and quick manual transaction logging.
+- **Core Capabilities**: Home dashboard with a monthly budget, a searchable Activity list, a shaded Calendar, Insights, on-device bank SMS import with one-tap review, CSV export and import, and quick manual entry. One currency per install: the currency setting is the symbol every amount is shown in.
 
 ---
 
@@ -12,7 +12,7 @@
 - **Language**: Kotlin `2.3.20` (`jvmToolchain(17)`)
 - **UI Toolkit**: Jetpack Compose (BOM `2026.03.01`) + Material 3 + Material Icons Extended
 - **Architecture**: MVVM with Repository Pattern & Kotlin Coroutines / Flow
-- **Local Persistence**: Room `2.7.1` + KSP `2.3.12` + DataStore Preferences `1.1.4`
+- **Local Persistence**: Room `2.7.1` + KSP `2.3.12`; settings in `SharedPreferences` (`SpendlyPreferences`)
 - **Navigation**: AndroidX Navigation 3 (`androidx.navigation3`) with typed `NavKey` serializable objects
 - **Build System**: Gradle 9 with Kotlin DSL (`build.gradle.kts`) and Version Catalog (`gradle/libs.versions.toml`)
 - **Android Target**: `compileSdk = 36`, `targetSdk = 35`, `minSdk = 26`
@@ -80,28 +80,28 @@ app/src/main/kotlin/com/example/spendly/
 │   │   ├── TransactionDao.kt       # Room DAO with Flow-based reactive queries
 │   │   └── Converters.kt           # Room TypeConverters (LocalDate, Category, Enums)
 │   ├── TransactionRepository.kt    # Data layer abstraction exposing reactive transaction streams
-│   ├── SpendlyPreferences.kt       # DataStore preferences (currency, dark theme, review counts)
+│   ├── SpendlyPreferences.kt       # SharedPreferences: currency, theme, monthly budget, widget options, and the category learned for each SMS payee
+│   ├── Currency.kt                 # `currencySymbol(code)`: the only place a currency code becomes a symbol
+│   ├── CsvBackup.kt                # CSV export and import (Settings > Data); ids are not written, and an import skips expenses already here
 │   └── SampleData.kt               # Seed data for previews and initial state
 ├── sms/
-│   ├── SmsParser.kt                # Regex-based parser for bank SMS; records only debits that name an account (a/c, acct, account), so card, wallet and FASTag alerts are skipped
-│   ├── SmsReader.kt                # On-device telephony content provider scanner
-│   └── SmsReceiver.kt              # BroadcastReceiver for incoming SMS debits
+│   ├── SmsParser.kt                # Regex-based parser for bank SMS; records only debits that name an account (a/c, acct, account), so card, wallet and FASTag alerts are skipped. Also `inferCategory` (whole-word keywords, the payee first), `isBankSender` (ordinary phone numbers are ignored) and `smsKey` (sent time + text, stored on the expense so one SMS is never recorded twice)
+│   ├── SmsReader.kt                # "Scan past SMS": reads the last 90 days of the inbox
+│   └── SmsReceiver.kt              # BroadcastReceiver for incoming SMS debits; does nothing when "Read bank SMS" is off, and never logs a message
 ├── ui/
 │   ├── SpendlyViewModel.kt         # Central ViewModel managing state flows, metrics, & mutations
-│   ├── home/HomeScreen.kt          # Spending cards, Donut chart, Weekly chart, recent items
-│   ├── calendar/CalendarScreen.kt  # Monthly grid, daily spending breakdown, month total
-│   ├── insights/InsightsScreen.kt  # Category spending, daily averages, and a trend chart (6 months in Monthly mode, the week's 7 days in Weekly); tap or drag across its bars to see one's spend, starting on the latest. Right under the Spent and Top category tiles sits a GitHub-style grid of shaded squares: "Day by day" in Monthly (`MonthHeatmap`, a seven-column calendar, Sunday first) and "When you spend" in Weekly (`WeekHeatmap`, a column per day and a row per part of the day; expenses without a time are left out). Squares take four steps of one hue by quartile; tap one to show it in the header, press and hold for a popup (`HeatPopup`) with its spend, a line of context and its largest expense, which follows the finger. The grid and the trend chart share `timeHue`, which must never match the Top category tile: teal (`TintTimeAlt`), or amber when teal Travel leads
-│   ├── settings/SettingsScreen.kt  # Currency picker, SMS sync triggers, data export/reset
-│   ├── activity/ActivityScreen.kt  # Chronological transaction log with filters
+│   ├── home/HomeScreen.kt          # Month header with a Settings button, a strip for SMS expenses to check, total tile with the budget bar, top-category ring, week tile, top three categories, the month's recent expenses
+│   ├── calendar/CalendarScreen.kt  # Monthly grid with each day shaded by its spend (four steps, `heatLevels` / `heatRamp` from Insights), the selected day's expenses with "Add an expense for this day", month total
+│   ├── insights/InsightsScreen.kt  # One "Spent" tile (total, daily average, top category), category spending, and a trend chart (6 months in Monthly mode, the week's 7 days in Weekly); tap or drag across its bars to see one's spend, starting on the latest. Weekly mode adds "When you spend" (`WeekHeatmap`): a column per day and a row per part of the day, expenses without a time left out; squares take four steps of one hue by quartile, tap one to show it in the header, press and hold for a popup (`HeatPopup`) that follows the finger. The grid and the trend chart share teal `timeHue`
+│   ├── settings/SettingsScreen.kt  # Opened from Home's header: currency, theme, monthly budget, widgets, SMS, export / import / delete. "Load sample data" shows in debuggable builds only
+│   ├── activity/ActivityScreen.kt  # A dock tab: every expense by day with day totals, search, filter pills (needs review, each category), "Confirm" on SMS rows and "Confirm all"
 │   ├── transaction/
-│   │   ├── AddTransactionScreen.kt # Full-screen Add Expense page with interactive numpad
-│   │   └── EditTransactionScreen.kt# Form for editing/deleting existing expenses
+│   │   └── AddTransactionScreen.kt # Add expense (item, date, amount keypad, category); the same screen edits an expense when given `editing`, with a delete button
 │   ├── components/
 │   │   ├── SpendlyCard.kt          # Standard styled surface card matching Stitch design
-│   │   ├── StitchBottomDock.kt     # Floating pill bottom navigation bar with center FAB
+│   │   ├── StitchBottomDock.kt     # Floating pill dock: Home, Activity, the + button, Calendar, Insights
 │   │   ├── TransactionItem.kt      # List row with category badge, relative date & amount
-│   │   ├── DonutChart.kt           # Custom Compose Canvas donut chart with touch selection
-│   │   ├── CategoryCharts.kt       # Home's by-category chart in 5 styles (donut, stacked bar, tiles, rings, half donut), picked in Settings
+│   │   ├── CategoryColors.kt       # `stitchCategoryColors`: each category's hue
 │   │   └── WeeklyBarChart.kt       # Custom Compose Canvas 7-day spending bar chart
 │   └── theme/
 │       ├── Color.kt                # Dark bento tokens (`#050506` base, `#141416` tiles, monochrome accent)
@@ -139,8 +139,8 @@ app/src/main/kotlin/com/example/spendly/
 - **Dark bento design** (direction E, picked 2026-11-04; the Stitch "Liquid Luminescence" folder is now only a reference):
   - Flat backgrounds with no wallpaper glow: near-black `#050506` (Dark), `#000000` (Black), `#ECEEF3` (Light). Screen `Scaffold`s keep `containerColor = Color.Transparent`
   - Content lives in opaque tiles: `cardBackground` / `container` `#141416` dark and white in light, 24dp corners, no borders or rims (`glassRimBrush()` is transparent now)
-  - Home's header is "Month Year" between round arrows that step a month (next stops at the current month), as on Calendar; tapping the name opens `MonthPickerMenu` to jump further
-  - Home is a bento grid: a wide total tile (smaller decimals, expenses and daily average), a top-category ring tile beside a "this week" bars tile (it starts on today; tapping a day, or dragging sideways across the bars, shows that day's spend in its header with the week's total underneath), the By category card (style from Settings), then recent expenses
+  - Home's header is "Month Year" between round arrows that step a month (next stops at the current month), as on Calendar; tapping the name opens `MonthPickerMenu` to jump further. The month is one value in the view model, shared by Home, Calendar, Insights and Categories
+  - Home is a bento grid: a wide total tile (smaller decimals, expenses and daily average, and a bar for what's left of the monthly budget when one is set), a top-category ring tile beside a "this week" bars tile (it starts on today; tapping a day, or dragging sideways across the bars, shows that day's spend in its header with the week's total underneath), a By category card with the three biggest, then the month's recent expenses
   - Accent is monochrome: `colors.primary` is near-white in dark and near-black in light, with `onPrimary` the opposite, for buttons, the dock and selection
   - Tinted tiles (picked 2026-11-04): each kind of tile mixes its own shade from one hue with `colors.tint(hue)` (deep in the dark themes, pastel in light) and is drawn with `TintedTile`, whose content gets tinted secondary text, tracks, dividers and accent from `SpendlyTheme.colors`. Navy `TintMoney` for totals and each screen's main tile (Home total, Calendar grid and month total, Insights "Spent"), amber `TintTime` for trends (teal `TintTimeAlt` when an amber category tile sits beside it), plum `TintList` for expense lists, green `TintSafe` for Add expense (a deep green screen, mint in light, with fields and keys a step lighter, the amount a step lighter again and a green Save), and a category's own hue for category tiles (top-category ring, category detail list, the selected Add tile, Categories row icons). On Add expense the chosen category's colour also marks its name and the Item icon. Charts, settings groups, fields and keys stay on neutral charcoal
   - The dock matches the tiles: a charcoal pill with a hairline edge in the dark themes, white in light (`dockBackground`, `dockBorder`, `dockContent`, `dockContentSelected`, `dockPill`); the green + disc (`dockAction` = `TintSafe`, `onDockAction` = `OnTintSafe`) is its one bright control. It's drawn with `GlassSurface` and a `tint` override
@@ -169,6 +169,7 @@ app/src/main/kotlin/com/example/spendly/
 - In `Transaction.kt`, the date field is `java.time.LocalDate` (no time/clock component).
 - **Never** format `transaction.date` with hour/minute patterns such as `h:mm a` or `HH:mm` (this causes `java.time.temporal.UnsupportedTemporalTypeException: Unsupported field: ClockHourOfAmPm`).
 - Format `LocalDate` with date patterns only: `d MMM`, `d MMM yyyy`, `EEEE, MMM d`, or relative labels (`Today`, `Yesterday`).
+- Add and edit both set the date with a date picker (never in the future). An expense added for today gets the time; a backdated one has none. "Today" comes from `SpendlyViewModel.today`, refreshed when the app returns to the front.
 - Time of day lives in its own field, `transaction.time` (`LocalTime?`, added in DB v3; null for rows saved earlier, which show the date alone). Clock patterns (`h:mm a`, `HH:mm`) go on `transaction.time` only.
 - Transaction lists are newest first (`ORDER BY date DESC, time DESC, id DESC` in `TransactionDao`); screens rely on that order, so filter or group the list rather than re-sorting it.
 
@@ -185,5 +186,8 @@ app/src/main/kotlin/com/example/spendly/
 
 ### 5. Privacy & Permissions
 - Do not request `android.permission.INTERNET`.
+- `allowBackup` is off and `data_extraction_rules.xml` excludes everything, so nothing reaches cloud backup or a device transfer; CSV export is how data moves.
+- Amounts are spending, shown without a minus sign. Percentages round with `roundToInt()` everywhere.
+- Deleting an expense shows an Undo pill for 5 seconds (`Navigation.kt`); saving an edit confirms the expense and remembers the payee's category for later SMS.
 - Only SMS permissions (`android.permission.RECEIVE_SMS`, `android.permission.READ_SMS`) are declared for local regex parsing of bank notifications.
 - `android.permission.POST_NOTIFICATIONS` is declared only for the local alert `SmsNotifier` posts when a bank SMS expense is recorded; tapping it opens that expense.
