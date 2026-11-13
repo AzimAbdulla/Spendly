@@ -89,7 +89,7 @@ val GlassLightWallpaperBlobs = emptyList<Color>()
 val TintMoney = Color(0xFF5B7BE6)   // navy: totals and each screen's main tile
 val TintTime = Color(0xFFEF9F27)    // amber: week and month trends
 val TintTimeAlt = Color(0xFF5FB3B0) // teal: a trend tile that sits beside an amber category tile
-val TintList = Color(0xFF9B6FD6)    // plum: expense lists
+val TintList = Color(0xFFD9708A)    // rose: expense lists, a warm wine tile unlike any other on screen
 val TintSafe = Color(0xFF3FBF85)    // green: privacy, and Add expense with the + that opens it
 val OnTintSafe = Color(0xFF06140D)  // text and icons on a TintSafe fill (the + button, Save)
 

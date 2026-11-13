@@ -68,7 +68,7 @@ Widget settings apply instantly and cover a dark or light base, transparency, th
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/home.png" width="230"><br>Home</td>
-    <td align="center"><img src="docs/screenshots/home-recent.png" width="230"><br>Recent expenses</td>
+    <td align="center"><img src="docs/screenshots/activity.png" width="230"><br>Activity</td>
     <td align="center"><img src="docs/screenshots/add-expense.png" width="230"><br>Add expense</td>
   </tr>
   <tr>
@@ -165,7 +165,7 @@ The unit tests cover the SMS parser (including bank alert formats that must be s
 
 ## Design notes
 
-- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. Each kind of tile has its own tint (navy for totals, amber for trends, plum for lists, green for Add expense), and charts, settings and keys stay neutral.
+- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. Each kind of tile has its own tint (navy for totals, amber for trends, rose for lists, green for Add expense), and charts, settings and keys stay neutral.
 - Space Grotesk for figures, Geist for text, sentence case throughout, and vector icons instead of emoji.
 - A floating pill navigation bar with a green add button. Content fades out above it, and every scrolling screen ends with enough room to clear it.
 - Motion is short and calm: arrivals slow into place, exits speed away, and only touch feedback springs.

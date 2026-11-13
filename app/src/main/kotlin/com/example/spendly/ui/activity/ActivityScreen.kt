@@ -51,6 +51,7 @@ import com.example.spendly.ui.components.DockClearance
 import com.example.spendly.ui.components.ScreenHeader
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.components.TransactionRows
+import com.example.spendly.ui.components.rememberSeenIds
 import com.example.spendly.ui.theme.GeistFontFamily
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
@@ -96,6 +97,8 @@ fun ActivityScreen(
     }
     val days = filtered.groupBy { it.date }.entries.toList()
     val today = LocalDate.now()
+    // Tracked across every day's tile, so an expense that starts a new day still arrives in green
+    val seen = rememberSeenIds(transactions.map { it.id })
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -259,6 +262,8 @@ fun ActivityScreen(
                                     onTransactionClick = onTransactionClick,
                                     currencySymbol = currencySymbol,
                                     onConfirm = onConfirm,
+                                    flashBleed = 4.dp,
+                                    screenSeen = seen,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                 )
                             }

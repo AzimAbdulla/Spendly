@@ -42,7 +42,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Dp
 import com.example.spendly.ui.theme.TintSafe
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -123,6 +125,29 @@ fun rememberAnimatedValues(targets: List<Float>): List<Animatable<Float, Animati
 
 private class SeenRows(val resetKey: Any?, val ids: Set<Long>)
 
+/** The expenses a whole screen had shown before its latest change; [ids] is null until the first load. */
+class SeenIds internal constructor(val ids: Set<Long>?)
+
+/**
+ * For a screen that splits one list over several tiles (a tile per day): remembers which expenses
+ * the screen has shown, so a new one is animated even when it lands in a tile of its own. Pass
+ * the result to each tile's [TransactionRows].
+ */
+@Composable
+fun rememberSeenIds(ids: List<Long>): SeenIds {
+    val memory = LocalShownMemory.current
+    val slot = shownSlot(4)
+    var seen by remember { mutableStateOf((memory?.slots?.get(slot) as? SeenRows)?.ids) }
+    val before = seen
+    LaunchedEffect(ids) {
+        if (ids.isNotEmpty() || seen != null) {
+            seen = ids.toSet()
+            memory?.slots?.set(slot, SeenRows(null, ids.toSet()))
+        }
+    }
+    return SeenIds(before)
+}
+
 /**
  * Transaction rows with hairline dividers. A row that wasn't on screen last time grows in from
  * the top, so a new expense slides into place and pushes the rest down. Changing [resetKey]
@@ -136,6 +161,11 @@ fun TransactionRows(
     currencySymbol: String = "₹",
     resetKey: Any? = null,
     onConfirm: ((Long) -> Unit)? = null,
+    // How far the tile's own padding sits above the first row and below the last, so a new
+    // row's green wash can reach the tile's edge there too
+    flashBleed: Dp = 0.dp,
+    // From rememberSeenIds, when the screen keeps track across several tiles
+    screenSeen: SeenIds? = null,
     divider: @Composable () -> Unit = {
         HorizontalDivider(modifier = Modifier.padding(start = 56.dp), color = SpendlyTheme.colors.divider)
     }
@@ -147,7 +177,7 @@ fun TransactionRows(
     var seen by remember(resetKey) {
         mutableStateOf((memory?.slots?.get(slot) as? SeenRows)?.takeIf { it.resetKey == resetKey }?.ids)
     }
-    val seenBefore = seen
+    val seenBefore = if (screenSeen != null) screenSeen.ids else seen
     LaunchedEffect(ids, resetKey) {
         if (ids.isNotEmpty() || seen != null) {
             seen = ids.toSet()
@@ -167,18 +197,28 @@ fun TransactionRows(
                         flash.animateTo(0f, tween(900, delayMillis = Motion.AfterScreen + Motion.Long, easing = LinearEasing))
                     }
                 }
+                // The wash runs out past the row to the tile's edges, whose rounded shape trims it.
+                // It's drawn outside AnimatedVisibility, which would clip it to the row
+                val first = index == 0
+                val last = index == transactions.lastIndex
                 AnimatedVisibility(
                     visibleState = visibility,
+                    modifier = Modifier.drawBehind {
+                        if (flash.value > 0f) {
+                            val side = 32.dp.toPx()
+                            val above = if (first) flashBleed.toPx() else 0f
+                            val below = if (last) flashBleed.toPx() else 0f
+                            drawRect(
+                                color = TintSafe.copy(alpha = 0.24f * flash.value),
+                                topLeft = Offset(-side, -above),
+                                size = Size(size.width + side * 2, size.height + above + below)
+                            )
+                        }
+                    },
                     enter = fadeIn(Motion.enter(delayMillis = Motion.AfterScreen)) +
                         expandVertically(Motion.enter(Motion.Long, delayMillis = Motion.AfterScreen), expandFrom = Alignment.Top)
                 ) {
-                    Column(
-                        Modifier.drawBehind {
-                            if (flash.value > 0f) {
-                                drawRoundRect(TintSafe.copy(alpha = 0.24f * flash.value), cornerRadius = CornerRadius(12.dp.toPx()))
-                            }
-                        }
-                    ) {
+                    Column {
                         TransactionItem(
                             transaction = tx,
                             onClick = { onTransactionClick(tx.id) },

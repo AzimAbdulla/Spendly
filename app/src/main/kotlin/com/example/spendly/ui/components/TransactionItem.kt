@@ -1,5 +1,7 @@
 package com.example.spendly.ui.components
 
+import com.example.spendly.ui.theme.OnTintSafe
+import com.example.spendly.ui.theme.TintSafe
 import com.example.spendly.data.currencySymbol
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -170,12 +172,12 @@ fun TransactionItem(
                         text = "Confirm",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = colors.onPrimary,
+                        color = OnTintSafe,
                         modifier = Modifier
                             .padding(top = 2.dp)
                             .clip(CircleShape)
                             .clickable(onClick = onConfirm)
-                            .background(colors.primary)
+                            .background(TintSafe)
                             .padding(horizontal = 10.dp, vertical = 2.dp)
                     )
                 } else {
