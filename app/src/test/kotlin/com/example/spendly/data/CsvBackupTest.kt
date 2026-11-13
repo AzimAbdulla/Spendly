@@ -4,6 +4,7 @@ import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.data.model.TransactionSource
 import com.example.spendly.data.model.TransactionStatus
+import com.example.spendly.data.model.spend
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -21,8 +22,25 @@ class CsvBackupTest {
             id = 8, amount = 140.0, currency = "INR", merchant = "Arun K", category = Category.OTHER,
             date = LocalDate.of(2026, 11, 4), time = null, notes = "From SMS: Debited Rs 140.00\nvia UPI",
             source = TransactionSource.SMS, status = TransactionStatus.NEEDS_REVIEW
+        ),
+        Transaction(
+            id = 9, amount = 2000.0, currency = "INR", merchant = "", category = Category.SHOPPING,
+            date = LocalDate.of(2026, 11, 13), item = "For aunt", paidBack = true
         )
     )
+
+    @Test
+    fun spend_isZeroOnceAnExpenseIsPaidBack() {
+        assertEquals(listOf(450.5, 140.0, 0.0), expenses.map { it.spend })
+        // The amount itself stays on record
+        assertEquals(2000.0, expenses.last().amount, 0.001)
+    }
+
+    @Test
+    fun read_treatsAFileWithoutThePaidBackColumnAsNotPaidBack() {
+        val read = CsvBackup.read("date,amount,category\n2026-11-01,120,FOOD\n")!!
+        assertEquals(false, read[0].paidBack)
+    }
 
     @Test
     fun writeThenRead_returnsTheSameExpenses() {

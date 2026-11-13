@@ -1,5 +1,6 @@
 package com.example.spendly.ui.calendar
 
+import com.example.spendly.data.model.spend
 import com.example.spendly.ui.insights.heatLevels
 import com.example.spendly.ui.insights.heatRamp
 import androidx.compose.foundation.background
@@ -93,9 +94,9 @@ fun CalendarScreen(
     }
 
     val dayTransactions = txByDate[selectedDate] ?: emptyList()
-    val dayTotal = dayTransactions.sumOf { it.amount }
+    val dayTotal = dayTransactions.sumOf { it.spend }
     val monthTotal = txByDate.filterKeys { it.year == selectedMonth.year && it.month == selectedMonth.month }
-        .values.sumOf { list -> list.sumOf { it.amount } }
+        .values.sumOf { list -> list.sumOf { it.spend } }
 
     Scaffold(
         modifier = modifier,
@@ -218,7 +219,7 @@ fun CalendarScreen(
                             val totalCells = ((leadingEmpty + daysInMonth + 6) / 7) * 7
                             // Each day is shaded by how its spend ranks in the month, in four steps
                             val dayTotals = (1..daysInMonth).associateWith { day ->
-                                txByDate[month.atDay(day)]?.sumOf { it.amount } ?: 0.0
+                                txByDate[month.atDay(day)]?.sumOf { it.spend } ?: 0.0
                             }
                             val levelOf = heatLevels(dayTotals.values)
                             val ramp = heatRamp(tile.primary, tile.textPrimary)

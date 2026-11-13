@@ -163,9 +163,13 @@ fun TransactionItem(
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = colors.textPrimary,
+                // Paid back: still on record, but dimmed because it isn't counted
+                color = if (transaction.paidBack) colors.textSecondary else colors.textPrimary,
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
             )
+            if (transaction.paidBack) {
+                Text(text = "Paid back", fontSize = 12.sp, color = colors.textSecondary)
+            }
             if (transaction.status == TransactionStatus.NEEDS_REVIEW) {
                 if (onConfirm != null && ownSymbol == currencySymbol) {
                     Text(

@@ -1,5 +1,6 @@
 package com.example.spendly.widget
 
+import com.example.spendly.data.model.spend
 import com.example.spendly.data.currencySymbol
 import android.content.Context
 import android.content.Intent
@@ -147,23 +148,23 @@ internal suspend fun loadWidget(context: Context): Pair<WidgetData, WidgetStyle>
     val today = LocalDate.now()
     val month = YearMonth.from(today)
     val inMonth = all.filter { YearMonth.from(it.date) == month }
-    val monthTotal = inMonth.sumOf { it.amount }
+    val monthTotal = inMonth.sumOf { it.spend }
     val days = (6 downTo 0).map { today.minusDays(it.toLong()) }
     val data = WidgetData(
         monthName = month.format(DateTimeFormatter.ofPattern("MMMM")),
         monthTotal = monthTotal,
-        monthCount = inMonth.size,
+        monthCount = inMonth.count { !it.paidBack },
         dailyAverage = monthTotal / today.dayOfMonth,
         split = inMonth.groupBy { it.category }
-            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+            .mapValues { (_, txs) -> txs.sumOf { it.spend } }
             .entries.sortedByDescending { it.value }
             .map { it.key to it.value },
-        week = days.map { day -> all.filter { it.date == day }.sumOf { it.amount } },
+        week = days.map { day -> all.filter { it.date == day }.sumOf { it.spend } },
         weekLabels = days.map { it.format(DateTimeFormatter.ofPattern("EEEEE")) },
         recent = all.take(3),
         reviewCount = all.count { it.status == TransactionStatus.NEEDS_REVIEW },
         lastWeekTotal = (13 downTo 7).map { today.minusDays(it.toLong()) }
-            .sumOf { day -> all.filter { it.date == day }.sumOf { it.amount } },
+            .sumOf { day -> all.filter { it.date == day }.sumOf { it.spend } },
         todayList = all.filter { it.date == today }.take(3),
         payees = all.take(10)
             .filter { it.source == TransactionSource.SMS && it.merchant.isNotBlank() && it.merchant != "Unknown Merchant" }

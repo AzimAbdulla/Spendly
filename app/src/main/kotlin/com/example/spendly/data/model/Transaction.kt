@@ -23,8 +23,13 @@ data class Transaction(
     val status: TransactionStatus = TransactionStatus.CONFIRMED,
     // Identifies the SMS an import came from (when it was sent and its text), so the same
     // message is never recorded twice; null for manual expenses and imports before v4
-    val smsKey: String? = null
+    val smsKey: String? = null,
+    // Someone else paid this back, so the record stays but it isn't the user's own spending
+    @ColumnInfo(defaultValue = "0") val paidBack: Boolean = false
 )
+
+/** What an expense cost the user: nothing once it's been paid back. Every total sums this. */
+val Transaction.spend: Double get() = if (paidBack) 0.0 else amount
 
 enum class Category(val displayName: String, val shortName: String) {
     FOOD("Food & Dining", "Dining"),

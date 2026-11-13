@@ -27,6 +27,7 @@ It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from
 
 **Tracking**
 - Add an expense in one screen: an item name, a date, an amount keypad and a category. The same screen edits or deletes an expense later, and a delete can be undone for a few seconds.
+- Mark an expense as paid back when someone else covers it: it stays on record but is left out of every total.
 - One currency per install, chosen in Settings from INR, USD, EUR, GBP and others.
 - An optional monthly budget, with what is left of it shown on Home.
 
@@ -165,7 +166,7 @@ The unit tests cover the SMS parser (including bank alert formats that must be s
 
 ## Design notes
 
-- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. Each kind of tile has its own tint (navy for totals, amber for trends, rose for lists, green for Add expense), and charts, settings and keys stay neutral.
+- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. Each kind of tile has its own tint (navy for totals, amber for trends, sky blue for lists, green for Add expense), and charts, settings and keys stay neutral.
 - Space Grotesk for figures, Geist for text, sentence case throughout, and vector icons instead of emoji.
 - A floating pill navigation bar with a green add button. Content fades out above it, and every scrolling screen ends with enough room to clear it.
 - Motion is short and calm: arrivals slow into place, exits speed away, and only touch feedback springs.

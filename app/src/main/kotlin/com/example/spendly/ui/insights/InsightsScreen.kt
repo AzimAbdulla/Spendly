@@ -1,5 +1,6 @@
 package com.example.spendly.ui.insights
 
+import com.example.spendly.data.model.spend
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -127,7 +128,7 @@ fun InsightsScreen(
         weekLabel(weekOffset, today)
     }
 
-    val periodTotal = periodTransactions.sumOf { it.amount }
+    val periodTotal = periodTransactions.sumOf { it.spend }
     // A finished month averages over all its days; the current one over the days so far
     val elapsedUnits = when {
         !isMonthlySelected -> 7
@@ -137,7 +138,7 @@ fun InsightsScreen(
     val dailyAverage = if (periodTotal > 0) periodTotal / elapsedUnits else 0.0
 
     val categorySums = remember(periodTransactions) {
-        periodTransactions.groupBy { it.category }.mapValues { it.value.sumOf { tx -> tx.amount } }
+        periodTransactions.groupBy { it.category }.mapValues { it.value.sumOf { tx -> tx.spend } }
     }
     val activeCategories = categorySums.filter { it.value > 0 }.entries.sortedByDescending { it.value }
     val topCategoryEntry = activeCategories.firstOrNull()
@@ -155,7 +156,7 @@ fun InsightsScreen(
                 Triple(
                     ym.format(DateTimeFormatter.ofPattern("MMM")),
                     ym.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                    transactions.filter { YearMonth.from(it.date) == ym }.sumOf { it.amount }
+                    transactions.filter { YearMonth.from(it.date) == ym }.sumOf { it.spend }
                 )
             }
         } else {
@@ -163,7 +164,7 @@ fun InsightsScreen(
                 Triple(
                     date.format(DateTimeFormatter.ofPattern("EEE")),
                     if (date == today) "Today" else date.format(DateTimeFormatter.ofPattern("EEEE, d MMM")),
-                    transactions.filter { it.date == date }.sumOf { it.amount }
+                    transactions.filter { it.date == date }.sumOf { it.spend }
                 )
             }
         }
@@ -549,7 +550,7 @@ private fun WeekHeatmap(weekStart: LocalDate, transactions: List<Transaction>, h
             (tx.date.toEpochDay() - weekStart.toEpochDay()).toInt() to part
         }
     }
-    val totals = remember(byCell) { byCell.mapValues { (_, txs) -> txs.sumOf { it.amount } } }
+    val totals = remember(byCell) { byCell.mapValues { (_, txs) -> txs.sumOf { it.spend } } }
     val level = heatLevels(totals.values)
     val ramp = heatRamp(hue, colors.textPrimary)
     val rows = DayParts.size
@@ -747,8 +748,8 @@ private fun HeatPopup(
 ) {
     val colors = SpendlyTheme.colors
     val density = LocalDensity.current
-    val total = expenses.sumOf { it.amount }
-    val largest = expenses.maxByOrNull { it.amount }
+    val total = expenses.sumOf { it.spend }
+    val largest = expenses.filter { !it.paidBack }.maxByOrNull { it.amount }
     val position = remember(centerX, top, density) {
         object : PopupPositionProvider {
             override fun calculatePosition(

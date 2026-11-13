@@ -1,5 +1,6 @@
 package com.example.spendly.ui.categories
 
+import com.example.spendly.data.model.spend
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,10 +76,10 @@ fun CategoriesScreen(
     val colors = SpendlyTheme.colors
 
     val monthTransactions = transactions.filter { YearMonth.from(it.date) == month }
-    val monthTotal = monthTransactions.sumOf { it.amount }
+    val monthTotal = monthTransactions.sumOf { it.spend }
     val byCategory = monthTransactions
         .groupBy { it.category }
-        .map { (cat, list) -> Triple(cat, list.sumOf { it.amount }, list.size) }
+        .map { (cat, list) -> Triple(cat, list.sumOf { it.spend }, list.size) }
         .sortedByDescending { it.second }
 
     Scaffold(
@@ -184,8 +185,8 @@ fun CategoryDetailScreen(
     val items = transactions
         .filter { it.category == category && YearMonth.from(it.date) == month }
         .sortedByDescending { it.date }
-    val total = items.sumOf { it.amount }
-    val monthAll = transactions.filter { YearMonth.from(it.date) == month }.sumOf { it.amount }
+    val total = items.sumOf { it.spend }
+    val monthAll = transactions.filter { YearMonth.from(it.date) == month }.sumOf { it.spend }
     val sharePct = if (monthAll > 0) ((total / monthAll) * 100).roundToInt() else 0
 
     Scaffold(

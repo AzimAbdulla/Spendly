@@ -1,5 +1,6 @@
 package com.example.spendly.ui.transaction
 
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.DatePicker
@@ -111,7 +112,7 @@ fun AddTransactionScreen(
     initialDate: LocalDate = LocalDate.now(),
     editing: Transaction? = null,
     defaultCurrency: String = "INR",
-    onSaved: (amount: Double, category: Category, item: String, date: LocalDate) -> Unit,
+    onSaved: (amount: Double, category: Category, item: String, date: LocalDate, paidBack: Boolean) -> Unit,
     onDelete: (() -> Unit)? = null,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -141,6 +142,7 @@ fun AddTransactionScreen(
     var selectedCategory by remember { mutableStateOf(editing?.category ?: prefillCategory ?: Category.FOOD) }
     var date by remember { mutableStateOf(editing?.date ?: initialDate) }
     var pickingDate by remember { mutableStateOf(false) }
+    var paidBack by remember { mutableStateOf(editing?.paidBack ?: false) }
     var saved by remember { mutableStateOf(false) }
     LaunchedEffect(saved) {
         if (saved) {
@@ -337,8 +339,33 @@ fun AddTransactionScreen(
                         color = colors.textPrimary
                     )
                 }
+                // Paid back by someone: the expense is kept, but left out of every total
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { paidBack = !paidBack }
+                        .background(if (paidBack) colors.primary else colors.container)
+                        .border(1.dp, if (paidBack) colors.primary else colors.border, RoundedCornerShape(14.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (paidBack) Icons.Default.Check else Icons.Outlined.Replay,
+                        contentDescription = null,
+                        tint = if (paidBack) colors.onPrimary else colors.textSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Paid back",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (paidBack) colors.onPrimary else colors.textPrimary
+                    )
+                }
                 val payee = editing?.merchant?.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
                 val origin = when {
+                    paidBack -> "Not counted in your spending"
                     editing == null -> null
                     editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
                     payee != null -> "Paid to $payee"
@@ -643,7 +670,7 @@ fun AddTransactionScreen(
                             if (!saved && canSave) {
                                 saved = true
                                 // Saved straight away, so leaving early never loses the expense
-                                onSaved(parsedAmount, selectedCategory, item.trim(), date)
+                                onSaved(parsedAmount, selectedCategory, item.trim(), date, paidBack)
                             }
                         }
                     ) {

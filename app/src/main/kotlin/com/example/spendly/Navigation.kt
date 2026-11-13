@@ -248,7 +248,7 @@ fun MainNavigation(
                                 onSettingsClick = { backStack.add(SettingsDestination) },
                                 monthlyTotal = monthlyTotal,
                                 monthlyBudget = monthlyBudget,
-                                transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth },
+                                transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth && !it.paidBack },
                                 hasAnyExpenses = transactions.isNotEmpty(),
                                 recentTransactions = recentTransactions,
                                 reviewCount = reviewCount,
@@ -342,7 +342,7 @@ fun MainNavigation(
                                     prefillCategory = key.category?.let { name -> Category.entries.firstOrNull { it.name == name } },
                                     initialDate = key.date?.let { LocalDate.parse(it) } ?: today,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date -> vm.addTransaction(amount, category, item, date) },
+                                    onSaved = { amount, category, item, date, paidBack -> vm.addTransaction(amount, category, item, date, paidBack) },
                                     // Also called a moment after saving, when back may already have closed it
                                     onCancel = { if (backStack.lastOrNull() is AddTransactionDestination) backStack.removeLastOrNull() }
                                 )
@@ -359,7 +359,7 @@ fun MainNavigation(
                                 AddTransactionScreen(
                                     editing = tx,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date ->
+                                    onSaved = { amount, category, item, date, paidBack ->
                                         vm.updateTransaction(
                                             tx.copy(
                                                 amount = amount,
@@ -367,6 +367,7 @@ fun MainNavigation(
                                                 category = category,
                                                 item = item,
                                                 date = date,
+                                                paidBack = paidBack,
                                                 status = TransactionStatus.CONFIRMED
                                             )
                                         )

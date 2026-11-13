@@ -1,5 +1,6 @@
 package com.example.spendly.ui
 
+import com.example.spendly.data.model.spend
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -87,7 +88,7 @@ class SpendlyViewModel(
         )
 
     val monthlyTotal: StateFlow<Double> = combine(transactions, _selectedMonth) { list, month ->
-            list.filter { YearMonth.from(it.date) == month }.sumOf { it.amount }
+            list.filter { YearMonth.from(it.date) == month }.sumOf { it.spend }
         }
         .stateIn(
             scope = viewModelScope,
@@ -101,7 +102,7 @@ class SpendlyViewModel(
                 emptyMap()
             } else {
                 inMonth.groupBy { it.category }
-                    .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+                    .mapValues { (_, txs) -> txs.sumOf { it.spend } }
             }
         }
         .stateIn(
@@ -113,7 +114,7 @@ class SpendlyViewModel(
     val weeklySpending: StateFlow<List<Double>> = combine(transactions, _today) { list, today ->
             (6 downTo 0).map { daysAgo ->
                 val date = today.minusDays(daysAgo.toLong())
-                list.filter { it.date == date }.sumOf { it.amount }
+                list.filter { it.date == date }.sumOf { it.spend }
             }
         }
         .stateIn(
@@ -123,7 +124,7 @@ class SpendlyViewModel(
         )
 
     /** Saves an expense on [date]; one for today gets the time too, a backdated one has none. */
-    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate) {
+    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate, paidBack: Boolean = false) {
         val now = LocalDateTime.now()
         viewModelScope.launch {
             repository.addTransaction(
@@ -135,7 +136,8 @@ class SpendlyViewModel(
                     date = date,
                     time = if (date == now.toLocalDate()) now.toLocalTime().withNano(0) else null,
                     item = item,
-                    source = TransactionSource.MANUAL
+                    source = TransactionSource.MANUAL,
+                    paidBack = paidBack
                 )
             )
         }

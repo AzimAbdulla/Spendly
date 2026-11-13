@@ -1,5 +1,6 @@
 package com.example.spendly.ui.activity
 
+import com.example.spendly.data.model.spend
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -80,6 +81,8 @@ fun ActivityScreen(
     var reviewOnly by rememberSaveable { mutableStateOf(initialFilter == ActivityFilter.REVIEW) }
     var category by rememberSaveable { mutableStateOf<Category?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
+    var paidBackOnly by rememberSaveable { mutableStateOf(false) }
+    val anyPaidBack = transactions.any { it.paidBack }
 
     val reviewCount = transactions.count { it.status == TransactionStatus.NEEDS_REVIEW }
     val usedCategories = remember(transactions) {
@@ -90,6 +93,7 @@ fun ActivityScreen(
     val filtered = transactions.filter { tx ->
         (!reviewOnly || tx.status == TransactionStatus.NEEDS_REVIEW) &&
             (category == null || tx.category == category) &&
+            (!paidBackOnly || tx.paidBack) &&
             words.all { word ->
                 tx.item.lowercase().contains(word) || tx.merchant.lowercase().contains(word) ||
                     tx.category.displayName.lowercase().contains(word) || String.format("%.2f", tx.amount).contains(word)
@@ -160,8 +164,9 @@ fun ActivityScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    FilterPill("All", selected = !reviewOnly && category == null) {
+                    FilterPill("All", selected = !reviewOnly && !paidBackOnly && category == null) {
                         reviewOnly = false
+                        paidBackOnly = false
                         category = null
                     }
                 }
@@ -170,13 +175,18 @@ fun ActivityScreen(
                         FilterPill("Needs review \u00B7 $reviewCount", selected = reviewOnly) { reviewOnly = !reviewOnly }
                     }
                 }
+                if (anyPaidBack || paidBackOnly) {
+                    item {
+                        FilterPill("Paid back", selected = paidBackOnly) { paidBackOnly = !paidBackOnly }
+                    }
+                }
                 items(usedCategories) { cat ->
                     FilterPill(cat.displayName, selected = category == cat) { category = if (category == cat) null else cat }
                 }
             }
 
             if (filtered.isEmpty()) {
-                val searching = words.isNotEmpty() || category != null
+                val searching = words.isNotEmpty() || category != null || paidBackOnly
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -247,7 +257,7 @@ fun ActivityScreen(
                                     color = colors.textSecondary
                                 )
                                 Text(
-                                    text = "$currencySymbol${String.format("%,.0f", dayTransactions.sumOf { it.amount })}",
+                                    text = "$currencySymbol${String.format("%,.0f", dayTransactions.sumOf { it.spend })}",
                                     fontFamily = SpaceGroteskFontFamily,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
