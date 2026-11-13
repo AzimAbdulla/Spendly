@@ -362,7 +362,6 @@ fun AddTransactionScreen(
                 }
                 val payee = editing?.merchant?.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
                 val origin = when {
-                    paidBack -> "Not counted"
                     editing == null -> null
                     editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
                     payee != null -> "Paid to $payee"
