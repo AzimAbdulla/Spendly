@@ -1,7 +1,16 @@
 package com.example.spendly.ui.transaction
 
+import com.example.spendly.ui.theme.SpendlyThemeColors
+import com.example.spendly.data.model.sharing
+import com.example.spendly.data.model.Sharing
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.ui.unit.Dp
-import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.DatePicker
@@ -113,7 +122,7 @@ fun AddTransactionScreen(
     initialDate: LocalDate = LocalDate.now(),
     editing: Transaction? = null,
     defaultCurrency: String = "INR",
-    onSaved: (amount: Double, category: Category, item: String, date: LocalDate, paidBack: Boolean) -> Unit,
+    onSaved: (amount: Double, category: Category, item: String, date: LocalDate, sharing: Sharing) -> Unit,
     onDelete: (() -> Unit)? = null,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -143,7 +152,8 @@ fun AddTransactionScreen(
     var selectedCategory by remember { mutableStateOf(editing?.category ?: prefillCategory ?: Category.FOOD) }
     var date by remember { mutableStateOf(editing?.date ?: initialDate) }
     var pickingDate by remember { mutableStateOf(false) }
-    var paidBack by remember { mutableStateOf(editing?.paidBack ?: false) }
+    var sharing by remember { mutableStateOf(editing?.sharing ?: Sharing()) }
+    var pickingSharing by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
     LaunchedEffect(saved) {
         if (saved) {
@@ -185,6 +195,19 @@ fun AddTransactionScreen(
     val currencySymbol = currencySymbol(defaultCurrency)
 
     val parsedAmount = amountStr.toDoubleOrNull() ?: 0.0
+
+    if (pickingSharing) {
+        WhoIsThisForSheet(
+            current = sharing,
+            amount = parsedAmount,
+            currencySymbol = currencySymbol,
+            onDone = {
+                sharing = it
+                pickingSharing = false
+            },
+            onDismiss = { pickingSharing = false }
+        )
+    }
 
     if (pickingDate) {
         // The picker works in UTC days; an expense can't be dated in the future
@@ -336,32 +359,17 @@ fun AddTransactionScreen(
                         color = colors.textPrimary
                     )
                 }
-                // Paid back by someone: the expense is kept, but left out of every total
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { paidBack = !paidBack }
-                        .background(if (paidBack) colors.primary else colors.container)
-                        .border(1.dp, if (paidBack) colors.primary else colors.border, RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (paidBack) Icons.Default.Check else Icons.Outlined.Replay,
-                        contentDescription = null,
-                        tint = if (paidBack) colors.onPrimary else colors.textSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Paid back",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (paidBack) colors.onPrimary else colors.textPrimary
-                    )
-                }
+                // Who it's for: just me, a split, owed back or paid back. Opens WhoIsThisForSheet
+                SharingChip(
+                    sharing = sharing,
+                    currencySymbol = currencySymbol,
+                    colors = colors,
+                    onClick = { pickingSharing = true }
+                )
                 val payee = editing?.merchant?.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
+                val share = sharing.myShare
                 val origin = when {
+                    share != null && parsedAmount > 0 && share >= parsedAmount -> "Your share is more than the bill"
                     editing == null -> null
                     editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
                     payee != null -> "Paid to $payee"
@@ -652,7 +660,8 @@ fun AddTransactionScreen(
                 ) {
                     val fold by animateFloatAsState(if (saved) 1f else 0f, Motion.move(), label = "saveFold")
                     // Nothing to save until there's an amount: Save stays dimmed and ignores taps
-                    val canSave = parsedAmount > 0
+                    // A split needs a share above nothing and below the bill
+                    val canSave = parsedAmount > 0 && sharing.myShare.let { it == null || (it > 0 && it < parsedAmount) }
                     val saveAlpha by animateFloatAsState(if (canSave || saved) 1f else 0.4f, Motion.move(Motion.Short), label = "saveAlpha")
                     Surface(
                         modifier = Modifier
@@ -666,7 +675,7 @@ fun AddTransactionScreen(
                             if (!saved && canSave) {
                                 saved = true
                                 // Saved straight away, so leaving early never loses the expense
-                                onSaved(parsedAmount, selectedCategory, item.trim(), date, paidBack)
+                                onSaved(parsedAmount, selectedCategory, item.trim(), date, sharing)
                             }
                         }
                     ) {
@@ -743,5 +752,221 @@ private fun FillOrScrollColumn(
             verticalArrangement = verticalArrangement,
             content = content
         )
+    }
+}
+
+/** Money without decimals when it's a whole amount, as people say it. */
+private fun money(symbol: String, amount: Double): String =
+    symbol + String.format(if (amount % 1.0 == 0.0) "%,.0f" else "%,.2f", amount)
+
+/** The chip beside the date: says who the expense is for, in that answer's colour. */
+@Composable
+private fun SharingChip(sharing: Sharing, currencySymbol: String, colors: SpendlyThemeColors, onClick: () -> Unit) {
+    val share = sharing.myShare
+    val (label, fill, ink) = when {
+        share != null -> Triple("Split \u00B7 my share ${money(currencySymbol, share)}", lerp(colors.container, colors.primary, 0.3f), colors.textPrimary)
+        sharing.owed -> Triple("Owed back", colors.tertiary.copy(alpha = 0.22f), colors.tertiary)
+        sharing.paidBack -> Triple("Paid back", colors.primary, colors.onPrimary)
+        else -> Triple("Just me", colors.container, colors.textPrimary)
+    }
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClickLabel = "Choose who this is for", onClick = onClick)
+            .background(fill)
+            .border(1.dp, if (sharing.isJustMe) colors.border else Color.Transparent, RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        if (sharing.paidBack) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = ink, modifier = Modifier.size(16.dp))
+        }
+        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = ink, maxLines = 1)
+        if (sharing.isJustMe) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+private enum class ShareChoice { JUST_ME, SPLIT, OWED, PAID_BACK }
+
+/**
+ * "Who is this for?": the four answers, with a field for my share when the bill is split. An
+ * expense that's still owed gets "They've paid me back" on top, which settles it in one tap.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WhoIsThisForSheet(
+    current: Sharing,
+    amount: Double,
+    currencySymbol: String,
+    onDone: (Sharing) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = SpendlyTheme.colors
+    var choice by remember {
+        mutableStateOf(
+            when {
+                current.isSplit -> ShareChoice.SPLIT
+                current.owed -> ShareChoice.OWED
+                current.paidBack -> ShareChoice.PAID_BACK
+                else -> ShareChoice.JUST_ME
+            }
+        )
+    }
+    var shareText by remember {
+        mutableStateOf(current.myShare?.let { String.format(Locale.US, "%.2f", it).removeSuffix("00").removeSuffix(".") } ?: "")
+    }
+    val share = shareText.toDoubleOrNull()
+    val shareOk = share != null && share > 0 && (amount <= 0 || share < amount)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = colors.popup
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Who is this for?",
+                fontFamily = SpaceGroteskFontFamily,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.textPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            if (current.owed) {
+                Text(
+                    text = "They've paid me back",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = OnTintSafe,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onDone(current.settled()) }
+                        .background(TintSafe)
+                        .padding(vertical = 14.dp)
+                )
+            }
+            ShareOption("Just me", "All of it is my spending", choice == ShareChoice.JUST_ME, onSelect = { choice = ShareChoice.JUST_ME })
+            ShareOption("Split the bill", "Only my share counts", choice == ShareChoice.SPLIT, onSelect = { choice = ShareChoice.SPLIT }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("My share", fontSize = 14.sp, color = colors.textSecondary)
+                    Row(
+                        modifier = Modifier
+                            .width(140.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(colors.background)
+                            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("$currencySymbol ", fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textSecondary)
+                        BasicTextField(
+                            value = shareText,
+                            onValueChange = { typed ->
+                                if (typed.isEmpty() || Regex("^\\d{0,9}(\\.\\d{0,2})?$").matches(typed)) shareText = typed
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            textStyle = TextStyle(fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textPrimary),
+                            cursorBrush = SolidColor(colors.textPrimary),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                Text(
+                    text = when {
+                        share == null || share <= 0 -> "Enter what your part cost"
+                        amount <= 0 -> "Then enter the whole bill as the amount"
+                        share >= amount -> "Your share has to be less than the bill"
+                        else -> "Others owe you ${money(currencySymbol, amount - share)}"
+                    },
+                    fontSize = 13.sp,
+                    color = if (shareOk) colors.tertiary else colors.textSecondary
+                )
+            }
+            ShareOption("They'll pay me back", "Counts until they do", choice == ShareChoice.OWED, onSelect = { choice = ShareChoice.OWED })
+            ShareOption("Already paid back", "Kept on record, not counted", choice == ShareChoice.PAID_BACK, onSelect = { choice = ShareChoice.PAID_BACK })
+
+            val canFinish = choice != ShareChoice.SPLIT || shareOk
+            Text(
+                text = "Done",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.onPrimary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .fillMaxWidth()
+                    .alpha(if (canFinish) 1f else 0.4f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(enabled = canFinish) {
+                        onDone(
+                            when (choice) {
+                                ShareChoice.JUST_ME -> Sharing()
+                                // A new split is owed until the others pay; an existing one keeps its state
+                                ShareChoice.SPLIT -> Sharing(owed = if (current.isSplit) current.owed else true, myShare = share)
+                                ShareChoice.OWED -> Sharing(owed = true)
+                                ShareChoice.PAID_BACK -> Sharing(paidBack = true)
+                            }
+                        )
+                    }
+                    .background(colors.primary)
+                    .padding(vertical = 14.dp)
+            )
+        }
+    }
+}
+
+/** One answer in the sheet: a radio, its name and what it means, and anything it reveals when picked. */
+@Composable
+private fun ShareOption(
+    title: String,
+    detail: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    extra: (@Composable ColumnScope.() -> Unit)? = null
+) {
+    val colors = SpendlyTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onSelect)
+            .background(if (selected) colors.glassSelected else colors.container)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            RadioButton(
+                selected = selected,
+                onClick = onSelect,
+                modifier = Modifier.size(20.dp),
+                colors = RadioButtonDefaults.colors(selectedColor = colors.textPrimary, unselectedColor = colors.textSecondary)
+            )
+            Column {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+                Text(detail, fontSize = 13.sp, color = colors.textSecondary)
+            }
+        }
+        if (selected && extra != null) {
+            Column(
+                modifier = Modifier.padding(start = 34.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = extra
+            )
+        }
     }
 }

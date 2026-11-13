@@ -1,5 +1,6 @@
 package com.example.spendly.ui.activity
 
+import com.example.spendly.data.model.owedAmount
 import com.example.spendly.data.model.spend
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,7 +62,7 @@ import com.example.spendly.ui.theme.tint
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-enum class ActivityFilter { ALL, REVIEW }
+enum class ActivityFilter { ALL, REVIEW, OWED }
 
 /**
  * Every expense, newest first, a tile per day with the day's total. Search looks at the item,
@@ -73,6 +74,7 @@ fun ActivityScreen(
     onTransactionClick: (Long) -> Unit,
     onConfirm: (Long) -> Unit,
     onConfirmAll: () -> Unit,
+    onPaid: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     currencySymbol: String = "\u20B9",
     initialFilter: ActivityFilter = ActivityFilter.ALL
@@ -82,6 +84,8 @@ fun ActivityScreen(
     var category by rememberSaveable { mutableStateOf<Category?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     var paidBackOnly by rememberSaveable { mutableStateOf(false) }
+    var owedOnly by rememberSaveable { mutableStateOf(initialFilter == ActivityFilter.OWED) }
+    val owedTotal = transactions.sumOf { it.owedAmount }
     val anyPaidBack = transactions.any { it.paidBack }
 
     val reviewCount = transactions.count { it.status == TransactionStatus.NEEDS_REVIEW }
@@ -94,6 +98,7 @@ fun ActivityScreen(
         (!reviewOnly || tx.status == TransactionStatus.NEEDS_REVIEW) &&
             (category == null || tx.category == category) &&
             (!paidBackOnly || tx.paidBack) &&
+            (!owedOnly || tx.owed) &&
             words.all { word ->
                 tx.item.lowercase().contains(word) || tx.merchant.lowercase().contains(word) ||
                     tx.category.displayName.lowercase().contains(word) || String.format("%.2f", tx.amount).contains(word)
@@ -164,15 +169,24 @@ fun ActivityScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    FilterPill("All", selected = !reviewOnly && !paidBackOnly && category == null) {
+                    FilterPill("All", selected = !reviewOnly && !paidBackOnly && !owedOnly && category == null) {
                         reviewOnly = false
                         paidBackOnly = false
+                        owedOnly = false
                         category = null
                     }
                 }
                 if (reviewCount > 0 || reviewOnly) {
                     item {
                         FilterPill("Needs review \u00B7 $reviewCount", selected = reviewOnly) { reviewOnly = !reviewOnly }
+                    }
+                }
+                if (owedTotal > 0 || owedOnly) {
+                    item {
+                        FilterPill(
+                            if (owedTotal > 0) "Owed \u00B7 $currencySymbol${String.format("%,.0f", owedTotal)}" else "Owed",
+                            selected = owedOnly
+                        ) { owedOnly = !owedOnly }
                     }
                 }
                 if (anyPaidBack || paidBackOnly) {
@@ -198,6 +212,7 @@ fun ActivityScreen(
                         text = when {
                             searching -> "No matching expenses"
                             reviewOnly -> "Nothing to review"
+                            owedOnly -> "Nothing owed to you"
                             else -> "No expenses yet"
                         },
                         fontSize = 16.sp,
@@ -208,6 +223,7 @@ fun ActivityScreen(
                         text = when {
                             searching -> "Try another word, or clear the filters"
                             reviewOnly -> "Every SMS expense has been checked"
+                            owedOnly -> "Everyone has paid you back"
                             else -> "Tap + to add your first expense"
                         },
                         fontSize = 14.sp,
@@ -272,6 +288,7 @@ fun ActivityScreen(
                                     onTransactionClick = onTransactionClick,
                                     currencySymbol = currencySymbol,
                                     onConfirm = onConfirm,
+                                    onPaid = onPaid,
                                     flashBleed = 4.dp,
                                     screenSeen = seen,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)

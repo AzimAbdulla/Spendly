@@ -1,5 +1,6 @@
 package com.example.spendly
 
+import com.example.spendly.data.model.spend
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -123,6 +124,7 @@ fun MainNavigation(
     val recentTransactions by vm.recentTransactions.collectAsStateWithLifecycle()
     val monthlyTotal by vm.monthlyTotal.collectAsStateWithLifecycle()
     val reviewCount by vm.reviewCount.collectAsStateWithLifecycle()
+    val owedTotal by vm.owedTotal.collectAsStateWithLifecycle()
     val categoryTotals by vm.categoryTotals.collectAsStateWithLifecycle()
     val weeklySpending by vm.weeklySpending.collectAsStateWithLifecycle()
     val defaultCurrency by vm.defaultCurrency.collectAsStateWithLifecycle()
@@ -206,7 +208,7 @@ fun MainNavigation(
     // (A NavEntry's contentKey defaults to its key's toString().)
     val shownMemories = remember { HashMap<Any, ShownMemory>() }
     val tabContentKeys = remember {
-        setOf<NavKey>(HomeDestination, ActivityDestination(), ActivityDestination(reviewOnly = true), CalendarDestination, InsightsDestination)
+        setOf<NavKey>(HomeDestination, ActivityDestination(), ActivityDestination(reviewOnly = true), ActivityDestination(owedOnly = true), CalendarDestination, InsightsDestination)
             .map { it.toString() }
             .toSet()
     }
@@ -244,11 +246,13 @@ fun MainNavigation(
                                 onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
                                 onReviewClick = { goToTab(ActivityDestination(reviewOnly = true)) },
                                 onViewAllClick = { goToTab(ActivityDestination()) },
+                                owedTotal = owedTotal,
+                                onOwedClick = { goToTab(ActivityDestination(owedOnly = true)) },
                                 onCategoriesClick = { backStack.add(CategoriesDestination) },
                                 onSettingsClick = { backStack.add(SettingsDestination) },
                                 monthlyTotal = monthlyTotal,
                                 monthlyBudget = monthlyBudget,
-                                transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth && !it.paidBack },
+                                transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth && it.spend > 0 },
                                 hasAnyExpenses = transactions.isNotEmpty(),
                                 recentTransactions = recentTransactions,
                                 reviewCount = reviewCount,
@@ -263,7 +267,12 @@ fun MainNavigation(
                         entry<ActivityDestination>(metadata = TabMotion) { key ->
                             ActivityScreen(
                                 transactions = transactions,
-                                initialFilter = if (key.reviewOnly) ActivityFilter.REVIEW else ActivityFilter.ALL,
+                                initialFilter = when {
+                                    key.reviewOnly -> ActivityFilter.REVIEW
+                                    key.owedOnly -> ActivityFilter.OWED
+                                    else -> ActivityFilter.ALL
+                                },
+                                onPaid = { vm.markPaid(it) },
                                 onTransactionClick = { id -> backStack.add(EditTransactionDestination(id)) },
                                 onConfirm = { vm.confirmTransaction(it) },
                                 onConfirmAll = { vm.confirmAllReviews() },
@@ -342,7 +351,7 @@ fun MainNavigation(
                                     prefillCategory = key.category?.let { name -> Category.entries.firstOrNull { it.name == name } },
                                     initialDate = key.date?.let { LocalDate.parse(it) } ?: today,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date, paidBack -> vm.addTransaction(amount, category, item, date, paidBack) },
+                                    onSaved = { amount, category, item, date, sharing -> vm.addTransaction(amount, category, item, date, sharing) },
                                     // Also called a moment after saving, when back may already have closed it
                                     onCancel = { if (backStack.lastOrNull() is AddTransactionDestination) backStack.removeLastOrNull() }
                                 )
@@ -359,7 +368,7 @@ fun MainNavigation(
                                 AddTransactionScreen(
                                     editing = tx,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date, paidBack ->
+                                    onSaved = { amount, category, item, date, sharing ->
                                         vm.updateTransaction(
                                             tx.copy(
                                                 amount = amount,
@@ -367,7 +376,9 @@ fun MainNavigation(
                                                 category = category,
                                                 item = item,
                                                 date = date,
-                                                paidBack = paidBack,
+                                                paidBack = sharing.paidBack,
+                                                owed = sharing.owed,
+                                                myShare = sharing.myShare,
                                                 status = TransactionStatus.CONFIRMED
                                             )
                                         )

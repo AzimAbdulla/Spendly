@@ -1,5 +1,7 @@
 package com.example.spendly.ui.components
 
+import com.example.spendly.data.model.spend
+import com.example.spendly.data.model.owedAmount
 import com.example.spendly.ui.theme.OnTintSafe
 import com.example.spendly.ui.theme.TintSafe
 import com.example.spendly.data.currencySymbol
@@ -45,7 +47,9 @@ fun TransactionItem(
     modifier: Modifier = Modifier,
     currencySymbol: String = "₹",
     // Given on lists where an SMS expense can be confirmed in place, without opening it
-    onConfirm: (() -> Unit)? = null
+    onConfirm: (() -> Unit)? = null,
+    // Given on lists where an owed expense can be marked paid in place
+    onPaid: (() -> Unit)? = null
 ) {
     val colors = SpendlyTheme.colors
     val catColor = stitchCategoryColors[transaction.category] ?: colors.textMuted
@@ -163,12 +167,46 @@ fun TransactionItem(
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                // Paid back: still on record, but dimmed because it isn't counted
-                color = if (transaction.paidBack) colors.textSecondary else colors.textPrimary,
+                // Paid back: still on record, but dimmed because none of it counts
+                color = if (transaction.spend == 0.0) colors.textSecondary else colors.textPrimary,
                 style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")
             )
-            if (transaction.paidBack) {
-                Text(text = "Paid back", fontSize = 12.sp, color = colors.textSecondary)
+            if (transaction.status != TransactionStatus.NEEDS_REVIEW) {
+                // What happens to the money, in one caption: owed is amber, settled is quiet
+                val owed = transaction.owedAmount
+                val caption = when {
+                    transaction.owed && transaction.myShare != null -> "$currencySymbol${String.format("%,.0f", owed)} owed"
+                    transaction.owed -> "Owed back"
+                    transaction.myShare != null -> "My share $currencySymbol${String.format("%,.0f", transaction.spend)}"
+                    transaction.paidBack -> "Paid back"
+                    else -> null
+                }
+                if (caption != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = caption,
+                            fontSize = 12.sp,
+                            color = if (transaction.owed) colors.tertiary else colors.textSecondary
+                        )
+                        if (transaction.owed && onPaid != null) {
+                            Text(
+                                text = "Paid",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = OnTintSafe,
+                                modifier = Modifier
+                                    .padding(top = 2.dp)
+                                    .clip(CircleShape)
+                                    .clickable(onClick = onPaid)
+                                    .background(TintSafe)
+                                    .padding(horizontal = 10.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
             }
             if (transaction.status == TransactionStatus.NEEDS_REVIEW) {
                 if (onConfirm != null && ownSymbol == currencySymbol) {

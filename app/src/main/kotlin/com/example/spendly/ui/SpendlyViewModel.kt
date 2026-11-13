@@ -1,5 +1,7 @@
 package com.example.spendly.ui
 
+import com.example.spendly.data.model.owedAmount
+import com.example.spendly.data.model.Sharing
 import com.example.spendly.data.model.spend
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -79,6 +81,15 @@ class SpendlyViewModel(
             initialValue = emptyList()
         )
 
+    // Everything still to come back, whichever month it was spent in
+    val owedTotal: StateFlow<Double> = transactions
+        .map { list -> list.sumOf { it.owedAmount } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.0
+        )
+
     val reviewCount: StateFlow<Int> = transactions
         .map { list -> list.count { it.status == TransactionStatus.NEEDS_REVIEW } }
         .stateIn(
@@ -124,7 +135,7 @@ class SpendlyViewModel(
         )
 
     /** Saves an expense on [date]; one for today gets the time too, a backdated one has none. */
-    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate, paidBack: Boolean = false) {
+    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate, sharing: Sharing = Sharing()) {
         val now = LocalDateTime.now()
         viewModelScope.launch {
             repository.addTransaction(
@@ -137,7 +148,9 @@ class SpendlyViewModel(
                     time = if (date == now.toLocalDate()) now.toLocalTime().withNano(0) else null,
                     item = item,
                     source = TransactionSource.MANUAL,
-                    paidBack = paidBack
+                    paidBack = sharing.paidBack,
+                    owed = sharing.owed,
+                    myShare = sharing.myShare
                 )
             )
         }
@@ -166,6 +179,11 @@ class SpendlyViewModel(
 
     fun confirmTransaction(id: Long) {
         viewModelScope.launch { repository.confirm(id) }
+    }
+
+    /** The money for an owed expense has come back. */
+    fun markPaid(id: Long) {
+        viewModelScope.launch { repository.markPaid(id) }
     }
 
     fun confirmAllReviews() {

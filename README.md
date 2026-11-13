@@ -27,7 +27,7 @@ It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from
 
 **Tracking**
 - Add an expense in one screen: an item name, a date, an amount keypad and a category. The same screen edits or deletes an expense later, and a delete can be undone for a few seconds.
-- Mark an expense as paid back when someone else covers it: it stays on record but is left out of every total.
+- Say who an expense is for: just you, a split bill where only your share counts, something someone will pay you back for, or something already paid back. Home shows how much is still owed to you, and Activity marks it paid in one tap.
 - One currency per install, chosen in Settings from INR, USD, EUR, GBP and others.
 - An optional monthly budget, with what is left of it shown on Home.
 

@@ -153,7 +153,7 @@ internal suspend fun loadWidget(context: Context): Pair<WidgetData, WidgetStyle>
     val data = WidgetData(
         monthName = month.format(DateTimeFormatter.ofPattern("MMMM")),
         monthTotal = monthTotal,
-        monthCount = inMonth.count { !it.paidBack },
+        monthCount = inMonth.count { it.spend > 0 },
         dailyAverage = monthTotal / today.dayOfMonth,
         split = inMonth.groupBy { it.category }
             .mapValues { (_, txs) -> txs.sumOf { it.spend } }

@@ -35,6 +35,10 @@ interface TransactionDao {
     @Query("UPDATE transactions SET status = 'CONFIRMED' WHERE id = :id")
     suspend fun confirm(id: Long)
 
+    // The money came back: a split keeps its share, anything else becomes paid back
+    @Query("UPDATE transactions SET owed = 0, paidBack = CASE WHEN myShare IS NULL THEN 1 ELSE paidBack END WHERE id = :id")
+    suspend fun markPaid(id: Long)
+
     @Query("UPDATE transactions SET status = 'CONFIRMED' WHERE status = 'NEEDS_REVIEW'")
     suspend fun confirmAll()
 

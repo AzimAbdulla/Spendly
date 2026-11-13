@@ -749,7 +749,7 @@ private fun HeatPopup(
     val colors = SpendlyTheme.colors
     val density = LocalDensity.current
     val total = expenses.sumOf { it.spend }
-    val largest = expenses.filter { !it.paidBack }.maxByOrNull { it.amount }
+    val largest = expenses.filter { it.spend > 0 }.maxByOrNull { it.spend }
     val position = remember(centerX, top, density) {
         object : PopupPositionProvider {
             override fun calculatePosition(
@@ -800,7 +800,7 @@ private fun HeatPopup(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "$currencySymbol${String.format("%,.0f", largest.amount)}",
+                        text = "$currencySymbol${String.format("%,.0f", largest.spend)}",
                         fontSize = 13.sp,
                         color = colors.textSecondary,
                         maxLines = 1

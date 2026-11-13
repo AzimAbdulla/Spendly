@@ -26,20 +26,26 @@ class CsvBackupTest {
         Transaction(
             id = 9, amount = 2000.0, currency = "INR", merchant = "", category = Category.SHOPPING,
             date = LocalDate.of(2026, 11, 13), item = "For aunt", paidBack = true
+        ),
+        Transaction(
+            id = 10, amount = 1500.0, currency = "INR", merchant = "", category = Category.FOOD,
+            date = LocalDate.of(2026, 11, 13), item = "Dinner", owed = true, myShare = 400.0
         )
     )
 
     @Test
     fun spend_isZeroOnceAnExpenseIsPaidBack() {
-        assertEquals(listOf(450.5, 140.0, 0.0), expenses.map { it.spend })
+        assertEquals(listOf(450.5, 140.0, 0.0, 400.0), expenses.map { it.spend })
         // The amount itself stays on record
-        assertEquals(2000.0, expenses.last().amount, 0.001)
+        assertEquals(2000.0, expenses[2].amount, 0.001)
     }
 
     @Test
     fun read_treatsAFileWithoutThePaidBackColumnAsNotPaidBack() {
         val read = CsvBackup.read("date,amount,category\n2026-11-01,120,FOOD\n")!!
         assertEquals(false, read[0].paidBack)
+        assertEquals(false, read[0].owed)
+        assertEquals(null, read[0].myShare)
     }
 
     @Test

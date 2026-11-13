@@ -161,6 +161,7 @@ fun TransactionRows(
     currencySymbol: String = "₹",
     resetKey: Any? = null,
     onConfirm: ((Long) -> Unit)? = null,
+    onPaid: ((Long) -> Unit)? = null,
     // How far the tile's own padding sits above the first row and below the last, so a new
     // row's green wash can reach the tile's edge there too
     flashBleed: Dp = 0.dp,
@@ -223,7 +224,8 @@ fun TransactionRows(
                             transaction = tx,
                             onClick = { onTransactionClick(tx.id) },
                             currencySymbol = currencySymbol,
-                            onConfirm = onConfirm?.let { confirm -> { confirm(tx.id) } }
+                            onConfirm = onConfirm?.let { confirm -> { confirm(tx.id) } },
+                            onPaid = onPaid?.let { paid -> { paid(tx.id) } }
                         )
                         if (index < transactions.lastIndex) divider()
                     }

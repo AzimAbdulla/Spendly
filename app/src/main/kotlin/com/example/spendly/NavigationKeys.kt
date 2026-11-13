@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object HomeDestination : NavKey
 @Serializable data object CalendarDestination : NavKey
-@Serializable data class ActivityDestination(val reviewOnly: Boolean = false) : NavKey
+@Serializable data class ActivityDestination(val reviewOnly: Boolean = false, val owedOnly: Boolean = false) : NavKey
 @Serializable data object InsightsDestination : NavKey
 @Serializable data object SettingsDestination : NavKey
 @Serializable data object CategoriesDestination : NavKey

@@ -25,11 +25,43 @@ data class Transaction(
     // message is never recorded twice; null for manual expenses and imports before v4
     val smsKey: String? = null,
     // Someone else paid this back, so the record stays but it isn't the user's own spending
-    @ColumnInfo(defaultValue = "0") val paidBack: Boolean = false
+    @ColumnInfo(defaultValue = "0") val paidBack: Boolean = false,
+    // Money still to come back: the whole amount, or for a split everything but myShare
+    @ColumnInfo(defaultValue = "0") val owed: Boolean = false,
+    // A split bill: the user's own part of the amount. Null when the expense isn't split
+    val myShare: Double? = null
 )
 
-/** What an expense cost the user: nothing once it's been paid back. Every total sums this. */
-val Transaction.spend: Double get() = if (paidBack) 0.0 else amount
+/**
+ * Who an expense is for, the answer on Add / Edit expense:
+ * - just me: all of it is my spending
+ * - split: only [myShare] is, and the rest is owed until the others pay
+ * - owed: all of it counts until it's paid back
+ * - paid back: kept on record, none of it counts
+ */
+data class Sharing(val paidBack: Boolean = false, val owed: Boolean = false, val myShare: Double? = null) {
+    val isSplit get() = myShare != null
+    val isJustMe get() = !paidBack && !owed && myShare == null
+
+    /** What it becomes once the money has come back. */
+    fun settled() = copy(owed = false, paidBack = myShare == null)
+}
+
+val Transaction.sharing get() = Sharing(paidBack, owed, myShare)
+
+/** What an expense cost the user: their share of a split, nothing once paid back. Every total sums this. */
+val Transaction.spend: Double get() = when {
+    myShare != null -> myShare.coerceIn(0.0, amount)
+    paidBack -> 0.0
+    else -> amount
+}
+
+/** Money someone still has to give back for this expense. */
+val Transaction.owedAmount: Double get() = when {
+    !owed -> 0.0
+    myShare != null -> amount - spend
+    else -> amount
+}
 
 enum class Category(val displayName: String, val shortName: String) {
     FOOD("Food & Dining", "Dining"),

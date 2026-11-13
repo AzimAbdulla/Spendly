@@ -107,6 +107,8 @@ fun HomeScreen(
     onReviewClick: () -> Unit,
     onViewAllClick: () -> Unit = {},
     onCategoriesClick: () -> Unit = onViewAllClick,
+    owedTotal: Double = 0.0,
+    onOwedClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     monthlyTotal: Double = SampleData.monthlyTotal,
@@ -259,31 +261,20 @@ fun HomeScreen(
             // SMS expenses waiting for a check: one tap to the list where each confirms in place
             if (reviewCount > 0) {
                 item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable(onClick = onReviewClick)
-                            .background(colors.container)
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(Modifier.size(8.dp).background(colors.tertiary, CircleShape))
-                        Text(
-                            text = if (reviewCount == 1) "1 SMS expense to check" else "$reviewCount SMS expenses to check",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = colors.textPrimary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    HomeStrip(
+                        text = if (reviewCount == 1) "1 SMS expense to check" else "$reviewCount SMS expenses to check",
+                        onClick = onReviewClick
+                    )
+                }
+            }
+
+            // Money still to come back: one tap to the list where each can be marked paid
+            if (owedTotal > 0) {
+                item {
+                    HomeStrip(
+                        text = "$currencySymbol${String.format("%,.0f", owedTotal)} owed to you",
+                        onClick = onOwedClick
+                    )
                 }
             }
 
@@ -746,3 +737,34 @@ private fun MonthStepButton(icon: ImageVector, label: String, enabled: Boolean, 
 
 /** The budget bar and its caption once the month's spend has passed the budget. */
 private val BudgetOver = Color(0xFFE2605C)
+
+/** A one-line reminder under Home's header, with an amber dot, that opens the list it's about. */
+@Composable
+private fun HomeStrip(text: String, onClick: () -> Unit) {
+    val colors = SpendlyTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .background(colors.container)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(Modifier.size(8.dp).background(colors.tertiary, CircleShape))
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = colors.textSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}

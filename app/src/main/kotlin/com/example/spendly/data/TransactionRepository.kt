@@ -17,6 +17,7 @@ class TransactionRepository(private val dao: TransactionDao) {
         dao.countSmsAlreadyRecorded(smsKey, merchant, amount, date) > 0
     suspend fun confirm(id: Long) = dao.confirm(id)
     suspend fun confirmAll() = dao.confirmAll()
+    suspend fun markPaid(id: Long) = dao.markPaid(id)
     suspend fun getAllOnce(): List<Transaction> = dao.getAllOnce()
     suspend fun addTransaction(transaction: Transaction) = dao.insertTransaction(transaction)
     suspend fun insertAll(transactions: List<Transaction>) = dao.insertAll(transactions)
