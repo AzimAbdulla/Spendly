@@ -1,5 +1,6 @@
 package com.example.spendly.ui.transaction
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Delete
@@ -161,6 +162,10 @@ fun AddTransactionScreen(
     // MaxAmountRoom of it goes to the amount
     var spare by remember(LocalConfiguration.current.screenHeightDp) { mutableStateOf(0.dp) }
     val amountRoom = spare.coerceAtMost(MaxAmountRoom)
+    // On a shorter phone the screen must still fit without scrolling: whatever doesn't fit is
+    // taken back, evenly, from the keys, the gaps and the padding (see FillOrScrollColumn)
+    var squeeze by remember(LocalConfiguration.current.screenHeightDp) { mutableStateOf(0.dp) }
+    val tight = squeeze / MaxSqueeze
     val density = LocalDensity.current
 
     // The amount grows by up to half again into that room, and shrinks smoothly when it's too long
@@ -211,13 +216,14 @@ fun AddTransactionScreen(
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         FillOrScrollColumn(
+            onOverflow = { over -> squeeze = (squeeze + over).coerceAtMost(MaxSqueeze) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(lerp(12.dp, 6.dp, tight))
         ) {
             // Header Row: Title & Close Button
             Row(
@@ -256,53 +262,44 @@ fun AddTransactionScreen(
                 }
             }
 
-            // Item: what was bought, the main detail of an expense
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Item",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(horizontal = 2.dp)
+            // Item: what was bought, the main detail of an expense. The placeholder is its label
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(colors.container)
+                    .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    tint = categoryAccent,
+                    modifier = Modifier.size(18.dp)
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(colors.container)
-                        .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingBag,
-                        contentDescription = null,
-                        tint = categoryAccent,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    BasicTextField(
-                        value = item,
-                        onValueChange = { item = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(
-                            fontFamily = GeistFontFamily,
-                            fontSize = 14.sp,
-                            color = colors.textPrimary
-                        ),
-                        cursorBrush = SolidColor(colors.primary),
-                        decorationBox = { innerTextField ->
-                            if (item.isEmpty()) {
-                                Text(
-                                    text = "e.g. Masala dosa, Cab to office",
-                                    fontSize = 14.sp,
-                                    color = colors.textSecondary.copy(alpha = 0.6f)
-                                )
-                            }
-                            innerTextField()
+                BasicTextField(
+                    value = item,
+                    onValueChange = { item = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(
+                        fontFamily = GeistFontFamily,
+                        fontSize = 14.sp,
+                        color = colors.textPrimary
+                    ),
+                    cursorBrush = SolidColor(colors.primary),
+                    decorationBox = { innerTextField ->
+                        if (item.isEmpty()) {
+                            Text(
+                                text = "Item, e.g. Masala dosa",
+                                fontSize = 14.sp,
+                                color = colors.textSecondary.copy(alpha = 0.6f)
+                            )
                         }
-                    )
-                }
+                        innerTextField()
+                    }
+                )
             }
 
             // When it was spent, and for an SMS expense who was paid
@@ -365,7 +362,7 @@ fun AddTransactionScreen(
                 }
                 val payee = editing?.merchant?.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
                 val origin = when {
-                    paidBack -> "Not counted in your spending"
+                    paidBack -> "Not counted"
                     editing == null -> null
                     editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
                     payee != null -> "Paid to $payee"
@@ -377,7 +374,7 @@ fun AddTransactionScreen(
                         text = origin,
                         fontSize = 12.sp,
                         color = colors.textSecondary,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
@@ -391,7 +388,7 @@ fun AddTransactionScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(amountWell)
                     .border(1.dp, colors.border, RoundedCornerShape(24.dp))
-                    .padding(vertical = 14.dp + amountRoom / 2, horizontal = 12.dp)
+                    .padding(vertical = lerp(14.dp, 6.dp, tight) + amountRoom / 2, horizontal = 12.dp)
                     .onSizeChanged { amountSpace = it.width },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -503,7 +500,7 @@ fun AddTransactionScreen(
                                 ) { selectedCategory = cat }
                                 .background(tileFill)
                                 .border(1.dp, tileBorder, RoundedCornerShape(18.dp))
-                                .padding(vertical = 8.dp, horizontal = 2.dp),
+                                .padding(vertical = lerp(8.dp, 4.dp, tight), horizontal = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
@@ -562,7 +559,7 @@ fun AddTransactionScreen(
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(46.dp)
+                                    .height(lerp(46.dp, 36.dp, tight))
                                     .glassPress(keyInteraction),
                                 shape = RoundedCornerShape(14.dp),
                                 color = colors.container,
@@ -715,22 +712,35 @@ fun AddTransactionScreen(
 /** How long the tick shows before Add expense closes. */
 private const val SavedHold = 480L
 
+/**
+ * The most height the screen gives back to fit a short phone: 10dp from each of four key rows,
+ * 6dp from each of six gaps, 16dp from the amount's padding and 16dp from the category tiles.
+ */
+private val MaxSqueeze = 108.dp
+
 /** The most spare height the amount takes; the rest stays above the keypad. */
 private val MaxAmountRoom = 120.dp
 
-/** Fills the available height, and scrolls only when the content can't fit (landscape, large text). */
+/** Fills the available height, and scrolls only when the content can't fit even fully tightened (landscape, large text). */
 @Composable
 private fun FillOrScrollColumn(
+    // Told how much taller than the screen the content came out, so the screen can tighten itself
+    onOverflow: (Dp) -> Unit,
     modifier: Modifier,
     verticalArrangement: Arrangement.Vertical,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val density = LocalDensity.current
     BoxWithConstraints(modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .heightIn(min = maxHeight),
+                .heightIn(min = maxHeight)
+                .onSizeChanged { size ->
+                    val over = with(density) { size.height.toDp() } - maxHeight
+                    if (over > 0.dp) onOverflow(over + 1.dp)
+                },
             verticalArrangement = verticalArrangement,
             content = content
         )

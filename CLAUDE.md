@@ -96,7 +96,7 @@ app/src/main/kotlin/com/example/spendly/
 │   ├── settings/SettingsScreen.kt  # Opened from Home's header: currency, theme, monthly budget, widgets, SMS, export / import / delete. "Load sample data" shows in debuggable builds only
 │   ├── activity/ActivityScreen.kt  # A dock tab: every expense by day with day totals, search, filter pills (needs review, each category), "Confirm" on SMS rows and "Confirm all"
 │   ├── transaction/
-│   │   └── AddTransactionScreen.kt # Add expense (item, date, amount keypad, category); the same screen edits an expense when given `editing`, with a delete button
+│   │   └── AddTransactionScreen.kt # Add expense (item, date, amount keypad, category); the same screen edits an expense when given `editing`, with a delete button. It must fit one screen without scrolling: on a short phone it measures its overflow and takes it back from the keys, gaps and padding (`squeeze`, up to `MaxSqueeze`)
 │   ├── components/
 │   │   ├── SpendlyCard.kt          # Standard styled surface card matching Stitch design
 │   │   ├── StitchBottomDock.kt     # Floating pill dock: Home, Activity, the + button, Calendar, Insights
