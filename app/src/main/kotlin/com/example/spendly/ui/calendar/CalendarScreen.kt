@@ -66,7 +66,7 @@ import com.example.spendly.ui.components.TransactionRows
 import com.example.spendly.ui.theme.Motion
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.theme.tint
-import com.example.spendly.ui.theme.TintMoney
+import com.example.spendly.ui.theme.Emerald
 import com.example.spendly.ui.theme.quiet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -178,7 +178,7 @@ fun CalendarScreen(
 
             // Monthly Calendar Card
             item {
-                TintedTile(tint = colors.tint(TintMoney), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.tint(Emerald), shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -223,7 +223,7 @@ fun CalendarScreen(
                             }
                             val levelOf = heatLevels(dayTotals.values)
                             val ramp = heatRamp(tile.primary, tile.textPrimary)
-                            val tileBackground = colors.tint(TintMoney).background
+                            val tileBackground = colors.tint(Emerald).background
 
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 for (week in 0 until (totalCells / 7)) {

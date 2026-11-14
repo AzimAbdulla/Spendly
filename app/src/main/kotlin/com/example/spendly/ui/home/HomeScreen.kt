@@ -95,7 +95,8 @@ import com.example.spendly.ui.components.rememberSquish
 import com.example.spendly.ui.components.squish
 import com.example.spendly.ui.theme.tint
 import com.example.spendly.ui.theme.TileTint
-import com.example.spendly.ui.theme.TintMoney
+import com.example.spendly.ui.theme.Emerald
+import com.example.spendly.ui.theme.rankShade
 import com.example.spendly.ui.theme.quiet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -285,7 +286,7 @@ fun HomeScreen(
                 val (whole, cents) = String.format("%,.2f", shownTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
                 val squish = rememberSquish()
                 TintedTile(
-                    tint = colors.tint(TintMoney),
+                    tint = colors.tint(Emerald),
                     modifier = Modifier.softRise(rise[0]).squish(squish),
                     shape = RoundedCornerShape(squish.cornerRadius())
                 ) {
@@ -370,7 +371,7 @@ fun HomeScreen(
                         weeklySpending = weeklySpending,
                         weekDayLabels = weekDayLabels,
                         currencySymbol = currencySymbol,
-                        tint = colors.quiet,
+                        tint = colors.quiet.copy(accent = Emerald),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -423,7 +424,7 @@ fun HomeScreen(
                         }
                         val shares = rememberAnimatedValues(List(3) { leading.getOrNull(it)?.let { e -> (e.value / total).toFloat() } ?: 0f })
                         leading.forEachIndexed { index, (category, amount) ->
-                            val hue = stitchCategoryColors[category] ?: colors.textMuted
+                            val hue = rankShade(index, leading.size)
                             Column(modifier = Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
@@ -533,7 +534,7 @@ private fun TopCategoryTile(categoryTotals: Map<Category, Double>, modifier: Mod
     val top = categoryTotals.maxByOrNull { it.value }?.takeIf { it.value > 0 }
     val share = if (top != null && total > 0) (top.value / total).toFloat() else 0f
     val shown = rememberAnimatedValues(listOf(share))
-    val ringColor = top?.key?.let { stitchCategoryColors[it] } ?: colors.textMuted
+    val ringColor = if (top != null) Emerald else colors.textMuted
     val squish = rememberSquish()
 
     TintedTile(tint = colors.quiet, modifier = modifier.squish(squish), shape = RoundedCornerShape(squish.cornerRadius())) {

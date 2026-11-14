@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import com.example.spendly.ui.theme.TintTimeAlt
 import com.example.spendly.ui.theme.Motion
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -84,7 +83,8 @@ import com.example.spendly.ui.components.weekLabel
 import com.example.spendly.ui.components.weekRange
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.theme.tint
-import com.example.spendly.ui.theme.TintMoney
+import com.example.spendly.ui.theme.Emerald
+import com.example.spendly.ui.theme.rankShade
 import com.example.spendly.ui.theme.quiet
 import com.example.spendly.ui.theme.TintTime
 import androidx.compose.runtime.LaunchedEffect
@@ -146,7 +146,7 @@ fun InsightsScreen(
     val topCategory = topCategoryEntry?.key ?: Category.FOOD
     val topCategoryAmount = topCategoryEntry?.value ?: 0.0
     // The time-based charts here (the weekly grid and the trend) share one hue
-    val timeHue = TintTimeAlt
+    val timeHue = Emerald
     val topCategoryPct = if (periodTotal > 0) ((topCategoryAmount / periodTotal) * 100).roundToInt() else 0
 
     // The trend chart: six months ending at the selected one, or the selected week's seven days.
@@ -261,7 +261,7 @@ fun InsightsScreen(
 
             // The period in one tile: its total, the daily average and what led
             item {
-                TintedTile(tint = colors.tint(TintMoney), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.tint(Emerald), shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(text = "Spent", fontSize = 13.sp, color = tile.textSecondary)
@@ -336,7 +336,7 @@ fun InsightsScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             activeCategories.forEach { (cat, amt) ->
                                 val pct = if (periodTotal > 0) (amt / periodTotal).toFloat() else 0f
-                                val catColor = stitchCategoryColors[cat] ?: colors.primary
+                                val catColor = rankShade(activeCategories.indexOfFirst { it.key == cat }, activeCategories.size)
 
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(
