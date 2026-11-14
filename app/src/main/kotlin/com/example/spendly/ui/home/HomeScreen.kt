@@ -96,9 +96,7 @@ import com.example.spendly.ui.components.squish
 import com.example.spendly.ui.theme.tint
 import com.example.spendly.ui.theme.TileTint
 import com.example.spendly.ui.theme.TintMoney
-import com.example.spendly.ui.theme.TintList
-import com.example.spendly.ui.theme.TintTime
-import com.example.spendly.ui.theme.TintTimeAlt
+import com.example.spendly.ui.theme.quiet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -226,7 +224,7 @@ fun HomeScreen(
             // First run: nothing recorded yet, so say how expenses get in
             if (!hasAnyExpenses) {
                 item {
-                    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+                    SpendlyCard(backgroundColor = colors.quiet.background, shape = RoundedCornerShape(24.dp)) {
                         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 text = "Start tracking",
@@ -355,9 +353,6 @@ fun HomeScreen(
 
             // Top category ring beside this week's bars
             item {
-                // The week tile is amber unless Food & Dining, also amber, leads right beside it
-                val topHue = categoryTotals.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key?.let { stitchCategoryColors[it] }
-                val weekHue = if (topHue == TintTime) TintTimeAlt else TintTime
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -375,7 +370,7 @@ fun HomeScreen(
                         weeklySpending = weeklySpending,
                         weekDayLabels = weekDayLabels,
                         currencySymbol = currencySymbol,
-                        tint = colors.tint(weekHue),
+                        tint = colors.quiet,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -385,7 +380,7 @@ fun HomeScreen(
 
             // Spending by Category chart
             item {
-                SpendlyCard(modifier = Modifier.softRise(rise[2]), shape = RoundedCornerShape(24.dp)) {
+                SpendlyCard(modifier = Modifier.softRise(rise[2]), backgroundColor = colors.quiet.background, shape = RoundedCornerShape(24.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -468,7 +463,7 @@ fun HomeScreen(
 
             // Recent Expenses List
             item {
-                TintedTile(tint = colors.tint(TintList), modifier = Modifier.softRise(rise[3]), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.quiet, modifier = Modifier.softRise(rise[3]), shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
@@ -541,7 +536,7 @@ private fun TopCategoryTile(categoryTotals: Map<Category, Double>, modifier: Mod
     val ringColor = top?.key?.let { stitchCategoryColors[it] } ?: colors.textMuted
     val squish = rememberSquish()
 
-    TintedTile(tint = colors.tint(ringColor), modifier = modifier.squish(squish), shape = RoundedCornerShape(squish.cornerRadius())) {
+    TintedTile(tint = colors.quiet, modifier = modifier.squish(squish), shape = RoundedCornerShape(squish.cornerRadius())) {
         val tile = SpendlyTheme.colors
         val track = tile.containerHigh
         Column(
@@ -747,7 +742,7 @@ private fun HomeStrip(text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
-            .background(colors.container)
+            .background(colors.quiet.background)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)

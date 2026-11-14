@@ -171,6 +171,21 @@ fun SpendlyThemeColors.tint(hue: Color): TileTint {
     )
 }
 
+/**
+ * The quiet tile every screen uses beside its one navy main tile: a faint shade of the same navy,
+ * with neutral content, so the only other colour on a screen is the data's own.
+ */
+val SpendlyThemeColors.quiet: TileTint
+    get() {
+        val fill = if (isDark) lerp(background, TintMoney, 0.09f) else lerp(Color.White, TintMoney, 0.06f)
+        return TileTint(
+            background = fill,
+            secondary = if (isDark) lerp(TintMoney, Color.White, 0.5f).copy(alpha = 0.8f) else lerp(TintMoney, Color.Black, 0.5f),
+            track = lerp(fill, TintMoney, 0.2f),
+            accent = primary
+        )
+    }
+
 /** These colours as seen inside a tinted tile: secondary text, tracks, dividers and the accent follow the tint. */
 fun SpendlyThemeColors.inTile(tint: TileTint) = copy(
     cardBackground = tint.background,

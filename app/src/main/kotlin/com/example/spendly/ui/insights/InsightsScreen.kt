@@ -85,6 +85,7 @@ import com.example.spendly.ui.components.weekRange
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.theme.tint
 import com.example.spendly.ui.theme.TintMoney
+import com.example.spendly.ui.theme.quiet
 import com.example.spendly.ui.theme.TintTime
 import androidx.compose.runtime.LaunchedEffect
 
@@ -302,7 +303,7 @@ fun InsightsScreen(
 
             // Interactive Category Breakdown
             item {
-                SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+                SpendlyCard(backgroundColor = colors.quiet.background, shape = RoundedCornerShape(24.dp)) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -416,7 +417,7 @@ fun InsightsScreen(
             // Spending trend, the main chart on Insights: months in monthly mode, days in weekly.
             // Tap a bar, or drag sideways across them, to see its spend in the header
             item {
-                TintedTile(tint = colors.tint(timeHue), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.quiet.copy(accent = timeHue), shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
@@ -565,7 +566,7 @@ private fun WeekHeatmap(weekStart: LocalDate, transactions: List<Transaction>, h
     fun title(cell: Pair<Int, Int>, pattern: String) =
         "${weekStart.plusDays(cell.first.toLong()).format(DateTimeFormatter.ofPattern(pattern))} ${DayParts[cell.second].first.lowercase()}"
 
-    SpendlyCard(shape = RoundedCornerShape(24.dp)) {
+    SpendlyCard(backgroundColor = SpendlyTheme.colors.quiet.background, shape = RoundedCornerShape(24.dp)) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

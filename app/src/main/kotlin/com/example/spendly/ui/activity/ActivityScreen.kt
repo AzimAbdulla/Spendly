@@ -57,8 +57,7 @@ import com.example.spendly.ui.components.rememberSeenIds
 import com.example.spendly.ui.theme.GeistFontFamily
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
-import com.example.spendly.ui.theme.TintList
-import com.example.spendly.ui.theme.tint
+import com.example.spendly.ui.theme.quiet
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -282,7 +281,7 @@ fun ActivityScreen(
                             }
                         }
                         item(key = "${date}_card") {
-                            TintedTile(tint = colors.tint(TintList), modifier = Modifier.animateItem()) {
+                            TintedTile(tint = colors.quiet, modifier = Modifier.animateItem()) {
                                 TransactionRows(
                                     transactions = dayTransactions,
                                     onTransactionClick = onTransactionClick,

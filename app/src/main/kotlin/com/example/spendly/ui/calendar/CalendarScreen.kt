@@ -67,7 +67,7 @@ import com.example.spendly.ui.theme.Motion
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.theme.tint
 import com.example.spendly.ui.theme.TintMoney
-import com.example.spendly.ui.theme.TintList
+import com.example.spendly.ui.theme.quiet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -296,7 +296,7 @@ fun CalendarScreen(
 
             // Daily Outflow Stream / Day Details Card
             item {
-                TintedTile(tint = colors.tint(TintList), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.quiet, shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
@@ -392,7 +392,7 @@ fun CalendarScreen(
 
             // Month summary: a real figure instead of a slogan
             item {
-                TintedTile(tint = colors.tint(TintMoney), shape = RoundedCornerShape(24.dp)) {
+                TintedTile(tint = colors.quiet, shape = RoundedCornerShape(24.dp)) {
                     val tile = SpendlyTheme.colors
                     Row(
                         modifier = Modifier
