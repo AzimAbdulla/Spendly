@@ -6,7 +6,9 @@ import android.graphics.Shader
 import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -66,11 +68,13 @@ fun Modifier.squish(squish: Squish): Modifier = this
         scaleY = scale
     }
     .pointerInput(squish) {
+        // Watches touches without consuming them, so buttons inside the tile still get their taps
         coroutineScope {
-            detectTapGestures(onPress = {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
                 launch { squish.amount.animateTo(1f, Motion.press()) }
-                tryAwaitRelease()
+                waitForUpOrCancellation()
                 launch { squish.amount.animateTo(0f, Motion.press()) }
-            })
+            }
         }
     }

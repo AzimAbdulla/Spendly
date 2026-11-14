@@ -257,26 +257,6 @@ fun HomeScreen(
                 }
             }
 
-            // SMS expenses waiting for a check: one tap to the list where each confirms in place
-            if (reviewCount > 0) {
-                item {
-                    HomeStrip(
-                        text = if (reviewCount == 1) "1 SMS expense to check" else "$reviewCount SMS expenses to check",
-                        onClick = onReviewClick
-                    )
-                }
-            }
-
-            // Money still to come back: one tap to the list where each can be marked paid
-            if (owedTotal > 0) {
-                item {
-                    HomeStrip(
-                        text = "$currencySymbol${String.format("%,.0f", owedTotal)} owed to you",
-                        onClick = onOwedClick
-                    )
-                }
-            }
-
             // Total tile: the month's spend, how many expenses, and the daily average
             item {
                 val shownTotal by animateAmountAsState(monthlyTotal)
@@ -347,6 +327,19 @@ fun HomeScreen(
                                 fontSize = 13.sp,
                                 color = if (over) BudgetOver else tile.textSecondary
                             )
+                        }
+                        // Reminders at the foot of the tile: SMS expenses to check, money owed back.
+                        // Each opens the Activity filter it's about
+                        if (reviewCount > 0 || owedTotal > 0) {
+                            Spacer(Modifier.height(14.dp))
+                            Box(Modifier.fillMaxWidth().height(1.dp).background(tile.divider))
+                            Row(
+                                modifier = Modifier.padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (reviewCount > 0) TileReminder("$reviewCount to check", onReviewClick)
+                                if (owedTotal > 0) TileReminder("$currencySymbol${String.format("%,.0f", owedTotal)} owed to you", onOwedClick)
+                            }
                         }
                     }
                 }
@@ -734,33 +727,19 @@ private fun MonthStepButton(icon: ImageVector, label: String, enabled: Boolean, 
 /** The budget bar and its caption once the month's spend has passed the budget. */
 private val BudgetOver = Color(0xFFE2605C)
 
-/** A one-line reminder under Home's header, with an amber dot, that opens the list it's about. */
+/** A reminder at the foot of the total tile, with an amber dot, that opens the list it's about. */
 @Composable
-private fun HomeStrip(text: String, onClick: () -> Unit) {
-    val colors = SpendlyTheme.colors
+private fun TileReminder(text: String, onClick: () -> Unit) {
+    val tile = SpendlyTheme.colors
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(CircleShape)
             .clickable(onClick = onClick)
-            .background(colors.quiet.background)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 4.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(Modifier.size(8.dp).background(colors.tertiary, CircleShape))
-        Text(
-            text = text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = colors.textPrimary,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = colors.textSecondary,
-            modifier = Modifier.size(18.dp)
-        )
+        Box(Modifier.size(7.dp).background(tile.tertiary, CircleShape))
+        Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = tile.textPrimary, maxLines = 1)
     }
 }
