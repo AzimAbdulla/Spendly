@@ -1,5 +1,7 @@
 package com.example.spendly.ui.home
 
+import com.example.spendly.data.foreignSymbol
+import com.example.spendly.ui.CurrencySpend
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.drawBehind
 import com.example.spendly.data.currencySymbol
@@ -105,7 +107,9 @@ fun HomeScreen(
     onOwedClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    // Everything spent in the month in the display currency, and the part of it paid in others
     monthlyTotal: Double = SampleData.monthlyTotal,
+    monthAbroad: List<CurrencySpend> = emptyList(),
     monthlyBudget: Double = 0.0,
     transactionCount: Int = SampleData.transactions.size,
     hasAnyExpenses: Boolean = true,
@@ -253,10 +257,14 @@ fun HomeScreen(
 
             // Total tile: the month's spend, how many expenses, and the daily average
             item {
-                val shownTotal by animateAmountAsState(monthlyTotal)
+                // The headline is what was paid in the display currency itself; other currencies
+                // get a line each below. The budget still counts all of it
+                val homeTotal = monthlyTotal - monthAbroad.sumOf { it.converted }
+                val homeCount = transactionCount - monthAbroad.sumOf { it.count }
+                val shownTotal by animateAmountAsState(homeTotal)
                 // A finished month averages over all its days; the current one over the days so far
                 val days = if (selectedMonth == YearMonth.from(today)) today.dayOfMonth else selectedMonth.lengthOfMonth()
-                val dailyAverage = monthlyTotal / days.coerceAtLeast(1)
+                val dailyAverage = homeTotal / days.coerceAtLeast(1)
                 val (whole, cents) = String.format("%,.2f", shownTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
                 val squish = rememberSquish()
                 TintedTile(
@@ -287,11 +295,37 @@ fun HomeScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "$transactionCount ${if (transactionCount == 1) "expense" else "expenses"} · " +
+                            text = "$homeCount ${if (homeCount == 1) "expense" else "expenses"} · " +
                                 "$currencySymbol${String.format("%,.0f", dailyAverage)} a day · $dateRangeLabel",
                             fontSize = 13.sp,
                             color = tile.textSecondary
                         )
+                        // Spent in other currencies: as paid, and what it comes to
+                        if (monthAbroad.isNotEmpty()) {
+                            Spacer(Modifier.height(12.dp))
+                            Box(Modifier.fillMaxWidth().height(1.dp).background(tile.divider))
+                            Spacer(Modifier.height(6.dp))
+                            monthAbroad.forEach { spent ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${foreignSymbol(spent.currency)}${String.format("%,.2f", spent.own)}",
+                                        fontFamily = SpaceGroteskFontFamily,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = tile.textPrimary
+                                    )
+                                    Text(
+                                        text = "\u2248 $currencySymbol${String.format("%,.0f", spent.converted)}",
+                                        fontSize = 13.sp,
+                                        color = tile.textSecondary
+                                    )
+                                }
+                            }
+                        }
                         // Against the monthly budget, when one is set in Settings
                         if (monthlyBudget > 0) {
                             val left = monthlyBudget - monthlyTotal

@@ -3,6 +3,8 @@ package com.example.spendly.ui
 import com.example.spendly.data.model.owedAmount
 import com.example.spendly.data.model.Sharing
 import com.example.spendly.data.model.spend
+import com.example.spendly.data.model.isForeign
+import com.example.spendly.data.model.ownSpend
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -33,6 +35,9 @@ import android.net.Uri
 import com.example.spendly.data.CsvBackup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+/** What was spent in one currency: in that currency, and what it comes to in the display currency. */
+data class CurrencySpend(val currency: String, val own: Double, val converted: Double, val count: Int)
 
 class SpendlyViewModel(
     private val repository: TransactionRepository,
@@ -118,6 +123,20 @@ class SpendlyViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = 0.0
+        )
+
+    // The shown month's spending in currencies other than the display one, biggest first
+    val monthAbroad: StateFlow<List<CurrencySpend>> = combine(transactions, _selectedMonth) { list, month ->
+            list.filter { YearMonth.from(it.date) == month && it.isForeign }
+                .groupBy { it.currency }
+                .map { (code, txs) -> CurrencySpend(code, txs.sumOf { it.ownSpend }, txs.sumOf { it.spend }, txs.count { it.spend > 0 }) }
+                .filter { it.own > 0 }
+                .sortedByDescending { it.converted }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
 
     val categoryTotals: StateFlow<Map<Category, Double>> = combine(transactions, _selectedMonth) { list, month ->

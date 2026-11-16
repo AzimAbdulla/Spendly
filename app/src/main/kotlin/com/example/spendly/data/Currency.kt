@@ -9,3 +9,6 @@ fun currencySymbol(code: String): String = when (code) {
     "JPY" -> "\u00A5"
     else -> "$code "
 }
+
+/** The symbol for an amount in another currency than the display one: a dollar says which dollar. */
+fun foreignSymbol(code: String): String = currencySymbol(code).let { if (it == "$") "$code " else it }

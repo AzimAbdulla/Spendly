@@ -124,6 +124,7 @@ fun MainNavigation(
     val transactions by vm.transactions.collectAsStateWithLifecycle()
     val recentTransactions by vm.recentTransactions.collectAsStateWithLifecycle()
     val monthlyTotal by vm.monthlyTotal.collectAsStateWithLifecycle()
+    val monthAbroad by vm.monthAbroad.collectAsStateWithLifecycle()
     val reviewCount by vm.reviewCount.collectAsStateWithLifecycle()
     val owedTotal by vm.owedTotal.collectAsStateWithLifecycle()
     val categoryTotals by vm.categoryTotals.collectAsStateWithLifecycle()
@@ -254,6 +255,7 @@ fun MainNavigation(
                                 onCategoriesClick = { backStack.add(CategoriesDestination) },
                                 onSettingsClick = { backStack.add(SettingsDestination) },
                                 monthlyTotal = monthlyTotal,
+                                monthAbroad = monthAbroad,
                                 monthlyBudget = monthlyBudget,
                                 transactionCount = transactions.count { YearMonth.from(it.date) == selectedMonth && it.spend > 0 },
                                 hasAnyExpenses = transactions.isNotEmpty(),

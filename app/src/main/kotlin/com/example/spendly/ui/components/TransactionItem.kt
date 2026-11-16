@@ -1,5 +1,6 @@
 package com.example.spendly.ui.components
 
+import com.example.spendly.data.foreignSymbol
 import com.example.spendly.data.model.converted
 import com.example.spendly.data.model.isForeign
 import com.example.spendly.data.model.ownOwed
@@ -162,7 +163,7 @@ fun TransactionItem(
         // Trailing amount (Space Grotesk, tabular). Everything here is spending, so no minus sign
         Column(horizontalAlignment = Alignment.End) {
             // Always the amount as it was paid, in its own currency; totals do the converting
-            val ownSymbol = currencySymbol(transaction.currency)
+            val ownSymbol = if (transaction.isForeign) foreignSymbol(transaction.currency) else currencySymbol(transaction.currency)
             Text(
                 text = "$ownSymbol${String.format("%,.2f", transaction.amount)}",
                 fontFamily = SpaceGroteskFontFamily,
