@@ -29,7 +29,13 @@ data class Transaction(
     // Money still to come back: the whole amount, or for a split everything but myShare
     @ColumnInfo(defaultValue = "0") val owed: Boolean = false,
     // A split bill: the user's own part of the amount. Null when the expense isn't split
-    val myShare: Double? = null
+    val myShare: Double? = null,
+    // Another currency than the display currency: what one unit of `currency` was worth in
+    // `rateCurrency` (the display currency when it was saved). Null when they were the same
+    val rate: Double? = null,
+    val rateCurrency: String? = null,
+    // Where that rate came from: see RateSource
+    @ColumnInfo(defaultValue = "NONE") val rateSource: String = "NONE"
 )
 
 /**
@@ -49,19 +55,35 @@ data class Sharing(val paidBack: Boolean = false, val owed: Boolean = false, val
 
 val Transaction.sharing get() = Sharing(paidBack, owed, myShare)
 
-/** What an expense cost the user: their share of a split, nothing once paid back. Every total sums this. */
-val Transaction.spend: Double get() = when {
+/** What an expense cost the user in its own currency: their share of a split, nothing once paid back. */
+val Transaction.ownSpend: Double get() = when {
     myShare != null -> myShare.coerceIn(0.0, amount)
     paidBack -> 0.0
     else -> amount
 }
 
-/** Money someone still has to give back for this expense. */
-val Transaction.owedAmount: Double get() = when {
+/** Money someone still has to give back for this expense, in its own currency. */
+val Transaction.ownOwed: Double get() = when {
     !owed -> 0.0
-    myShare != null -> amount - spend
+    myShare != null -> amount - ownSpend
     else -> amount
 }
+
+// The three below are in the display currency. They rely on `rate` meaning "display currency per
+// one of its own", which is how every expense comes out of TransactionRepository (Fx.inDisplay).
+// Nothing is rounded here: totals add full-precision values and round only when shown
+
+/** What an expense cost the user, in the display currency. Every total sums this. */
+val Transaction.spend: Double get() = ownSpend * (rate ?: 1.0)
+
+/** Money still to come back, in the display currency. */
+val Transaction.owedAmount: Double get() = ownOwed * (rate ?: 1.0)
+
+/** The whole amount in the display currency. */
+val Transaction.converted: Double get() = amount * (rate ?: 1.0)
+
+/** True when the expense is in another currency than the one totals are shown in. */
+val Transaction.isForeign: Boolean get() = rate != null
 
 enum class Category(val displayName: String, val shortName: String) {
     FOOD("Food & Dining", "Dining"),

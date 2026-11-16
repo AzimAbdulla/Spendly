@@ -1,5 +1,6 @@
 package com.example.spendly.widget
 
+import com.example.spendly.data.model.converted
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
@@ -469,7 +470,7 @@ private fun RecentContent(data: WidgetData, style: WidgetStyle) {
                 Dot(style.cat(tx.category), size = 8.dp)
                 Label("  " + tx.item.ifBlank { tx.category.displayName }, style.text, size = text, modifier = GlanceModifier.defaultWeight())
                 Column(horizontalAlignment = Alignment.End) {
-                    Label("−" + style.amount(tx.amount, decimals = true), style.text, size = text, weight = FontWeight.Medium)
+                    Label("−" + style.amount(tx.converted, decimals = true), style.text, size = text, weight = FontWeight.Medium)
                     Label(whenLabel, style.muted, size = 12.sp)
                 }
             }
@@ -549,7 +550,7 @@ private fun TodayContent(data: WidgetData, style: WidgetStyle) {
                             size = 12.sp,
                             modifier = GlanceModifier.defaultWeight()
                         )
-                        Label(style.compact(tx.amount), style.text, size = 12.sp)
+                        Label(style.compact(tx.converted), style.text, size = 12.sp)
                     }
                 }
             }

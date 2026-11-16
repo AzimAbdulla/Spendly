@@ -1,6 +1,6 @@
 # Spendly
 
-Spendly is a native Android expense tracker that keeps everything on your phone. There are no accounts, no cloud sync and no analytics, and the app does not request the internet permission, so your spending data cannot leave the device.
+Spendly is a native Android expense tracker that keeps everything on your phone. There are no accounts, no cloud sync and no analytics. The only thing it ever goes online for is a public exchange-rates file, used to add up spending in different currencies; nothing about you or your expenses is sent, and the app works the same with no connection.
 
 It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from bank SMS messages on the device and turn them into expenses, exports to CSV, and ships five home screen widgets.
 
@@ -28,7 +28,7 @@ It is built with Kotlin, Jetpack Compose and Room. It can read debit alerts from
 **Tracking**
 - Add an expense in one screen: an item name, a date, an amount keypad and a category. The same screen edits or deletes an expense later, and a delete can be undone for a few seconds.
 - Say who an expense is for: just you, a split bill where only your share counts, something someone will pay you back for, or something already paid back. Home shows how much is still owed to you, and Activity marks it paid in one tap.
-- One currency per install, chosen in Settings from INR, USD, EUR, GBP and others.
+- Every expense keeps the currency it was paid in. Add expense remembers the last currency you used, so it follows you when you travel, and totals are shown in one display currency chosen in Settings. Each expense in another currency stores the exchange rate of its own day, so past totals don't move when rates do.
 - An optional monthly budget, with what is left of it shown on Home.
 
 **Seeing where the money goes**
@@ -88,7 +88,7 @@ The screenshots use the demo expenses from Settings, Load sample data.
 
 ## Privacy
 
-- No `INTERNET` permission, no analytics, no accounts and no remote services.
+- No analytics, no accounts and no remote services. The internet permission is used for one thing: downloading a public exchange-rates file. No request carries anything about you or your expenses.
 - Expenses live in a local Room database and preferences in the app's private storage. Android backup and device transfer are switched off for the app, so nothing is copied to a cloud account.
 - The only permissions are `READ_SMS` and `RECEIVE_SMS`, used to parse bank debit alerts locally, and `POST_NOTIFICATIONS`, used only for the alert shown when an SMS expense is recorded. SMS is read only after you grant the permission in Settings, and a switch there turns it off again. Message text is never written to the system log.
 - Expenses can be exported to a CSV file from Settings, and all data can be deleted there too.

@@ -212,6 +212,21 @@ class SmsParserTest {
     }
 
     @Test
+    fun toTransaction_inAnotherCurrencyWithARate_isSavedWithThatRate() {
+        val parsed = SmsParser.parse("Your A/C ending 1234 was debited by AED 150.00 at Carrefour on 26-Oct-26.")!!
+        val tx = parsed.toTransaction(autoSave = true, defaultCurrency = "INR", rate = 22.9)
+
+        assertEquals(150.0, tx.amount, 0.001)
+        assertEquals("AED", tx.currency)
+        assertEquals(22.9, tx.rate!!, 0.001)
+        assertEquals("INR", tx.rateCurrency)
+        assertEquals("ESTIMATED", tx.rateSource)
+        assertEquals(com.example.spendly.data.model.TransactionStatus.CONFIRMED, tx.status)
+        // In its own currency no rate is kept, whatever is passed
+        assertNull(parsed.toTransaction(autoSave = true, defaultCurrency = "AED", rate = 1.0).rate)
+    }
+
+    @Test
     fun toTransaction_inAnotherCurrency_needsReview() {
         val parsed = SmsParser.parse("Debited USD 25.00 from a/c XX1234 at Starbucks on 26-Oct-26.")!!
 

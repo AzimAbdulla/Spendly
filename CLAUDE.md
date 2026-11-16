@@ -2,9 +2,9 @@
 
 ## Project Overview
 **Spendly** is a native Android personal finance & expense tracker built with Jetpack Compose, Material 3, and Room SQLite.
-- **Privacy First & Offline Only**: No internet permissions (`android.permission.INTERNET` is intentionally omitted), no analytics, no cloud accounts, and zero remote network dependencies. All data is kept strictly on-device in a local Room database.
+- **Privacy First & Offline First**: No analytics and no cloud accounts. `android.permission.INTERNET` exists for one thing only, downloading a public exchange-rates file (`data/Rates.kt`); no request may ever carry user data, and every feature must work the same with no connection. All data is kept strictly on-device in a local Room database.
 - **Design Language**: Dark bento UI: flat near-black with opaque charcoal tiles, a monochrome accent with category hues for data, Space Grotesk for figures, Geist for body copy, an inverted floating pill dock, crisp vector icons.
-- **Core Capabilities**: Home dashboard with a monthly budget, a searchable Activity list, a shaded Calendar, Insights, on-device bank SMS import with one-tap review, CSV export and import, and quick manual entry. One currency per install: the currency setting is the symbol every amount is shown in.
+- **Core Capabilities**: Home dashboard with a monthly budget, a searchable Activity list, a shaded Calendar, Insights, on-device bank SMS import with one-tap review, CSV export and import, and quick manual entry. Every expense keeps its own currency; totals are shown in one display currency.
 
 ---
 
@@ -84,6 +84,7 @@ app/src/main/kotlin/com/example/spendly/
 │   ├── TransactionRepository.kt    # Data layer abstraction exposing reactive transaction streams
 │   ├── SpendlyPreferences.kt       # SharedPreferences: currency, theme, monthly budget, widget options, and the category learned for each SMS payee
 │   ├── Currency.kt                 # `currencySymbol(code)`: the only place a currency code becomes a symbol
+│   ├── Rates.kt                    # Exchange rates: `Fx` (display currency + latest table, converts an expense for display), `Rates` (cache, daily refresh, a past day's rate), `RateSource`, `supportedCurrencies`
 │   ├── CsvBackup.kt                # CSV export and import (Settings > Data); ids are not written, and an import skips expenses already here
 │   └── SampleData.kt               # Seed data for previews and initial state
 ├── sms/
@@ -187,7 +188,8 @@ app/src/main/kotlin/com/example/spendly/
 - Widget vector drawables: write arc flags out in full (`0 0 0 20 4`, not `0020 4`); RemoteViews leaves the icon blank otherwise.
 
 ### 5. Privacy & Permissions
-- Do not request `android.permission.INTERNET`.
+- `android.permission.INTERNET` is only for `Rates.kt`'s GET of a public rates file. Never send anything about the user or their expenses, and never make a feature wait on the network.
+- **Currencies** (DB v7): an expense keeps `amount` and `currency` as paid. The display currency is `SpendlyPreferences.defaultCurrency`; a new expense starts in `spendingCurrency`, the last one used (the symbol in Add expense's amount opens `CurrencySheet`). An expense in another currency stores `rate` (what one of its currency was worth in `rateCurrency`, the display currency when saved) and `rateSource`: `ESTIMATED` (the latest rate on the phone, used when saving so nothing waits on the network), `FETCHED` (that day's rate, set once by `TransactionRepository.settleRates` and never changed again) or `MANUAL` (typed in the sheet, never overwritten). `Rates` keeps the latest table (per US dollar, with `Fx.Bundled` for a first run offline), refreshes it at most daily from the fawazahmed0 currency API on jsDelivr (open.er-api.com as a fallback) and fetches a past day's rate by date. `SpendlyApplication.syncRates()` runs both on start and after saves; failures are silent. `TransactionRepository.getAllTransactions()` passes every row through `Fx.inDisplay`, so in memory `rate` always means "display currency per one of its own" and `spend`, `owedAmount` and `converted` are in the display currency; `ownSpend` and `ownOwed` are in the expense's currency (row captions). Changing the display currency rewrites nothing: a rate saved for another display currency is carried across at today's rate. Stored rows (`getStored`, `getAllStored`) are what edits, Undo and CSV export use. Rows show the amount as paid, with "≈ ₹3,435" under it when it's in another currency. Nothing is rounded before totals are summed. The monthly budget is a plain figure in the display currency and isn't converted when that changes
 - `allowBackup` is off and `data_extraction_rules.xml` excludes everything, so nothing reaches cloud backup or a device transfer; CSV export is how data moves.
 - **Who an expense is for** (`Sharing` in `Transaction.kt`, DB v6): the chip beside the date on Add / Edit opens `WhoIsThisForSheet` with four answers. Just me (default); Split the bill (`myShare` set, only the share counts, the rest is owed); They'll pay me back (`owed`, counts in full until paid); Already paid back (`paidBack`, counts nothing). Every total sums `Transaction.spend`, never `amount`; `owedAmount` is what is still to come back. Marking paid (`markPaid`, or "They've paid me back" at the top of the sheet) clears `owed` and sets `paidBack` unless it is a split. Rows keep the full amount with one caption ("₹1,100 owed", "Owed back" in amber; "My share ₹400", "Paid back" muted), Home's total tile ends with "₹X owed to you" while anything is owed (beside "N to check" for SMS expenses, each opening its Activity filter), and it opens Activity on the "Owed" filter, where each row has a "Paid" pill. Counts use `spend > 0`
 - Amounts are spending, shown without a minus sign. Percentages round with `roundToInt()` everywhere.

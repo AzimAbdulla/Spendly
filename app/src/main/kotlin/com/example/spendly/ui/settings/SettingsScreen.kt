@@ -105,6 +105,8 @@ val currencyChipList = listOf(
 @Composable
 fun SettingsScreen(
     defaultCurrency: String = "INR",
+    // How fresh the exchange rates are, and how many expenses are in each currency
+    currencyNote: String = "",
     onCurrencySelected: (String) -> Unit = {},
     smsAutoSave: Boolean = true,
     onSmsAutoSaveChanged: (Boolean) -> Unit = {},
@@ -225,13 +227,13 @@ fun SettingsScreen(
                                     }
                                     Column {
                                         Text(
-                                            text = "Currency",
+                                            text = "Display currency",
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "$defaultCurrency (${when(defaultCurrency) { "INR" -> "₹ - Indian Rupee"; "USD" -> "$ - US Dollar"; "EUR" -> "€ - Euro"; "GBP" -> "£ - British Pound"; "AED" -> "د.إ - Dirham"; else -> defaultCurrency }})",
+                                            text = "Totals in $defaultCurrency" + if (currencyNote.isNotEmpty()) " \u00B7 $currencyNote" else "",
                                             fontSize = 12.sp,
                                             color = colors.textSecondary,
                                             fontWeight = FontWeight.Medium

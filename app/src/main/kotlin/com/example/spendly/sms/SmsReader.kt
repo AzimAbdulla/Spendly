@@ -2,6 +2,7 @@ package com.example.spendly.sms
 
 import android.content.Context
 import android.provider.Telephony
+import com.example.spendly.data.Fx
 import com.example.spendly.data.SpendlyPreferences
 import com.example.spendly.data.TransactionRepository
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,8 @@ object SmsReader {
     suspend fun scanInbox(
         context: Context,
         repository: TransactionRepository,
-        preferences: SpendlyPreferences
+        preferences: SpendlyPreferences,
+        fx: Fx
     ): SmsScanResult = withContext(Dispatchers.IO) {
         var scanned = 0
         var imported = 0
@@ -68,7 +70,8 @@ object SmsReader {
                                 time = sentAt.toLocalTime().withNano(0),
                                 smsKey = key,
                                 defaultCurrency = defaultCurrency,
-                                learnedCategory = preferences.learnedCategory(parsed.merchant)
+                                learnedCategory = preferences.learnedCategory(parsed.merchant),
+                                rate = fx.rate(parsed.currency, defaultCurrency)
                             )
                         )
                         imported++

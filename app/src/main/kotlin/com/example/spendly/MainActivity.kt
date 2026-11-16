@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val app = LocalContext.current.applicationContext as SpendlyApplication
             val viewModel: SpendlyViewModel = viewModel(
-                factory = SpendlyViewModel.provideFactory(app.repository, app.preferences)
+                factory = SpendlyViewModel.provideFactory(app.repository, app.preferences, app.rates, app::syncRates)
             )
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val isDark = when (themeMode) {

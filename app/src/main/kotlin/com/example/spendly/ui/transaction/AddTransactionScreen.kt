@@ -1,5 +1,10 @@
 package com.example.spendly.ui.transaction
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.OutlinedTextField
+import com.example.spendly.data.Fx
+import com.example.spendly.data.supportedCurrencies
 import com.example.spendly.ui.theme.SpendlyThemeColors
 import com.example.spendly.data.model.sharing
 import com.example.spendly.data.model.Sharing
@@ -121,8 +126,12 @@ fun AddTransactionScreen(
     prefillCategory: Category? = null,
     initialDate: LocalDate = LocalDate.now(),
     editing: Transaction? = null,
+    // The display currency, and the one a new expense starts in (the last one used)
     defaultCurrency: String = "INR",
-    onSaved: (amount: Double, category: Category, item: String, date: LocalDate, sharing: Sharing) -> Unit,
+    spendingCurrency: String = defaultCurrency,
+    fx: Fx = Fx(defaultCurrency, Fx.Bundled),
+    // manualRate is a rate the user typed for this expense; null leaves the rate to Spendly
+    onSaved: (amount: Double, category: Category, item: String, date: LocalDate, sharing: Sharing, currency: String, manualRate: Double?) -> Unit,
     onDelete: (() -> Unit)? = null,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -144,8 +153,7 @@ fun AddTransactionScreen(
 
     var amountStr by remember {
         mutableStateOf(
-            // An amount in another currency starts empty: what it cost in yours has to be typed
-            (editing?.amount?.takeIf { editing.currency == defaultCurrency } ?: prefillAmount)
+            (editing?.amount ?: prefillAmount)
                 ?.let { String.format(Locale.US, "%.2f", it).removeSuffix("00").removeSuffix(".") } ?: "0"
         )
     }
@@ -192,9 +200,33 @@ fun AddTransactionScreen(
         label = "amountScale"
     )
 
-    val currencySymbol = currencySymbol(defaultCurrency)
+    // The expense's own currency, and the rate to the display currency when they differ: the one
+    // it was saved with, else the latest known, unless the user types their own
+    var currency by remember { mutableStateOf(editing?.currency ?: spendingCurrency) }
+    var manualRate by remember { mutableStateOf<Double?>(null) }
+    var pickingCurrency by remember { mutableStateOf(false) }
+    val rate = if (currency == defaultCurrency) null
+        else manualRate ?: editing?.rate?.takeIf { editing.currency == currency } ?: fx.rate(currency, defaultCurrency)
+    val currencySymbol = currencySymbol(currency)
 
     val parsedAmount = amountStr.toDoubleOrNull() ?: 0.0
+
+    if (pickingCurrency) {
+        CurrencySheet(
+            current = currency,
+            displayCurrency = defaultCurrency,
+            rateFor = { code ->
+                if (code == currency) rate
+                else editing?.rate?.takeIf { editing.currency == code } ?: fx.rate(code, defaultCurrency)
+            },
+            onDone = { code, typedRate ->
+                if (code != currency || typedRate != null) manualRate = typedRate
+                currency = code
+                pickingCurrency = false
+            },
+            onDismiss = { pickingCurrency = false }
+        )
+    }
 
     if (pickingSharing) {
         WhoIsThisForSheet(
@@ -370,8 +402,8 @@ fun AddTransactionScreen(
                 val share = sharing.myShare
                 val origin = when {
                     share != null && parsedAmount > 0 && share >= parsedAmount -> "Your share is more than the bill"
+                    rate != null && parsedAmount > 0 -> "\u2248 ${money(currencySymbol(defaultCurrency), kotlin.math.round(parsedAmount * rate))} in $defaultCurrency"
                     editing == null -> null
-                    editing.currency != defaultCurrency -> "Charged ${editing.currency} ${String.format("%,.2f", editing.amount)}. Enter what it cost you"
                     payee != null -> "Paid to $payee"
                     editing.source == TransactionSource.SMS -> "From a bank SMS"
                     else -> null
@@ -413,14 +445,28 @@ fun AddTransactionScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = currencySymbol,
-                        fontFamily = SpaceGroteskFontFamily,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = moneyTint.secondary,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
+                    // The currency: tap to record this expense in another one
+                    Row(
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable(onClickLabel = "Change currency") { pickingCurrency = true },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = currencySymbol.trim(),
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = moneyTint.secondary
+                        )
+                        Icon(
+                            Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Currency: $currency",
+                            tint = moneyTint.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     // Digits roll up into place as they're typed
                     RollingText(
                         text = if (amountStr.isEmpty()) "0" else amountStr,
@@ -675,7 +721,7 @@ fun AddTransactionScreen(
                             if (!saved && canSave) {
                                 saved = true
                                 // Saved straight away, so leaving early never loses the expense
-                                onSaved(parsedAmount, selectedCategory, item.trim(), date, sharing)
+                                onSaved(parsedAmount, selectedCategory, item.trim(), date, sharing, currency, manualRate)
                             }
                         }
                     ) {
@@ -785,6 +831,93 @@ private fun SharingChip(sharing: Sharing, currencySymbol: String, colors: Spendl
         Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = ink, maxLines = 1)
         if (sharing.isJustMe) {
             Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+/**
+ * "Currency": which currency this expense is in, and when it isn't the display currency, what
+ * one of it is worth. The rate starts at the one Spendly has; typing another keeps the typed one.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CurrencySheet(
+    current: String,
+    displayCurrency: String,
+    rateFor: (String) -> Double?,
+    onDone: (currency: String, typedRate: Double?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = SpendlyTheme.colors
+    var picked by remember { mutableStateOf(current) }
+    // Null until the user types in the field
+    var rateText by remember(picked) { mutableStateOf<String?>(null) }
+    val known = rateFor(picked)
+    val typed = rateText?.toDoubleOrNull()?.takeIf { it > 0 }
+    val foreign = picked != displayCurrency
+    val canFinish = !foreign || typed != null || (rateText == null && known != null)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = colors.popup
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text("Currency", fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                supportedCurrencies.forEach { code ->
+                    val selected = code == picked
+                    Text(
+                        text = "${currencySymbol(code).trim().takeIf { it != code }?.plus(" ").orEmpty()}$code",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (selected) colors.onPrimary else colors.textPrimary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { picked = code }
+                            .background(if (selected) colors.primary else colors.containerHigh)
+                            .padding(horizontal = 14.dp, vertical = 9.dp)
+                    )
+                }
+            }
+            if (foreign) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("1 $picked =", fontSize = 15.sp, color = colors.textPrimary)
+                    OutlinedTextField(
+                        value = rateText ?: known?.let { String.format(Locale.US, "%.4f", it).trimEnd('0').trimEnd('.') }.orEmpty(),
+                        onValueChange = { text -> rateText = text.filter { it.isDigit() || it == '.' }.take(12) },
+                        singleLine = true,
+                        prefix = { Text(currencySymbol(displayCurrency)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Text(
+                    text = "Totals are shown in $displayCurrency. Spendly fills this in from the day's rate when it's online; a rate you type is kept as it is.",
+                    fontSize = 12.sp,
+                    color = colors.textSecondary
+                )
+            }
+            Text(
+                text = "Done",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.onPrimary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(if (canFinish) 1f else 0.4f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(enabled = canFinish) { onDone(picked, typed.takeIf { foreign }) }
+                    .background(colors.primary)
+                    .padding(vertical = 14.dp)
+            )
         }
     }
 }

@@ -9,7 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.spendly.data.model.Transaction
 
-@Database(entities = [Transaction::class], version = 6, exportSchema = false)
+@Database(entities = [Transaction::class], version = 7, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class SpendlyDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
@@ -51,12 +51,21 @@ abstract class SpendlyDatabase : RoomDatabase() {
             }
         }
 
+        // v7 adds the exchange rate an expense was saved with; existing expenses have none
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN rate REAL")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN rateCurrency TEXT")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN rateSource TEXT NOT NULL DEFAULT 'NONE'")
+            }
+        }
+
         @Volatile private var INSTANCE: SpendlyDatabase? = null
 
         fun getDatabase(context: Context): SpendlyDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(context, SpendlyDatabase::class.java, "spendly_database")
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build()
                     .also { INSTANCE = it }
             }

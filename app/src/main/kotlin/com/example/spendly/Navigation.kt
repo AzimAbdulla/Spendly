@@ -1,5 +1,6 @@
 package com.example.spendly
 
+import java.time.format.DateTimeFormatter
 import com.example.spendly.data.model.spend
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -117,7 +118,7 @@ fun MainNavigation(
 ) {
     val context = LocalContext.current.applicationContext as SpendlyApplication
     val vm: SpendlyViewModel = viewModel ?: viewModel(
-        factory = SpendlyViewModel.provideFactory(context.repository, context.preferences)
+        factory = SpendlyViewModel.provideFactory(context.repository, context.preferences, context.rates, context::syncRates)
     )
 
     val transactions by vm.transactions.collectAsStateWithLifecycle()
@@ -128,6 +129,8 @@ fun MainNavigation(
     val categoryTotals by vm.categoryTotals.collectAsStateWithLifecycle()
     val weeklySpending by vm.weeklySpending.collectAsStateWithLifecycle()
     val defaultCurrency by vm.defaultCurrency.collectAsStateWithLifecycle()
+    val spendingCurrency by vm.spendingCurrency.collectAsStateWithLifecycle()
+    val fx by vm.fx.collectAsStateWithLifecycle()
     val smsAutoSave by vm.smsAutoSave.collectAsStateWithLifecycle()
     val isScanningSms by vm.isScanningSms.collectAsStateWithLifecycle()
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
@@ -304,6 +307,11 @@ fun MainNavigation(
                             SettingsScreen(
                                 onBack = { backStack.removeLastOrNull() },
                                 defaultCurrency = defaultCurrency,
+                                currencyNote = listOfNotNull(
+                                    fx.updated?.let { "rates from ${it.format(DateTimeFormatter.ofPattern("d MMM"))}" } ?: "built-in rates",
+                                    transactions.groupingBy { it.currency }.eachCount().takeIf { it.size > 1 }
+                                        ?.entries?.sortedByDescending { it.value }?.joinToString(", ") { "${it.value} ${it.key}" }
+                                ).joinToString(" \u00B7 "),
                                 onCurrencySelected = { vm.setDefaultCurrency(it) },
                                 monthlyBudget = monthlyBudget,
                                 onMonthlyBudgetChanged = { vm.setMonthlyBudget(it) },
@@ -351,7 +359,11 @@ fun MainNavigation(
                                     prefillCategory = key.category?.let { name -> Category.entries.firstOrNull { it.name == name } },
                                     initialDate = key.date?.let { LocalDate.parse(it) } ?: today,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date, sharing -> vm.addTransaction(amount, category, item, date, sharing) },
+                                    spendingCurrency = spendingCurrency,
+                                    fx = fx,
+                                    onSaved = { amount, category, item, date, sharing, currency, manualRate ->
+                                        vm.addTransaction(amount, category, item, date, sharing, currency, manualRate)
+                                    },
                                     // Also called a moment after saving, when back may already have closed it
                                     onCancel = { if (backStack.lastOrNull() is AddTransactionDestination) backStack.removeLastOrNull() }
                                 )
@@ -368,11 +380,12 @@ fun MainNavigation(
                                 AddTransactionScreen(
                                     editing = tx,
                                     defaultCurrency = defaultCurrency,
-                                    onSaved = { amount, category, item, date, sharing ->
+                                    fx = fx,
+                                    onSaved = { amount, category, item, date, sharing, currency, manualRate ->
                                         vm.updateTransaction(
                                             tx.copy(
                                                 amount = amount,
-                                                currency = defaultCurrency,
+                                                currency = currency,
                                                 category = category,
                                                 item = item,
                                                 date = date,
@@ -380,7 +393,8 @@ fun MainNavigation(
                                                 owed = sharing.owed,
                                                 myShare = sharing.myShare,
                                                 status = TransactionStatus.CONFIRMED
-                                            )
+                                            ),
+                                            manualRate
                                         )
                                     },
                                     onDelete = {

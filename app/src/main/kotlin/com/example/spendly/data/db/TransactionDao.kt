@@ -16,6 +16,17 @@ interface TransactionDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE smsKey = :smsKey OR (smsKey IS NULL AND source = 'SMS' AND merchant = :merchant AND amount = :amount AND date = :date)")
     suspend fun countSmsAlreadyRecorded(smsKey: String, merchant: String, amount: Double, date: LocalDate): Int
 
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): Transaction?
+
+    // Expenses whose rate for [display] is still a guess: saved offline, or in another currency
+    // from before rates were kept
+    @Query("SELECT * FROM transactions WHERE (rateSource = 'ESTIMATED' AND rateCurrency = :display) OR (rate IS NULL AND currency != :display)")
+    suspend fun withUnsettledRate(display: String): List<Transaction>
+
+    @Query("UPDATE transactions SET rate = :rate, rateCurrency = :display, rateSource = 'FETCHED' WHERE id = :id")
+    suspend fun settleRate(id: Long, rate: Double, display: String)
+
     @Query("UPDATE transactions SET status = 'CONFIRMED' WHERE id = :id")
     suspend fun confirm(id: Long)
 

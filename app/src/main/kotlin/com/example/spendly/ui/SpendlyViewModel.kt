@@ -6,6 +6,9 @@ import com.example.spendly.data.model.spend
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.spendly.data.Fx
+import com.example.spendly.data.RateSource
+import com.example.spendly.data.Rates
 import com.example.spendly.data.SampleData
 import com.example.spendly.data.SpendlyPreferences
 import com.example.spendly.data.TransactionRepository
@@ -33,11 +36,21 @@ import kotlinx.coroutines.withContext
 
 class SpendlyViewModel(
     private val repository: TransactionRepository,
-    private val preferences: SpendlyPreferences
+    private val preferences: SpendlyPreferences,
+    private val rates: Rates,
+    // Refreshes rates and settles guessed ones in the background; safe to call offline
+    private val syncRates: () -> Unit
 ) : ViewModel() {
 
+    // The display currency: what every total is shown in
     private val _defaultCurrency = MutableStateFlow(preferences.defaultCurrency)
     val defaultCurrency: StateFlow<String> = _defaultCurrency.asStateFlow()
+
+    // The currency a new expense starts in: the last one used, so it follows the user abroad
+    private val _spendingCurrency = MutableStateFlow(preferences.spendingCurrency)
+    val spendingCurrency: StateFlow<String> = _spendingCurrency.asStateFlow()
+
+    val fx: StateFlow<Fx> = rates.fx
 
     private val _themeMode = MutableStateFlow(preferences.themeMode)
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
@@ -135,37 +148,80 @@ class SpendlyViewModel(
         )
 
     /** Saves an expense on [date]; one for today gets the time too, a backdated one has none. */
-    fun addTransaction(amount: Double, category: Category, item: String, date: LocalDate, sharing: Sharing = Sharing()) {
+    /**
+     * Saves an expense on [date] in [currency]; one for today gets the time too, a backdated one
+     * has none. [manualRate] is a rate the user typed, kept as it is.
+     */
+    fun addTransaction(
+        amount: Double,
+        category: Category,
+        item: String,
+        date: LocalDate,
+        sharing: Sharing = Sharing(),
+        currency: String = preferences.defaultCurrency,
+        manualRate: Double? = null
+    ) {
         val now = LocalDateTime.now()
+        preferences.spendingCurrency = currency
+        _spendingCurrency.value = currency
         viewModelScope.launch {
             repository.addTransaction(
-                Transaction(
-                    amount = amount,
-                    currency = preferences.defaultCurrency,
-                    merchant = "",
-                    category = category,
-                    date = date,
-                    time = if (date == now.toLocalDate()) now.toLocalTime().withNano(0) else null,
-                    item = item,
-                    source = TransactionSource.MANUAL,
-                    paidBack = sharing.paidBack,
-                    owed = sharing.owed,
-                    myShare = sharing.myShare
+                withRate(
+                    Transaction(
+                        amount = amount,
+                        currency = currency,
+                        merchant = "",
+                        category = category,
+                        date = date,
+                        time = if (date == now.toLocalDate()) now.toLocalTime().withNano(0) else null,
+                        item = item,
+                        source = TransactionSource.MANUAL,
+                        paidBack = sharing.paidBack,
+                        owed = sharing.owed,
+                        myShare = sharing.myShare
+                    ),
+                    manualRate,
+                    stored = null
                 )
             )
+            syncRates()
         }
     }
 
     /** Saving an expense confirms it, and teaches Spendly that payee's category for next time. */
-    fun updateTransaction(transaction: Transaction) {
+    fun updateTransaction(transaction: Transaction, manualRate: Double? = null) {
         preferences.learnCategory(transaction.merchant, transaction.category)
         viewModelScope.launch {
-            repository.updateTransaction(transaction)
+            repository.updateTransaction(withRate(transaction, manualRate, repository.getStored(transaction.id)))
+            syncRates()
         }
     }
 
+    /**
+     * [t] with the rate it should be stored with. An edit that leaves the currency and the day
+     * alone keeps the rate it was first saved with; otherwise the rate is the one the user typed,
+     * or the latest known, marked as a guess until that day's rate can be fetched.
+     */
+    private fun withRate(t: Transaction, manualRate: Double?, stored: Transaction?): Transaction {
+        val fx = rates.fx.value
+        val estimate = fx.rate(t.currency)
+        return when {
+            manualRate != null && t.currency != fx.display ->
+                t.copy(rate = manualRate, rateCurrency = fx.display, rateSource = RateSource.MANUAL)
+            stored != null && stored.currency == t.currency && stored.date == t.date ->
+                t.copy(rate = stored.rate, rateCurrency = stored.rateCurrency, rateSource = stored.rateSource)
+            t.currency == fx.display || estimate == null ->
+                t.copy(rate = null, rateCurrency = null, rateSource = RateSource.NONE)
+            else -> t.copy(rate = estimate, rateCurrency = fx.display, rateSource = RateSource.ESTIMATED)
+        }
+    }
+
+    // The row as it was stored, kept so Undo puts back exactly that
+    private var lastDeleted: Transaction? = null
+
     fun deleteTransaction(id: Long) {
         viewModelScope.launch {
+            lastDeleted = repository.getStored(id)
             repository.deleteById(id)
         }
     }
@@ -173,7 +229,7 @@ class SpendlyViewModel(
     /** Puts back an expense that was just deleted, under its old id. */
     fun restoreTransaction(transaction: Transaction) {
         viewModelScope.launch {
-            repository.addTransaction(transaction)
+            repository.addTransaction(lastDeleted?.takeIf { it.id == transaction.id } ?: transaction)
         }
     }
 
@@ -197,6 +253,9 @@ class SpendlyViewModel(
     fun setDefaultCurrency(currency: String) {
         preferences.defaultCurrency = currency
         _defaultCurrency.value = currency
+        // Totals re-add in the new currency; no expense is rewritten
+        rates.setDisplay(currency)
+        syncRates()
     }
 
     fun setThemeMode(mode: String) {
@@ -218,7 +277,8 @@ class SpendlyViewModel(
         viewModelScope.launch {
             _isScanningSms.value = true
             try {
-                val result = SmsReader.scanInbox(context, repository, preferences)
+                val result = SmsReader.scanInbox(context, repository, preferences, rates.fx.value)
+                syncRates()
                 onResult(result)
             } finally {
                 _isScanningSms.value = false
@@ -231,7 +291,7 @@ class SpendlyViewModel(
         viewModelScope.launch {
             val count = withContext(Dispatchers.IO) {
                 runCatching {
-                    val all = repository.getAllOnce()
+                    val all = repository.getAllStored()
                     context.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(CsvBackup.write(all).toByteArray()) }
                     all.size
                 }.getOrNull()
@@ -247,9 +307,10 @@ class SpendlyViewModel(
                 runCatching {
                     val text = context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
                     val read = CsvBackup.read(text) ?: return@runCatching null
-                    val have = repository.getAllOnce().mapTo(HashSet()) { CsvBackup.sameExpenseKey(it) }
+                    val have = repository.getAllStored().mapTo(HashSet()) { CsvBackup.sameExpenseKey(it) }
                     val fresh = read.filter { have.add(CsvBackup.sameExpenseKey(it)) }
                     repository.insertAll(fresh)
+                    syncRates()
                     fresh.size
                 }.getOrNull()
             }
@@ -273,12 +334,14 @@ class SpendlyViewModel(
     companion object {
         fun provideFactory(
             repository: TransactionRepository,
-            preferences: SpendlyPreferences
+            preferences: SpendlyPreferences,
+            rates: Rates,
+            syncRates: () -> Unit
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SpendlyViewModel(repository, preferences) as T
+                    return SpendlyViewModel(repository, preferences, rates, syncRates) as T
                 }
             }
     }

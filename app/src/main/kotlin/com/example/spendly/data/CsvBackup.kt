@@ -12,7 +12,7 @@ import java.time.LocalTime
  * Any spreadsheet opens it. Ids aren't written, so importing never overwrites an expense.
  */
 object CsvBackup {
-    private val header = listOf("date", "time", "amount", "currency", "category", "item", "merchant", "notes", "source", "status", "paid_back", "owed", "my_share")
+    private val header = listOf("date", "time", "amount", "currency", "category", "item", "merchant", "notes", "source", "status", "paid_back", "owed", "my_share", "rate", "rate_currency", "rate_source")
 
     fun write(transactions: List<Transaction>): String = buildString {
         appendLine(header.joinToString(","))
@@ -20,7 +20,8 @@ object CsvBackup {
             appendLine(
                 listOf(
                     t.date.toString(), t.time?.toString().orEmpty(), t.amount.toString(), t.currency,
-                    t.category.name, t.item, t.merchant, t.notes, t.source.name, t.status.name, t.paidBack.toString(), t.owed.toString(), t.myShare?.toString().orEmpty()
+                    t.category.name, t.item, t.merchant, t.notes, t.source.name, t.status.name, t.paidBack.toString(), t.owed.toString(), t.myShare?.toString().orEmpty(),
+                    t.rate?.toString().orEmpty(), t.rateCurrency.orEmpty(), t.rateSource
                 ).joinToString(",") { quote(it) }
             )
         }
@@ -48,7 +49,10 @@ object CsvBackup {
                 status = TransactionStatus.entries.firstOrNull { it.name == cell("status") } ?: TransactionStatus.CONFIRMED,
                 paidBack = cell("paid_back") == "true",
                 owed = cell("owed") == "true",
-                myShare = cell("my_share").toDoubleOrNull()?.takeIf { it in 0.0..amount }
+                myShare = cell("my_share").toDoubleOrNull()?.takeIf { it in 0.0..amount },
+                rate = cell("rate").toDoubleOrNull()?.takeIf { it > 0 },
+                rateCurrency = cell("rate_currency").ifEmpty { null },
+                rateSource = cell("rate_source").ifEmpty { RateSource.NONE }
             )
         }
     }

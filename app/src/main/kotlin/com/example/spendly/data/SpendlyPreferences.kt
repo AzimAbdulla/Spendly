@@ -11,6 +11,11 @@ class SpendlyPreferences(context: Context) {
         get() = prefs.getString(KEY_DEFAULT_CURRENCY, "INR") ?: "INR"
         set(value) = prefs.edit().putString(KEY_DEFAULT_CURRENCY, value).apply()
 
+    // The currency the last expense was added in; a new one starts there
+    var spendingCurrency: String
+        get() = prefs.getString(KEY_SPENDING_CURRENCY, null) ?: defaultCurrency
+        set(value) = prefs.edit().putString(KEY_SPENDING_CURRENCY, value).apply()
+
     var isSmsAutoSaveEnabled: Boolean
         get() = prefs.getBoolean(KEY_SMS_AUTO_SAVE, true)
         set(value) = prefs.edit().putBoolean(KEY_SMS_AUTO_SAVE, value).apply()
@@ -63,6 +68,7 @@ class SpendlyPreferences(context: Context) {
 
     companion object {
         private const val KEY_DEFAULT_CURRENCY = "key_default_currency"
+        private const val KEY_SPENDING_CURRENCY = "key_spending_currency"
         private const val KEY_SMS_AUTO_SAVE = "key_sms_auto_save"
         private const val KEY_THEME_MODE = "key_theme_mode"
         private const val KEY_MONTHLY_BUDGET = "key_monthly_budget"

@@ -45,7 +45,7 @@ object SmsNotifier {
         val merchant = transaction.merchant.takeIf { it.isNotBlank() && it != "Unknown Merchant" }
         val title = if (merchant != null) "$amount at $merchant" else "$amount from a bank SMS"
         val text = when {
-            transaction.currency != defaultCurrency -> "In another currency. Tap to enter what it cost you"
+            transaction.currency != defaultCurrency && transaction.rate == null -> "In another currency. Tap to check it"
             transaction.category == Category.OTHER -> "Tap to choose a category"
             transaction.status == TransactionStatus.NEEDS_REVIEW -> "Looks like ${transaction.category.displayName}. Tap to check it"
             else -> "Saved under ${transaction.category.displayName}. Tap to change it"

@@ -77,4 +77,18 @@ class CsvBackupTest {
         val copy = CsvBackup.read(CsvBackup.write(expenses))!!
         assertEquals(expenses.map(CsvBackup::sameExpenseKey), copy.map(CsvBackup::sameExpenseKey))
     }
+
+    @Test
+    fun writeThenRead_keepsTheCurrencyAndItsRate() {
+        val abroad = expenses[0].copy(id = 0, currency = "AED", rate = 22.9, rateCurrency = "INR", rateSource = RateSource.FETCHED)
+        assertEquals(listOf(abroad), CsvBackup.read(CsvBackup.write(listOf(abroad))))
+    }
+
+    @Test
+    fun read_givesAFileFromBeforeRatesNoRate() {
+        val read = CsvBackup.read("date,amount,currency\n2026-11-01,150,AED\n")!!
+        assertEquals("AED", read[0].currency)
+        assertEquals(null, read[0].rate)
+        assertEquals(RateSource.NONE, read[0].rateSource)
+    }
 }

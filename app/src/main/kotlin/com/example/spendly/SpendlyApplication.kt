@@ -1,6 +1,7 @@
 package com.example.spendly
 
 import android.app.Application
+import com.example.spendly.data.Rates
 import com.example.spendly.data.SpendlyPreferences
 import com.example.spendly.data.TransactionRepository
 import com.example.spendly.data.db.SpendlyDatabase
@@ -15,8 +16,9 @@ import com.example.spendly.widget.updateSpendlyWidgets
 
 class SpendlyApplication : Application() {
     val database by lazy { SpendlyDatabase.getDatabase(this) }
-    val repository by lazy { TransactionRepository(database.transactionDao()) }
     val preferences by lazy { SpendlyPreferences(this) }
+    val rates by lazy { Rates(this, preferences.defaultCurrency) }
+    val repository by lazy { TransactionRepository(database.transactionDao(), rates) }
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -28,6 +30,18 @@ class SpendlyApplication : Application() {
             repository.getAllTransactions().conflate().collect { refreshWidgets() }
         }
         preferences.onChange { refreshWidgets() }
+        syncRates()
+    }
+
+    /**
+     * Brings the rates up to date and settles expenses saved with a guessed one. Does nothing
+     * without a connection, and nothing in the app waits for it.
+     */
+    fun syncRates() {
+        appScope.launch {
+            rates.refresh()
+            repository.settleRates()
+        }
     }
 
     private var widgetRefresh: Job? = null

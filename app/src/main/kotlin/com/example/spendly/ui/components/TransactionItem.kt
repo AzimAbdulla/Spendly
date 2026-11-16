@@ -1,5 +1,9 @@
 package com.example.spendly.ui.components
 
+import com.example.spendly.data.model.converted
+import com.example.spendly.data.model.isForeign
+import com.example.spendly.data.model.ownOwed
+import com.example.spendly.data.model.ownSpend
 import com.example.spendly.data.model.spend
 import com.example.spendly.data.model.owedAmount
 import com.example.spendly.ui.theme.OnTintSafe
@@ -157,11 +161,10 @@ fun TransactionItem(
 
         // Trailing amount (Space Grotesk, tabular). Everything here is spending, so no minus sign
         Column(horizontalAlignment = Alignment.End) {
-            // An SMS amount in another currency keeps its own symbol until it's been reviewed
+            // Always the amount as it was paid, in its own currency; totals do the converting
             val ownSymbol = currencySymbol(transaction.currency)
-            val curr = if (transaction.status == TransactionStatus.NEEDS_REVIEW && ownSymbol != currencySymbol) ownSymbol else currencySymbol
             Text(
-                text = "$curr${String.format("%,.2f", transaction.amount)}",
+                text = "$ownSymbol${String.format("%,.2f", transaction.amount)}",
                 fontFamily = SpaceGroteskFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
@@ -171,12 +174,13 @@ fun TransactionItem(
             )
             if (transaction.status != TransactionStatus.NEEDS_REVIEW) {
                 // What happens to the money, in one caption: owed is amber, settled is quiet
-                val owed = transaction.owedAmount
                 val caption = when {
-                    transaction.owed && transaction.myShare != null -> "$currencySymbol${String.format("%,.0f", owed)} owed"
+                    transaction.owed && transaction.myShare != null -> "$ownSymbol${String.format("%,.0f", transaction.ownOwed)} owed"
                     transaction.owed -> "Owed back"
-                    transaction.myShare != null -> "My share $currencySymbol${String.format("%,.0f", transaction.spend)}"
+                    transaction.myShare != null -> "My share $ownSymbol${String.format("%,.0f", transaction.ownSpend)}"
                     transaction.paidBack -> "Paid back"
+                    // In another currency: what it comes to in the one totals are shown in
+                    transaction.isForeign -> "\u2248 $currencySymbol${String.format("%,.0f", transaction.converted)}"
                     else -> null
                 }
                 if (caption != null) {
@@ -207,7 +211,7 @@ fun TransactionItem(
                 }
             }
             if (transaction.status == TransactionStatus.NEEDS_REVIEW) {
-                if (onConfirm != null && ownSymbol == currencySymbol) {
+                if (onConfirm != null) {
                     Text(
                         text = "Confirm",
                         fontSize = 12.sp,

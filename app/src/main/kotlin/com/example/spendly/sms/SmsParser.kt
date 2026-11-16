@@ -18,7 +18,8 @@ data class ParsedSms(
 ) {
     /**
      * [autoSave] off sends everything to review. An amount in another currency than
-     * [defaultCurrency] always goes to review, since totals are kept in one currency.
+     * [defaultCurrency] is saved with [rate] (what one of it is worth in [defaultCurrency], the
+     * latest known, settled to that day's rate later); with no rate it goes to review.
      */
     fun toTransaction(
         autoSave: Boolean,
@@ -26,9 +27,11 @@ data class ParsedSms(
         time: LocalTime? = null,
         smsKey: String? = null,
         defaultCurrency: String = currency,
-        learnedCategory: Category? = null
+        learnedCategory: Category? = null,
+        rate: Double? = null
     ): Transaction {
-        val status = if (isHighConfidence && autoSave && currency == defaultCurrency) {
+        val foreign = currency != defaultCurrency
+        val status = if (isHighConfidence && autoSave && (!foreign || rate != null)) {
             TransactionStatus.CONFIRMED
         } else {
             TransactionStatus.NEEDS_REVIEW
@@ -43,7 +46,10 @@ data class ParsedSms(
             notes = "From SMS: ${rawBody.take(60)}...",
             source = TransactionSource.SMS,
             status = status,
-            smsKey = smsKey
+            smsKey = smsKey,
+            rate = rate.takeIf { foreign },
+            rateCurrency = defaultCurrency.takeIf { foreign && rate != null },
+            rateSource = if (foreign && rate != null) "ESTIMATED" else "NONE"
         )
     }
 }

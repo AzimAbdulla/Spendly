@@ -36,7 +36,8 @@ class SmsReceiver : BroadcastReceiver() {
             time = sentAt.toLocalTime().withNano(0),
             smsKey = key,
             defaultCurrency = app.preferences.defaultCurrency,
-            learnedCategory = app.preferences.learnedCategory(parsed.merchant)
+            learnedCategory = app.preferences.learnedCategory(parsed.merchant),
+            rate = app.rates.fx.value.rate(parsed.currency)
         )
 
         val pendingResult = goAsync()
@@ -45,6 +46,7 @@ class SmsReceiver : BroadcastReceiver() {
                 if (!app.repository.isSmsRecorded(key, transaction.merchant, transaction.amount, transaction.date)) {
                     val id = app.repository.addTransaction(transaction)
                     SmsNotifier.notifyNewExpense(app, transaction.copy(id = id), app.preferences.defaultCurrency)
+                    app.syncRates()
                 }
             } catch (e: Exception) {
                 // A failed save must not crash the receiver; the next inbox scan picks it up
