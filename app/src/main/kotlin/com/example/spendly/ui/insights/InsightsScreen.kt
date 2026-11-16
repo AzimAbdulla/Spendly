@@ -43,8 +43,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.CreditCardOff
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -58,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,7 +83,6 @@ import com.example.spendly.ui.theme.tint
 import com.example.spendly.ui.theme.Emerald
 import com.example.spendly.ui.theme.rankShade
 import com.example.spendly.ui.theme.quiet
-import com.example.spendly.ui.theme.TintTime
 import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -816,6 +812,3 @@ private val HeatGap = 4.dp
 private val HeatRowLabel = 64.dp
 private val WeekCellHeight = 34.dp
 private val HeatCellShape = RoundedCornerShape(8.dp)
-
-/** A day square's width over its height: a little wider than tall, so five weeks stay compact. */
-private const val HeatCellRatio = 1.25f

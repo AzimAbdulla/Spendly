@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -33,7 +32,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -42,7 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,7 +49,6 @@ import com.example.spendly.data.model.Category
 import com.example.spendly.data.model.Transaction
 import com.example.spendly.ui.components.SpendlyCard
 import com.example.spendly.ui.components.DockClearance
-import com.example.spendly.ui.theme.CalendarToday
 import com.example.spendly.ui.theme.ChevronRight
 import com.example.spendly.ui.theme.SpaceGroteskFontFamily
 import com.example.spendly.ui.theme.SpendlyTheme
@@ -89,7 +85,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import com.example.spendly.ui.components.rememberAnimatedValues
-import com.example.spendly.ui.components.stitchCategoryColors
 import com.example.spendly.ui.components.TintedTile
 import com.example.spendly.ui.components.rememberSquish
 import com.example.spendly.ui.components.squish
@@ -124,7 +119,6 @@ fun HomeScreen(
     onMonthSelected: (YearMonth) -> Unit = {},
 ) {
     val colors = SpendlyTheme.colors
-    val monthLabel = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val dateRangeLabel = "${selectedMonth.format(DateTimeFormatter.ofPattern("MMM"))} 1 – ${selectedMonth.lengthOfMonth()}"
     val currencySymbol = currencySymbol(defaultCurrency)
     val weekDayLabels = (6 downTo 0).map { today.minusDays(it.toLong()).format(DateTimeFormatter.ofPattern("EEE")) }

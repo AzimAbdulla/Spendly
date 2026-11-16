@@ -41,6 +41,17 @@ class SmsParserTest {
     }
 
     // A toll comes out of the FASTag balance, not the bank account, so it isn't an expense here
+    // Lakhs are grouped in twos: this used to be read as Rs 1
+    @Test
+    fun parseIndianGroupedAmount_readsTheWholeFigure() {
+        val result = SmsParser.parse("Debited Rs 1,25,000.50 from a/c X1234 on 04Nov26 via UPI to Arun K. Ref 111122223333.Bal Rs 12,34,567.00")
+
+        assertNotNull(result)
+        assertEquals(125000.50, result!!.amount, 0.001)
+        assertEquals(2500000.0, SmsParser.parse("Rs.25,00,000 debited from A/c XX1234 to Home Builders on 01-11-26")!!.amount, 0.001)
+        assertEquals(1250000.0, SmsParser.parse("USD 1,250,000 debited from account 1234 at Acme Motors on 01-11-26")!!.amount, 0.001)
+    }
+
     @Test
     fun parseFastagTollSms_returnsNull() {
         val sms = "Rs.30.00 paid for Kumbalam on 05-Nov-2026 12:21:28 for KL01AB1234 via Federal Bank FASTag. Bal Rs.220.00. Call 18002669520 for discrepancy. Always wear seat belt in front and rear seats while travelling. In case of emergency, kindly call NHAI Helpline 1033 -Federal Bank"

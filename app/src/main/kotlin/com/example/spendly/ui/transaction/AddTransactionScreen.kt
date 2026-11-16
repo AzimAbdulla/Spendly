@@ -818,6 +818,7 @@ private fun WhoIsThisForSheet(
     var shareText by remember {
         mutableStateOf(current.myShare?.let { String.format(Locale.US, "%.2f", it).removeSuffix("00").removeSuffix(".") } ?: "")
     }
+    var previousShareText by remember { mutableStateOf(shareText) }
     val share = shareText.toDoubleOrNull()
     val shareOk = share != null && share > 0 && (amount <= 0 || share < amount)
 
@@ -883,6 +884,46 @@ private fun WhoIsThisForSheet(
                             textStyle = TextStyle(fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textPrimary),
                             cursorBrush = SolidColor(colors.textPrimary),
                             modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    val isHalf = amount > 0 && share != null && kotlin.math.abs(share - (amount / 2.0)) < 0.009
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .alpha(if (amount > 0) 1f else 0.45f)
+                            .background(if (isHalf) colors.tertiary.copy(alpha = 0.15f) else colors.background)
+                            .border(
+                                width = 1.dp,
+                                color = if (isHalf) colors.tertiary else colors.border,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable(enabled = amount > 0) {
+                                if (isHalf) {
+                                    val prev = previousShareText.toDoubleOrNull()
+                                    shareText = if (prev != null && kotlin.math.abs(prev - (amount / 2.0)) < 0.009) {
+                                        ""
+                                    } else {
+                                        previousShareText
+                                    }
+                                } else {
+                                    previousShareText = shareText
+                                    val half = amount / 2.0
+                                    shareText = if (half == kotlin.math.floor(half)) {
+                                        String.format(Locale.US, "%.0f", half)
+                                    } else {
+                                        String.format(Locale.US, "%.2f", half).trimEnd('0').trimEnd('.')
+                                    }
+                                }
+                            }
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "½",
+                            fontFamily = SpaceGroteskFontFamily,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isHalf) colors.tertiary else if (amount > 0) colors.textPrimary else colors.textSecondary
                         )
                     }
                 }

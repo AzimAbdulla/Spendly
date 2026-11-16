@@ -68,9 +68,10 @@ object SmsParser {
     private val ACCOUNT_PATTERN = Pattern.compile("(?i)\\b(?:a/c|acct|account)\\b")
 
     // Regex for amounts with currency
-    // Matches: $45.50, USD 45.50, INR 350.00, Rs. 350, EUR 18.50, etc.
+    // Matches: $45.50, USD 45.50, INR 350.00, Rs. 350, EUR 18.50, etc. Commas may group by
+    // thousands (1,250,000) or the Indian way (12,50,000)
     private val AMOUNT_PATTERN = Pattern.compile(
-        "(?i)(?:(USD|EUR|GBP|INR|Rs\\.?|CAD|AUD|CHF|SGD|AED|\\$|€|£|₹)\\s*([0-9]+(?:,[0-9]{3})*(?:\\.[0-9]{1,2})?)|([0-9]+(?:,[0-9]{3})*(?:\\.[0-9]{1,2})?)\\s*(USD|EUR|GBP|INR|Rs\\.?|CAD|AUD|CHF|SGD|AED))"
+        "(?i)(?:(USD|EUR|GBP|INR|Rs\\.?|CAD|AUD|CHF|SGD|AED|\\$|€|£|₹)\\s*([0-9]+(?:,[0-9]{2,3})*(?:\\.[0-9]{1,2})?)|([0-9]+(?:,[0-9]{2,3})*(?:\\.[0-9]{1,2})?)\\s*(USD|EUR|GBP|INR|Rs\\.?|CAD|AUD|CHF|SGD|AED))"
     )
 
     // Regex for merchant extraction - ordered by precedence

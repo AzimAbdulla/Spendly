@@ -166,7 +166,7 @@ The unit tests cover the SMS parser (including bank alert formats that must be s
 
 ## Design notes
 
-- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. Each kind of tile has its own tint (navy for totals, amber for trends, sky blue for lists, green for Add expense), and charts, settings and keys stay neutral.
+- A dark bento layout: a near-black background with opaque tiles, 24 dp corners and no borders. One emerald green carries the colour: each screen's main tile, the + button and Add expense. Every other tile is charcoal, and categories keep their own colour on small dots and icons.
 - Space Grotesk for figures, Geist for text, sentence case throughout, and vector icons instead of emoji.
 - A floating pill navigation bar with a green add button. Content fades out above it, and every scrolling screen ends with enough room to clear it.
 - Motion is short and calm: arrivals slow into place, exits speed away, and only touch feedback springs.

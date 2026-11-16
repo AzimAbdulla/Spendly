@@ -24,19 +24,6 @@ fun Category.getIcon(): ImageVector = when (this) {
     Category.OTHER -> Icons.Filled.Dots
 }
 
-fun Category.getColor(): Color = when (this) {
-    Category.FOOD -> StitchCatFood
-    Category.GROCERIES -> StitchCatGroceries
-    Category.TRANSPORT -> StitchCatTransport
-    Category.SHOPPING -> StitchCatShopping
-    Category.ENTERTAINMENT -> StitchCatEntertainment
-    Category.UTILITIES -> StitchCatUtilities
-    Category.HEALTH -> StitchCatHealth
-    Category.SUBSCRIPTIONS -> StitchCatSubscriptions
-    Category.TRAVEL -> StitchCatTravel
-    Category.OTHER -> StitchCatOther
-}
-
 private var _dining: ImageVector? = null
 val Icons.Filled.Dining: ImageVector
     get() {
@@ -407,37 +394,6 @@ val Icons.Filled.Dots: ImageVector
         return _dots!!
     }
 
-private var _tag: ImageVector? = null
-val Icons.Filled.Tag: ImageVector
-    get() {
-        if (_tag != null) return _tag!!
-        _tag = materialIcon(name = "Filled.Tag") {
-            materialPath {
-                moveTo(21.41f, 11.58f)
-                lineToRelative(-9.0f, -9.0f)
-                curveTo(12.05f, 2.22f, 11.55f, 2.0f, 11.0f, 2.0f)
-                horizontalLineTo(4.0f)
-                curveToRelative(-1.1f, 0.0f, -2.0f, 0.9f, -2.0f, 2.0f)
-                verticalLineToRelative(7.0f)
-                curveToRelative(0.0f, 0.55f, 0.22f, 1.05f, 0.59f, 1.42f)
-                lineToRelative(9.0f, 9.0f)
-                curveToRelative(0.36f, 0.36f, 0.86f, 0.58f, 1.41f, 0.58f)
-                reflectiveCurveToRelative(1.05f, -0.22f, 1.41f, -0.59f)
-                lineToRelative(7.0f, -7.0f)
-                curveToRelative(0.37f, -0.36f, 0.59f, -0.86f, 0.59f, -1.41f)
-                curveToRelative(0.0f, -0.55f, -0.23f, -1.06f, -0.59f, -1.42f)
-                close()
-                moveTo(5.5f, 7.0f)
-                curveTo(4.67f, 7.0f, 4.0f, 6.33f, 4.0f, 5.5f)
-                reflectiveCurveTo(4.67f, 4.0f, 5.5f, 4.0f)
-                reflectiveCurveTo(7.0f, 4.67f, 7.0f, 5.5f)
-                reflectiveCurveTo(6.33f, 7.0f, 5.5f, 7.0f)
-                close()
-            }
-        }
-        return _tag!!
-    }
-
 private var _pieChart: ImageVector? = null
 val Icons.Filled.PieChart: ImageVector
     get() {
@@ -598,27 +554,4 @@ val Icons.Filled.ChevronRight: ImageVector
             }
         }
         return _chevronRight!!
-    }
-
-private var _trendingUp: ImageVector? = null
-val Icons.Filled.TrendingUp: ImageVector
-    get() {
-        if (_trendingUp != null) return _trendingUp!!
-        _trendingUp = materialIcon(name = "Filled.TrendingUp") {
-            materialPath {
-                moveTo(16.0f, 6.0f)
-                lineToRelative(2.29f, 2.29f)
-                lineToRelative(-4.88f, 4.88f)
-                lineToRelative(-4.0f, -4.0f)
-                lineTo(2.0f, 16.59f)
-                lineTo(3.41f, 18.0f)
-                lineToRelative(6.0f, -6.0f)
-                lineToRelative(4.0f, 4.0f)
-                lineToRelative(6.3f, -6.29f)
-                lineTo(22.0f, 12.0f)
-                verticalLineTo(6.0f)
-                close()
-            }
-        }
-        return _trendingUp!!
     }

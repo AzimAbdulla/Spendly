@@ -111,7 +111,7 @@ fun GlassSurface(
             .onGloballyPositioned { origin = it.positionInRoot() }
             .clip(shape)
     ) {
-        if (canBlur && backdrop != null) {
+        if (canBlur) {
             Box(
                 modifier = Modifier
                     .matchParentSize()

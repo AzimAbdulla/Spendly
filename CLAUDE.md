@@ -26,8 +26,10 @@
 # Build debug APK (emulator testing)
 ./gradlew assembleDebug
 
-# Build the APK for a phone: release, signed with the debug key so it installs over a debug
-# build and keeps its data; it starts about 40% faster and animates more smoothly than debug
+# Build the APK for a phone: release, shrunk with R8 (about 3 MB against 23 MB for debug) and
+# signed with the debug key so it installs over a debug build and keeps its data; it starts
+# about 40% faster and animates more smoothly than debug. After changing dependencies or adding
+# reflection, run this build on a device before sending it: R8 can strip what only it can't see
 ./gradlew assembleRelease
 
 # Output APK paths:
@@ -69,7 +71,7 @@ adb exec-out screencap -p > screenshot.png
 
 ```
 app/src/main/kotlin/com/example/spendly/
-├── SpendlyApplication.kt           # Application class initializing Room DB, Repository, DataStore
+├── SpendlyApplication.kt           # Application class initializing Room DB, Repository, preferences
 ├── MainActivity.kt                 # Single Activity with edge-to-edge setup & Navigation entry
 ├── NavigationKeys.kt               # Serializable NavKey definitions (Home, Calendar, Insights, etc.)
 ├── Navigation.kt                   # NavDisplay / screen routing & state hoisting
