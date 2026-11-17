@@ -1,2 +1,7 @@
-# Spendly needs no rules of its own: Room, Glance, Navigation 3 and kotlinx.serialization
-# each ship the keep rules they need.
+# Glance draws the widgets from a WorkManager worker. WorkManager creates its workers and
+# input mergers by class name, which R8 can't see, so their constructors must be kept: without
+# these every widget stays on its loading spinner.
+-keep class * extends androidx.work.InputMerger { <init>(); }
+-keep class * extends androidx.work.ListenableWorker {
+    <init>(android.content.Context, androidx.work.WorkerParameters);
+}

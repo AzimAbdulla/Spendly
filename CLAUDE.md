@@ -30,6 +30,7 @@
 # signed with the debug key so it installs over a debug build and keeps its data; it starts
 # about 40% faster and animates more smoothly than debug. After changing dependencies or adding
 # reflection, run this build on a device before sending it: R8 can strip what only it can't see
+# (it broke every widget once: WorkManager's workers and input mergers are kept in app/proguard-rules.pro)
 ./gradlew assembleRelease
 
 # Output APK paths:
