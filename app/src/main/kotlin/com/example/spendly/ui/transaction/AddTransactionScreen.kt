@@ -1,5 +1,7 @@
 package com.example.spendly.ui.transaction
 
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.OutlinedTextField
@@ -948,10 +950,19 @@ private fun WhoIsThisForSheet(
             }
         )
     }
-    var shareText by remember {
-        mutableStateOf(current.myShare?.let { String.format(Locale.US, "%.2f", it).removeSuffix("00").removeSuffix(".") } ?: "")
+    // How many people share the bill, you included. It isn't stored: an existing split starts
+    // on the count its share was an equal part of, else on 2
+    var people by remember {
+        mutableIntStateOf(
+            current.myShare?.takeIf { amount > 0 }?.let { mine -> (2..MaxPeople).firstOrNull { equalShare(amount, it) == mine } } ?: 2
+        )
     }
-    var previousShareText by remember { mutableStateOf(shareText) }
+    var shareText by remember {
+        mutableStateOf(current.myShare?.let(::shareInput) ?: equalShare(amount, people)?.let(::shareInput).orEmpty())
+    }
+    val equal = equalShare(amount, people)
+    // Typed over the equal share: kept until the count changes
+    val edited = shareText.isNotEmpty() && equal != null && shareText.toDoubleOrNull() != equal
     val share = shareText.toDoubleOrNull()
     val shareOk = share != null && share > 0 && (amount <= 0 || share < amount)
 
@@ -992,72 +1003,54 @@ private fun WhoIsThisForSheet(
             }
             ShareOption("Just me", "All of it is my spending", choice == ShareChoice.JUST_ME, onSelect = { choice = ShareChoice.JUST_ME })
             ShareOption("Split the bill", "Only my share counts", choice == ShareChoice.SPLIT, onSelect = { choice = ShareChoice.SPLIT }) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("My share", fontSize = 14.sp, color = colors.textSecondary)
-                    Row(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colors.background)
-                            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("$currencySymbol ", fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textSecondary)
-                        BasicTextField(
-                            value = shareText,
-                            onValueChange = { typed ->
-                                if (typed.isEmpty() || Regex("^\\d{0,9}(\\.\\d{0,2})?$").matches(typed)) shareText = typed
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            textStyle = TextStyle(fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textPrimary),
-                            cursorBrush = SolidColor(colors.textPrimary),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                // How many people, then the share that comes to; typing a share keeps it
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Split between", fontSize = 14.sp, color = colors.textSecondary, modifier = Modifier.weight(1f))
+                    StepButton(Icons.Default.Remove, "Fewer people", enabled = people > 2) {
+                        people--
+                        equalShare(amount, people)?.let { shareText = shareInput(it) }
                     }
-                    val isHalf = amount > 0 && share != null && kotlin.math.abs(share - (amount / 2.0)) < 0.009
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .alpha(if (amount > 0) 1f else 0.45f)
-                            .background(if (isHalf) colors.tertiary.copy(alpha = 0.15f) else colors.background)
-                            .border(
-                                width = 1.dp,
-                                color = if (isHalf) colors.tertiary else colors.border,
-                                shape = RoundedCornerShape(12.dp)
+                    Text(
+                        text = "$people people",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textPrimary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.width(84.dp)
+                    )
+                    StepButton(Icons.Default.Add, "More people", enabled = people < MaxPeople) {
+                        people++
+                        equalShare(amount, people)?.let { shareText = shareInput(it) }
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.background)
+                        .border(1.dp, if (edited) colors.primary else colors.border, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(if (edited) "My share \u00B7 edited" else "My share", fontSize = 12.sp, color = colors.textSecondary)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${currencySymbol.trim()} ", fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textSecondary)
+                            BasicTextField(
+                                value = shareText,
+                                onValueChange = { typed ->
+                                    if (typed.isEmpty() || Regex("^\\d{0,9}(\\.\\d{0,2})?$").matches(typed)) shareText = typed
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                textStyle = TextStyle(fontFamily = SpaceGroteskFontFamily, fontSize = 18.sp, color = colors.textPrimary),
+                                cursorBrush = SolidColor(colors.textPrimary),
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            .clickable(enabled = amount > 0) {
-                                if (isHalf) {
-                                    val prev = previousShareText.toDoubleOrNull()
-                                    shareText = if (prev != null && kotlin.math.abs(prev - (amount / 2.0)) < 0.009) {
-                                        ""
-                                    } else {
-                                        previousShareText
-                                    }
-                                } else {
-                                    previousShareText = shareText
-                                    val half = amount / 2.0
-                                    shareText = if (half == kotlin.math.floor(half)) {
-                                        String.format(Locale.US, "%.0f", half)
-                                    } else {
-                                        String.format(Locale.US, "%.2f", half).trimEnd('0').trimEnd('.')
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "½",
-                            fontFamily = SpaceGroteskFontFamily,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isHalf) colors.tertiary else if (amount > 0) colors.textPrimary else colors.textSecondary
-                        )
+                        }
+                    }
+                    if (edited) {
+                        Text("Equal share ${money(currencySymbol, equal)}", fontSize = 12.sp, color = colors.textSecondary)
                     }
                 }
                 Text(
@@ -1101,6 +1094,34 @@ private fun WhoIsThisForSheet(
                     .padding(vertical = 14.dp)
             )
         }
+    }
+}
+
+/** Most people a bill can be split between. */
+private const val MaxPeople = 20
+
+/** One person's equal part of [amount] among [people], to the paisa; null until there's an amount. */
+private fun equalShare(amount: Double, people: Int): Double? =
+    if (amount > 0) kotlin.math.round(amount / people * 100) / 100 else null
+
+/** A share as it's typed in the field: no trailing zeros. */
+private fun shareInput(value: Double): String =
+    String.format(Locale.US, "%.2f", value).removeSuffix("00").removeSuffix(".")
+
+/** A round − or + button for the people count. */
+@Composable
+private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = SpendlyTheme.colors
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .alpha(if (enabled) 1f else 0.35f)
+            .clickable(enabled = enabled, onClickLabel = label, onClick = onClick)
+            .background(colors.containerHigh),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = label, tint = colors.textPrimary, modifier = Modifier.size(18.dp))
     }
 }
 

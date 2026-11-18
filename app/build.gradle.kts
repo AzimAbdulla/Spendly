@@ -18,9 +18,9 @@ android {
 
   buildTypes {
     release {
-      // R8 strips unused code (most of the Material icon set) and unused resources
-      isMinifyEnabled = true
-      isShrinkResources = true
+      // No R8: it merged the five widget classes into one, so every widget showed the same
+      // content, and it broke WorkManager before that. A 15 MB APK is the price of being safe
+      isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Sideloaded builds use the debug key, so a release APK installs over a debug one and
       // keeps its data; the release build starts and animates noticeably faster

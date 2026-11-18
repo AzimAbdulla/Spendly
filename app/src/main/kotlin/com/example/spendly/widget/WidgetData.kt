@@ -1,6 +1,9 @@
 package com.example.spendly.widget
 
 import com.example.spendly.data.model.spend
+import com.example.spendly.data.model.isForeign
+import com.example.spendly.data.model.ownSpend
+import com.example.spendly.data.foreignSymbol
 import com.example.spendly.data.currencySymbol
 import android.content.Context
 import android.content.Intent
@@ -33,7 +36,12 @@ import java.time.format.DateTimeFormatter
 /** What the widgets show, read fresh from the database on every update. */
 internal data class WidgetData(
     val monthName: String,
-    val monthTotal: Double,
+    val monthTotal: Double,                 // everything, converted to the display currency
+    val homeTotal: Double,                  // the part paid in the display currency itself
+    val homeCount: Int,
+    val homeDaily: Double,
+    val abroad: List<Pair<String, Double>>, // other currencies this month, as paid, biggest first
+    val abroadConverted: Double,            // what those come to in the display currency
     val monthCount: Int,
     val dailyAverage: Double,
     val split: List<Pair<Category, Double>>, // this month, largest first
@@ -123,6 +131,10 @@ internal class WidgetStyle(
     // A tinted widget keeps a soft wash even at full transparency, or it would look like the plain styles
     fun fill(color: Color) = color.copy(alpha = color.alpha * if (tinted) maxOf(opacity, 0.45f) else opacity)
 
+    /** An amount in another currency, as paid: "AED 150". */
+    fun foreign(code: String, value: Double): String =
+        foreignSymbol(code) + if (hideAmounts) "••" else String.format(if (value % 1.0 == 0.0) "%,.0f" else "%,.2f", value)
+
     /** A short figure for tight spots: ₹850, ₹4.6k. */
     fun compact(value: Double): String = when {
         hideAmounts -> "$symbol ••"
@@ -149,10 +161,22 @@ internal suspend fun loadWidget(context: Context): Pair<WidgetData, WidgetStyle>
     val month = YearMonth.from(today)
     val inMonth = all.filter { YearMonth.from(it.date) == month }
     val monthTotal = inMonth.sumOf { it.spend }
+    // As on Home: the big figure is what was paid in the display currency; the rest gets a line
+    val (foreign, home) = inMonth.partition { it.isForeign }
+    val homeTotal = home.sumOf { it.spend }
     val days = (6 downTo 0).map { today.minusDays(it.toLong()) }
     val data = WidgetData(
         monthName = month.format(DateTimeFormatter.ofPattern("MMMM")),
         monthTotal = monthTotal,
+        homeTotal = homeTotal,
+        homeCount = home.count { it.spend > 0 },
+        homeDaily = homeTotal / today.dayOfMonth,
+        abroad = foreign.groupBy { it.currency }
+            .map { (code, txs) -> Triple(code, txs.sumOf { it.ownSpend }, txs.sumOf { it.spend }) }
+            .filter { it.second > 0 }
+            .sortedByDescending { it.third }
+            .map { it.first to it.second },
+        abroadConverted = foreign.sumOf { it.spend },
         monthCount = inMonth.count { it.spend > 0 },
         dailyAverage = monthTotal / today.dayOfMonth,
         split = inMonth.groupBy { it.category }

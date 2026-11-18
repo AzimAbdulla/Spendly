@@ -1,5 +1,6 @@
 package com.example.spendly.widget
 
+import com.example.spendly.data.model.isForeign
 import com.example.spendly.data.model.converted
 import android.content.Context
 import android.graphics.Bitmap
@@ -224,7 +225,8 @@ private fun OverviewContent(data: WidgetData, style: WidgetStyle) {
     val tint = style.money
     val top = data.split.firstOrNull()
     val showRing = size.width >= 280.dp
-    val showLegend = size.height >= 150.dp && data.split.isNotEmpty()
+    // The currency line takes a row, so on the shortest size the category names give way to it
+    val showLegend = size.height >= (if (data.abroad.isNotEmpty()) 170.dp else 150.dp) && data.split.isNotEmpty()
     val ring = lerp(58.dp, 84.dp, room)
     val label = lerp(13.sp, 14.5.sp, room)
     val small = lerp(12.sp, 13.5.sp, room)
@@ -233,17 +235,30 @@ private fun OverviewContent(data: WidgetData, style: WidgetStyle) {
         Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Label("${data.monthName} · Spendly", style.label(tint), size = label, weight = FontWeight.Medium)
-                val (whole, decimals) = style.bigAmount(data.monthTotal)
+                val (whole, decimals) = style.bigAmount(data.homeTotal)
                 val amountWidth = size.width - HorizontalPadding * 2 - if (showRing && top != null) ring + 12.dp else 0.dp
                 val amountSize = lerp(30.sp, 42.sp, room)
                 val measured = textWidth(context, whole, amountSize, bold = true) + textWidth(context, decimals, amountSize * 0.57f)
                 BigAmount(whole, decimals, style.figure(tint), style.sub(tint), size = fitting(amountSize, measured, amountWidth))
                 Label(
-                    if (data.monthCount == 0) "No expenses yet"
-                    else "${data.monthCount} ${if (data.monthCount == 1) "expense" else "expenses"} · ${style.amount(data.dailyAverage)} a day",
+                    if (data.homeCount == 0 && data.abroad.isEmpty()) "No expenses yet"
+                    else "${data.homeCount} ${if (data.homeCount == 1) "expense" else "expenses"} · ${style.amount(data.homeDaily)} a day",
                     style.sub(tint),
                     size = label
                 )
+                // Other currencies this month, as on Home's total tile, in one line
+                if (data.abroad.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.padding(top = 3.dp)) {
+                        Label(
+                            "+ " + data.abroad.take(2).joinToString(" \u00B7 ") { (code, own) -> style.foreign(code, own) } +
+                                if (data.abroad.size > 2) " +${data.abroad.size - 2}" else "",
+                            style.text,
+                            size = label,
+                            weight = FontWeight.Medium
+                        )
+                        Label("  \u2248 ${style.amount(data.abroadConverted)}", style.sub(tint), size = label)
+                    }
+                }
             }
             if (showRing && top != null) {
                 val share = (top.second / data.monthTotal).toFloat()
@@ -470,7 +485,10 @@ private fun RecentContent(data: WidgetData, style: WidgetStyle) {
                 Dot(style.cat(tx.category), size = 8.dp)
                 Label("  " + tx.item.ifBlank { tx.category.displayName }, style.text, size = text, modifier = GlanceModifier.defaultWeight())
                 Column(horizontalAlignment = Alignment.End) {
-                    Label("−" + style.amount(tx.converted, decimals = true), style.text, size = text, weight = FontWeight.Medium)
+                    Label(
+                        "−" + if (tx.isForeign) style.foreign(tx.currency, tx.amount) else style.amount(tx.amount, decimals = true),
+                        style.text, size = text, weight = FontWeight.Medium
+                    )
                     Label(whenLabel, style.muted, size = 12.sp)
                 }
             }
