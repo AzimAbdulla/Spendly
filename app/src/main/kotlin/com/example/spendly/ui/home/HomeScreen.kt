@@ -1,5 +1,8 @@
 package com.example.spendly.ui.home
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.offset
 import com.example.spendly.data.foreignSymbol
 import com.example.spendly.ui.CurrencySpend
 import androidx.compose.foundation.layout.width
@@ -123,7 +126,6 @@ fun HomeScreen(
     onMonthSelected: (YearMonth) -> Unit = {},
 ) {
     val colors = SpendlyTheme.colors
-    val dateRangeLabel = "${selectedMonth.format(DateTimeFormatter.ofPattern("MMM"))} 1 – ${selectedMonth.lengthOfMonth()}"
     val currencySymbol = currencySymbol(defaultCurrency)
     val weekDayLabels = (6 downTo 0).map { today.minusDays(it.toLong()).format(DateTimeFormatter.ofPattern("EEE")) }
     val monthName = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM"))
@@ -265,7 +267,6 @@ fun HomeScreen(
                 // A finished month averages over all its days; the current one over the days so far
                 val days = if (selectedMonth == YearMonth.from(today)) today.dayOfMonth else selectedMonth.lengthOfMonth()
                 val dailyAverage = homeTotal / days.coerceAtLeast(1)
-                val (whole, cents) = String.format("%,.2f", shownTotal).split(".").let { it[0] to it.getOrElse(1) { "00" } }
                 val squish = rememberSquish()
                 TintedTile(
                     tint = colors.tint(Emerald),
@@ -274,17 +275,16 @@ fun HomeScreen(
                 ) {
                     val tile = SpendlyTheme.colors
                     Column(modifier = Modifier.padding(20.dp)) {
+                        // The month is already in the header above
                         Text(
-                            text = "Spent in $monthName",
+                            text = "Spent",
                             fontSize = 13.sp,
                             color = tile.textSecondary
                         )
                         Spacer(Modifier.height(4.dp))
+                        // Whole rupees: paise are noise on a month's total
                         Text(
-                            text = buildAnnotatedString {
-                                append("$currencySymbol$whole")
-                                withStyle(SpanStyle(fontSize = 22.sp, color = tile.textSecondary)) { append(".$cents") }
-                            },
+                            text = "$currencySymbol${String.format("%,.0f", shownTotal)}",
                             fontFamily = SpaceGroteskFontFamily,
                             fontSize = 40.sp,
                             lineHeight = 44.sp,
@@ -296,9 +296,9 @@ fun HomeScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = "$homeCount ${if (homeCount == 1) "expense" else "expenses"} · " +
-                                "$currencySymbol${String.format("%,.0f", dailyAverage)} a day · $dateRangeLabel",
+                                "$currencySymbol${String.format("%,.0f", dailyAverage)} a day",
                             fontSize = 13.sp,
-                            color = tile.textSecondary
+                            color = tile.textMuted
                         )
                         // Spent in other currencies: as paid, and what it comes to
                         if (monthAbroad.isNotEmpty()) {
@@ -326,45 +326,51 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        // Against the monthly budget, when one is set in Settings
+                        // Against the monthly budget, when one is set in Settings. In the current month a
+                        // white mark shows where spending evenly would have got to by today (the pace),
+                        // and the line under the bar says how far over or under that you are
                         if (monthlyBudget > 0) {
                             val left = monthlyBudget - monthlyTotal
                             val used = rememberAnimatedValues(listOf((monthlyTotal / monthlyBudget).toFloat().coerceIn(0f, 1f)))
                             val over = left < 0
-                            Spacer(Modifier.height(14.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(CircleShape)
-                                    .background(tile.containerHigh)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .drawBehind {
-                                            drawRect(if (over) BudgetOver else tile.primary, size = Size(size.width * used[0].value, size.height))
-                                        }
-                                        .fillMaxWidth()
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = "$currencySymbol${String.format("%,.0f", kotlin.math.abs(left))} " +
-                                    (if (over) "over" else "left of") + " your $currencySymbol${String.format("%,.0f", monthlyBudget)} budget",
-                                fontSize = 13.sp,
-                                color = if (over) BudgetOver else tile.textSecondary
+                            val current = selectedMonth == YearMonth.from(today)
+                            val paceShare = today.dayOfMonth.toFloat() / selectedMonth.lengthOfMonth()
+                            val pace = monthlyBudget * paceShare
+                            Spacer(Modifier.height(if (current && !over) 10.dp else 16.dp))
+                            BudgetBar(
+                                used = used[0].value,
+                                pace = paceShare.takeIf { current && !over },
+                                paceLabel = "Day ${today.dayOfMonth}",
+                                fill = if (over) BudgetOver else tile.primary,
+                                track = tile.containerHigh,
+                                mark = tile.textPrimary,
+                                labelColor = tile.textMuted
                             )
+                            Spacer(Modifier.height(10.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (over) "$currencySymbol${String.format("%,.0f", -left)} over your budget"
+                                        else "$currencySymbol${String.format("%,.0f", left)} left of $currencySymbol${String.format("%,.0f", monthlyBudget)}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (over) BudgetOver else tile.textPrimary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (current && !over) {
+                                    val ahead = monthlyTotal - pace
+                                    Text(
+                                        text = "$currencySymbol${String.format("%,.0f", kotlin.math.abs(ahead))} ${if (ahead > 0) "over" else "under"} pace",
+                                        fontSize = 12.sp,
+                                        color = if (ahead > 0) tile.tertiary else tile.primary
+                                    )
+                                }
+                            }
                         }
                         // Reminders at the foot of the tile: SMS expenses to check, money owed back.
                         // Each opens the Activity filter it's about
                         if (reviewCount > 0 || owedTotal > 0) {
-                            Spacer(Modifier.height(14.dp))
-                            Box(Modifier.fillMaxWidth().height(1.dp).background(tile.divider))
-                            Row(
-                                modifier = Modifier.padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            Spacer(Modifier.height(16.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (reviewCount > 0) TileReminder("$reviewCount to check", onReviewClick)
                                 if (owedTotal > 0) TileReminder("$currencySymbol${String.format("%,.0f", owedTotal)} owed to you", onOwedClick)
                             }
@@ -755,6 +761,45 @@ private fun MonthStepButton(icon: ImageVector, label: String, enabled: Boolean, 
 /** The budget bar and its caption once the month's spend has passed the budget. */
 private val BudgetOver = Color(0xFFE2605C)
 
+/**
+ * The budget bar: [used] of the budget filled in, and in the current month a thin mark at [pace]
+ * (the share of the month gone) with its day above it.
+ */
+@Composable
+private fun BudgetBar(used: Float, pace: Float?, paceLabel: String, fill: Color, track: Color, mark: Color, labelColor: Color) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val width = maxWidth
+        val markX = width * (pace ?: 0f)
+        Column {
+            if (pace != null) {
+                Text(
+                    text = paceLabel,
+                    fontSize = 11.sp,
+                    color = labelColor,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .padding(bottom = 4.dp)
+                        // Centred over the mark, kept inside the tile at either end
+                        .offset { IntOffset((markX.roundToPx() - 22.dp.roundToPx()).coerceIn(0, (width - 44.dp).roundToPx()), 0) }
+                        .width(44.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+            Canvas(modifier = Modifier.fillMaxWidth().height(14.dp)) {
+                val barTop = 3.dp.toPx()
+                val barHeight = 8.dp.toPx()
+                val radius = androidx.compose.ui.geometry.CornerRadius(barHeight / 2)
+                drawRoundRect(track, Offset(0f, barTop), Size(size.width, barHeight), radius)
+                if (used > 0f) drawRoundRect(fill, Offset(0f, barTop), Size(size.width * used, barHeight), radius)
+                if (pace != null) {
+                    val x = size.width * pace
+                    drawRoundRect(mark, Offset(x - 1.dp.toPx(), 0f), Size(2.dp.toPx(), size.height), androidx.compose.ui.geometry.CornerRadius(1.dp.toPx()))
+                }
+            }
+        }
+    }
+}
+
 /** A reminder at the foot of the total tile, with an amber dot, that opens the list it's about. */
 @Composable
 private fun TileReminder(text: String, onClick: () -> Unit) {
@@ -763,11 +808,12 @@ private fun TileReminder(text: String, onClick: () -> Unit) {
         modifier = Modifier
             .clip(CircleShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 10.dp),
+            .background(tile.containerHigh)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(Modifier.size(7.dp).background(tile.tertiary, CircleShape))
+        Box(Modifier.size(6.dp).background(tile.tertiary, CircleShape))
         Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = tile.textPrimary, maxLines = 1)
     }
 }
